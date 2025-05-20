@@ -27,7 +27,7 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         pageNumber: 1,
         pageSize: 5,
         showLoader: false,
-        isDarkMode: true,
+        isDarkMode: false,
 
         // advanced expenses searching variables
         searchSelectedTags: [],

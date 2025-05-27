@@ -39,6 +39,7 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         currentTotalOfTopupExpenses: 0,
         isAdvancedSearch: false,
         TM_BACKEND_URL: import.meta.env.VITE_TM_BACKEND_URL,
+        selectedTags: []
     }),
     getters: {
         getUserName: (state) => state.userName,
@@ -70,11 +71,15 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         getCurrentTotalOfTopupExpenses: (state) => state.currentTotalOfTopupExpenses,
         getIsAdvancedSearch: (state) => state.isAdvancedSearch,
         getShowLoader: (state) => state.showLoader,
-        getIsDarkMode: (state) => state.isDarkMode
+        getIsDarkMode: (state) => state.isDarkMode,
+        getSelectedTags: (state) => state.selectedTags
     },
     actions: {
         setUserName(userName) {
             this.userName = userName
+        },
+        setSelectedTags(tagsList) {
+            this.selectedTags = tagsList
         },
         setLoggedInStatus(status) {
             this.isLoggedIn = status
@@ -366,7 +371,9 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
                     { baseURL: this.TM_BACKEND_URL }
                 )
                 if (response.status == 201) {
-                    location.reload()
+                    this.setSelectedTags(response.data.data.selected_tags)
+                    this.showLoader = false
+                    this.setApplyEntryTagVisible(false)
                 }
             } catch(err) {
                 this.showLoader = false

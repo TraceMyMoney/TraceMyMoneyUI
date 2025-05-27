@@ -294,7 +294,7 @@
                       @click="getEntryInformation(expense, item)">
                       {{item.description}}
                       <v-icon
-                        v-if="item.entry_tags?.length > 0"
+                        v-if="item.entry_tags?.length > 0 || this.getSelectedTags.length > 0"
                         size="x-small"
                         color="success"
                       >
@@ -478,7 +478,8 @@ export default {
       "getCurrentTotalOfExpenses",
       "getCurrentTotalOfTopupExpenses",
       "getIsAdvancedSearch",
-      "getIsDarkMode"
+      "getIsDarkMode",
+      "getSelectedTags"
     ])
   },
   async created() {
@@ -502,7 +503,8 @@ export default {
       "setSearchSelectedBanks",
       "setSearchEntryKeyword",
       "setSearchSelectedDaterange",
-      "setAdvancedSearch"
+      "setAdvancedSearch",
+      "setSelectedTags"
     ]),
 
     // API related functions
@@ -560,6 +562,7 @@ export default {
       this.setExpenseEntryCreationDate(chagnedDate)
     },
     getEntryInformation(expense, entry) {
+      this.setSelectedTags(this.getSelectedTags.length ? this.getSelectedTags : entry.entry_tags);
       this.applyTagInfo = {
         ...entry,
         ...{

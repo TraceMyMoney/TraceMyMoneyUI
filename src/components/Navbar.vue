@@ -3,11 +3,13 @@
       <v-container class="w-lg-75 w-100">
         <div class="d-flex w-lg-75 mx-auto justify-space-between align-center">
           <div class="d-flex align-center">
-            <v-icon
-              :color="getIsDarkMode ? 'white' : 'success'"
+            <v-img
+              :src="currentThemeIcon"
+              width="24"
+              height="24"
+              class="cursor-pointer"
               @click="makeBgWhite"
-            > mdi-theme-light-dark
-            </v-icon> &nbsp;
+            />&nbsp;&nbsp;&nbsp;
             <span
               @click="reloadPage"
               class="text-sm-h5 text-md-h4 text-h6 cursor-pointer dynapuff text-success">
@@ -47,6 +49,8 @@
 <script>
 import { traceMyMoneyStore } from "@/stores/traceMyMoneyStore";
 import { mapActions, mapState } from 'pinia'
+import darkmode from '@/assets/darkmode.svg';
+import whitemode from '@/assets/whitemode.svg';
 
 export default {
     data() {
@@ -60,7 +64,10 @@ export default {
         "getUserName",
         "getLoggedInStatus",
         "getIsDarkMode"
-      ])
+      ]),
+      currentThemeIcon() {
+        return this.getIsDarkMode ? whitemode : darkmode;
+      }
     },
     methods: {
       ...mapActions(traceMyMoneyStore, [

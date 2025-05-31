@@ -50,14 +50,14 @@
                     label="Select the bank"
                     class="w-100"
                   ></v-select>
-                  <v-text-field
-                    label="Add the date"
-                    variant="outlined"
-                    color="success"
-                    density="compact"
-                    v-model="getExpenseEntryCreationDate"
+                 <VueDatePicker
+                    v-model="datePicker"
+                    :max-date="today"
+                    :format="formatMyDates"
+                    :enable-time-picker="false"
+                    class="mb-5"
                     @update:modelValue="changeExpenseEntryCreationDate"
-                  ></v-text-field>
+                  ></VueDatePicker>
                 </div>
                 <div class="d-flex justify-center align-center">
                   <div class="w-100 mx-auto">
@@ -98,7 +98,7 @@
                           v-model="item.selected_tags"
                           :items="getEntryTags"
                           multiple
-                      >
+                        >
                       </v-select>
                       <v-divider class="py-2"></v-divider>
                     </template>
@@ -412,6 +412,7 @@ import { reactive } from "vue";
 import { mapActions, mapState } from 'pinia'
 import { traceMyMoneyStore } from "@/stores/traceMyMoneyStore";
 import { filterValidExpenses } from '../helper/helper'
+import { ref } from 'vue'
 
 // components
 import LoginVue from './Login.vue';
@@ -446,7 +447,8 @@ export default {
       toggleActionsFilter: 0,
       dateranges: DATERANGES,
       operatorItems: OPERATORS,
-      pazeSizes: PAGE_SIZES
+      pazeSizes: PAGE_SIZES,
+      datePicker: ref(new Date())
     }
   },
   components: {
@@ -461,7 +463,6 @@ export default {
   computed: {
     ...mapState(traceMyMoneyStore, [
       "getLoggedInStatus",
-      "getExpenseEntryCreationDate",
       "getBankItems",
       "getLoginPageStatus",
       "getFilteredExpensesList",
@@ -558,8 +559,9 @@ export default {
     removeInitialExpenseEntry(counter) {
       this.initialExpenseEntriesList.splice(counter, 1)
     },
-    changeExpenseEntryCreationDate(chagnedDate) {
-      this.setExpenseEntryCreationDate(chagnedDate)
+    changeExpenseEntryCreationDate(changedDate) {
+      const formatedChangedDate = `${this.formatMyDates(changedDate)} 00:00`
+      this.setExpenseEntryCreationDate(formatedChangedDate)
     },
     getEntryInformation(expense, entry) {
       this.setSelectedTags(this.getSelectedTags.length ? this.getSelectedTags : entry.entry_tags);
@@ -608,7 +610,13 @@ export default {
       this.setSearchEntryKeyword("")
       this.setSearchSelectedDaterange(null)
       this.setAdvancedSearch(false)
-    }
+    },
+    formatMyDates(date) {
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    },
   }
 }
 

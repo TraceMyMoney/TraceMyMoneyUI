@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from "axios";
-import { fetchAccessToken, getDateRange, handleError } from '@/helper/helper';
+import { fetchAccessToken, formatMyDates, handleError } from '@/helper/helper';
 import { ALL } from '@/constants/constants'
 
 export const traceMyMoneyStore = defineStore("traceMyMoney", {
@@ -142,7 +142,7 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
             if (this.isLoggedIn) {
                 this.showLoader = true
                 const date = new Date()
-                this.expenseEntryCreationDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()} 00:00`
+                this.expenseEntryCreationDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} 00:00`
 
                 try {
                     const banksResponse = await axios.get(`${this.TM_BACKEND_URL}banks/`)
@@ -437,7 +437,10 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
                         data["search_by_keyword"] = this.searchEntryKeyword
                     }
                     if (this.searchSelectedDaterange) {
-                        data["search_by_daterange"] = getDateRange(this.searchSelectedDaterange)
+                        data["search_by_daterange"] = {
+                            start_date: `${formatMyDates(this.searchSelectedDaterange[0])} 00:00`,
+                            end_date: `${formatMyDates(this.searchSelectedDaterange[1])} 00:00`
+                        }
                     }
                 } else {
                     data["bank_id"] = this.currentSelectedBankId

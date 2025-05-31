@@ -52,7 +52,7 @@
                   ></v-select>
                  <VueDatePicker
                     v-model="datePicker"
-                    :max-date="today"
+                    :max-date="maxDate"
                     :format="formatMyDates"
                     :enable-time-picker="false"
                     class="mb-5"
@@ -179,18 +179,16 @@
               multiple
             >
             </v-select>
-            <v-select
-              variant="outlined"
-              density="compact"
-              color="success"
-              class="custom-hide_input_details w-40"
-              :items="dateranges"
-              v-model="getSearchSelectedDaterange"
-              label="Daterange"
+            <VueDatePicker
+              :format="formatMyDaterange"
+              :range="true"
+              :enable-time-picker="false"
+              v-model="myDateRange"
+              class="w-50"
+              :max-date="maxDate"
               clearable
               @update:model-value="updateSearchSelectedDaterange($event)"
-            >
-            </v-select>
+            ></VueDatePicker>
           </div>
           <div class="d-flex my-3">
             <v-text-field
@@ -411,7 +409,7 @@
 import { reactive } from "vue";
 import { mapActions, mapState } from 'pinia'
 import { traceMyMoneyStore } from "@/stores/traceMyMoneyStore";
-import { filterValidExpenses } from '../helper/helper'
+import { filterValidExpenses, formatMyDates } from '../helper/helper'
 import { ref } from 'vue'
 
 // components
@@ -448,7 +446,9 @@ export default {
       dateranges: DATERANGES,
       operatorItems: OPERATORS,
       pazeSizes: PAGE_SIZES,
-      datePicker: ref(new Date())
+      datePicker: ref(new Date()),
+      maxDate: new Date(),
+      myDateRange: null
     }
   },
   components: {
@@ -560,7 +560,7 @@ export default {
       this.initialExpenseEntriesList.splice(counter, 1)
     },
     changeExpenseEntryCreationDate(changedDate) {
-      const formatedChangedDate = `${this.formatMyDates(changedDate)} 00:00`
+      const formatedChangedDate = `${formatMyDates(changedDate)} 00:00`
       this.setExpenseEntryCreationDate(formatedChangedDate)
     },
     getEntryInformation(expense, entry) {
@@ -611,12 +611,12 @@ export default {
       this.setSearchSelectedDaterange(null)
       this.setAdvancedSearch(false)
     },
-    formatMyDates(date) {
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
-      return `${day}-${month}-${year}`;
-    },
+    formatMyDaterange(myDates) {
+      if (myDates.length == 2) {
+        return `FROM : ${formatMyDates(myDates[0])}   TO : ${formatMyDates(myDates[1])}`
+      }
+      return ''
+    }
   }
 }
 

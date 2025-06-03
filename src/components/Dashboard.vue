@@ -53,7 +53,7 @@
                  <VueDatePicker
                     v-model="datePicker"
                     :max-date="maxDate"
-                    :format="formatMyDates"
+                    :format="formatInitialDate"
                     :enable-time-picker="false"
                     class="mb-5"
                     @update:modelValue="changeExpenseEntryCreationDate"
@@ -616,6 +616,12 @@ export default {
         return `FROM : ${formatMyDates(myDates[0])}   TO : ${formatMyDates(myDates[1])}`
       }
       return ''
+    },
+    formatInitialDate(date) {
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
     }
   }
 }

@@ -271,7 +271,7 @@
                   </div>
                 </v-col>
                 <v-col cols="12" :class="['d-flex', 'mt-2', 'justify-space-between', {'bg-grey-darken-4': getIsDarkMode}]">
-                    <span class="font-weight-bold">Remaining : {{expense.remaining_amount_till_now}}/-</span>
+                    <span class="font-weight-bold">Remaining : {{  this.getPrivacyModeEnabled ? "--" : `${expense.remaining_amount_till_now}/-` }}</span>
                     <div>
                       <span v-if="expense.topup_expense_total < 0" class="font-weight-bold">+ {{Math.abs(expense.topup_expense_total)}}/-</span>
                       &nbsp;&nbsp;
@@ -423,11 +423,9 @@ import ApplyEntryTagsVue from './ApplyEntryTags.vue';
 
 // constants
 import {
-  DATERANGES,
   OPERATORS,
   PAGE_SIZES,
   DEFAULT_PAGE_NUMBER,
-  DEFAULT_PAGE_SIZE
 } from '../constants/constants'
 
 export default {
@@ -443,7 +441,6 @@ export default {
       showAction: false,
       showFilter: true,
       toggleActionsFilter: 0,
-      dateranges: DATERANGES,
       operatorItems: OPERATORS,
       pazeSizes: PAGE_SIZES,
       datePicker: ref(new Date()),
@@ -480,7 +477,8 @@ export default {
       "getCurrentTotalOfTopupExpenses",
       "getIsAdvancedSearch",
       "getIsDarkMode",
-      "getSelectedTags"
+      "getSelectedTags",
+      "getPrivacyModeEnabled"
     ])
   },
   async created() {
@@ -603,7 +601,7 @@ export default {
     },
     resetAdvancedSearch() {
       this.setPageNumber(DEFAULT_PAGE_NUMBER)
-      this.setPageSize(DEFAULT_PAGE_SIZE)
+      this.setPageSize(this.getPageSize)
       this.setSearchOperator("and")
       this.setSearchSelectedTags([])
       this.setSearchSelectedBanks([])

@@ -28,6 +28,7 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         pageSize: 5,
         showLoader: false,
         isDarkMode: false,
+        privacyModeEnabled: false,
 
         // advanced expenses searching variables
         searchSelectedTags: [],
@@ -72,7 +73,9 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         getIsAdvancedSearch: (state) => state.isAdvancedSearch,
         getShowLoader: (state) => state.showLoader,
         getIsDarkMode: (state) => state.isDarkMode,
-        getSelectedTags: (state) => state.selectedTags
+        getSelectedTags: (state) => state.selectedTags,
+        getPrivacyModeEnabled: (state) => state.privacyModeEnabled,
+
     },
     actions: {
         setUserName(userName) {
@@ -135,8 +138,11 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         setAdvancedSearch(status) {
             this.isAdvancedSearch = status
         },
-        setIsDarkMode() {
-            this.isDarkMode = !this.isDarkMode
+        setIsDarkMode(value) {
+            this.isDarkMode = value
+        },
+        setPrivacyModeEnabled(value) {
+            this.privacyModeEnabled = value
         },
         async getInitialData() {
             if (this.isLoggedIn) {
@@ -146,6 +152,15 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
 
                 try {
                     const banksResponse = await axios.get(`${this.TM_BACKEND_URL}banks/`)
+                    const userPreferencesResponse = await axios.get(`${this.TM_BACKEND_URL}user-preferences/`)
+                    if (userPreferencesResponse) {
+                        const data = userPreferencesResponse?.data?.user_preferences;
+                        if (data) {
+                            this.setPageSize(data.page_size);
+                            this.setIsDarkMode(data.is_dark_mode);
+                            this.setPrivacyModeEnabled(data.privacy_mode_enabled);
+                        }
+                    }
                     if (banksResponse) {
                         this.banksList = banksResponse.data?.banks.map(ele => ({
                             "bankName": ele.name,
@@ -158,7 +173,8 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
                             const responses = await Promise.all([
                                 axios.get(`${this.TM_BACKEND_URL}expenses/`, {
                                     params: {
-                                        bank_id: this.currentSelectedBankId
+                                        bank_id: this.currentSelectedBankId,
+                                        per_page: this.pageSize
                                     }
                                 }),
                                 axios.get(`${this.TM_BACKEND_URL}entry-tags/`),
@@ -467,6 +483,22 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         logoutUser() {
             localStorage.removeItem("access_token")
             location.reload()
+        },
+        updateUserPreferences(payload){
+            this.showLoader = true
+            axios.patch("user-preferences/update",
+                payload,
+                {baseURL: this.TM_BACKEND_URL}
+            ).then(res => {
+                if (res.status ==  200) {
+                    window.location.reload()
+                }
+            }).catch(err => {
+                this.showLoader = false
+                const pushToData = handleError(err)
+                this.showAlert = true
+                this.alertErrorMessages.push(pushToData)
+            })
         }
     }
 })

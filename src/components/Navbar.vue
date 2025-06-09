@@ -8,7 +8,7 @@
               width="24"
               height="24"
               class="cursor-pointer"
-              @click="makeBgWhite"
+              @click="makeBgWhiteSoft"
             />&nbsp;&nbsp;&nbsp;
             <span
               @click="reloadPage"
@@ -17,7 +17,8 @@
             </span>
           </div>
           <span>
-            <span v-if="getLoggedInStatus" class="text-success dynapuff">
+            <span v-if="getLoggedInStatus" class="text-success dynapuff d-flex align-center">
+              <v-switch v-model="getPrivacyModeEnabled" @click="updatePrivacyMode" class="mr-3 d-flex"></v-switch>
               Hello@{{ getUserName }}
               <span
                 color="primary"
@@ -63,7 +64,8 @@ export default {
       ...mapState(traceMyMoneyStore, [
         "getUserName",
         "getLoggedInStatus",
-        "getIsDarkMode"
+        "getIsDarkMode",
+        "getPrivacyModeEnabled"
       ]),
       currentThemeIcon() {
         return this.getIsDarkMode ? whitemode : darkmode;
@@ -73,13 +75,17 @@ export default {
       ...mapActions(traceMyMoneyStore, [
         "logoutUser",
         "setLoginPageStatus",
-        "setIsDarkMode"
+        "setIsDarkMode",
+        "updateUserPreferences"
       ]),
       reloadPage() {
         location.reload()
       },
-      makeBgWhite(){
-        this.setIsDarkMode()
+      makeBgWhiteSoft(){
+        this.updateUserPreferences({"is_dark_mode":!this.getIsDarkMode})
+      },
+      updatePrivacyMode() {
+        this.updateUserPreferences({"privacy_mode_enabled": !this.getPrivacyModeEnabled})
       }
     }
 }

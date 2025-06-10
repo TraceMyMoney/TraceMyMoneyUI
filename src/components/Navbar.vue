@@ -9,6 +9,7 @@
               height="24"
               class="cursor-pointer"
               @click="makeBgWhiteSoft"
+              v-if="getLoggedInStatus"
             />&nbsp;&nbsp;&nbsp;
             <span
               @click="reloadPage"

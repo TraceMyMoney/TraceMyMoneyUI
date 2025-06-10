@@ -18,7 +18,14 @@
           </div>
           <span>
             <span v-if="getLoggedInStatus" class="text-success dynapuff d-flex align-center">
-              <v-switch v-model="getPrivacyModeEnabled" @click="updatePrivacyMode" class="mr-3 d-flex"></v-switch>
+              <v-btn
+                icon
+                @click="updatePrivacyMode"
+              >
+                <v-icon>
+                  {{ getPrivacyModeEnabled ? 'mdi-eye-off' : 'mdi-eye' }}
+                </v-icon>
+              </v-btn>
               Hello@{{ getUserName }}
               <span
                 color="primary"

@@ -50,14 +50,14 @@
                     label="Select the bank"
                     class="w-100"
                   ></v-select>
-                  <v-text-field
-                    label="Add the date"
-                    variant="outlined"
-                    color="success"
-                    density="compact"
-                    v-model="getExpenseEntryCreationDate"
+                 <VueDatePicker
+                    v-model="datePicker"
+                    :max-date="maxDate"
+                    :format="formatInitialDate"
+                    :enable-time-picker="false"
+                    class="mb-5"
                     @update:modelValue="changeExpenseEntryCreationDate"
-                  ></v-text-field>
+                  ></VueDatePicker>
                 </div>
                 <div class="d-flex justify-center align-center">
                   <div class="w-100 mx-auto">
@@ -98,7 +98,7 @@
                           v-model="item.selected_tags"
                           :items="getEntryTags"
                           multiple
-                      >
+                        >
                       </v-select>
                       <v-divider class="py-2"></v-divider>
                     </template>
@@ -179,18 +179,16 @@
               multiple
             >
             </v-select>
-            <v-select
-              variant="outlined"
-              density="compact"
-              color="success"
-              class="custom-hide_input_details w-40"
-              :items="dateranges"
-              v-model="getSearchSelectedDaterange"
-              label="Daterange"
+            <VueDatePicker
+              :format="formatMyDaterange"
+              :range="true"
+              :enable-time-picker="false"
+              v-model="myDateRange"
+              class="w-50"
+              :max-date="maxDate"
               clearable
               @update:model-value="updateSearchSelectedDaterange($event)"
-            >
-            </v-select>
+            ></VueDatePicker>
           </div>
           <div class="d-flex my-3">
             <v-text-field
@@ -273,7 +271,7 @@
                   </div>
                 </v-col>
                 <v-col cols="12" :class="['d-flex', 'mt-2', 'justify-space-between', {'bg-grey-darken-4': getIsDarkMode}]">
-                    <span class="font-weight-bold">Remaining : {{expense.remaining_amount_till_now}}/-</span>
+                    <span class="font-weight-bold">Remaining : {{  this.getPrivacyModeEnabled ? "--" : `${expense.remaining_amount_till_now}/-` }}</span>
                     <div>
                       <span v-if="expense.topup_expense_total < 0" class="font-weight-bold">+ {{Math.abs(expense.topup_expense_total)}}/-</span>
                       &nbsp;&nbsp;
@@ -294,7 +292,7 @@
                       @click="getEntryInformation(expense, item)">
                       {{item.description}}
                       <v-icon
-                        v-if="item.entry_tags?.length > 0"
+                        v-if="item.entry_tags?.length > 0 || this.getSelectedTags.length > 0"
                         size="x-small"
                         color="success"
                       >
@@ -411,7 +409,8 @@
 import { reactive } from "vue";
 import { mapActions, mapState } from 'pinia'
 import { traceMyMoneyStore } from "@/stores/traceMyMoneyStore";
-import { filterValidExpenses } from '../helper/helper'
+import { filterValidExpenses, formatMyDates } from '../helper/helper'
+import { ref } from 'vue'
 
 // components
 import LoginVue from './Login.vue';
@@ -424,11 +423,9 @@ import ApplyEntryTagsVue from './ApplyEntryTags.vue';
 
 // constants
 import {
-  DATERANGES,
   OPERATORS,
   PAGE_SIZES,
   DEFAULT_PAGE_NUMBER,
-  DEFAULT_PAGE_SIZE
 } from '../constants/constants'
 
 export default {
@@ -444,9 +441,11 @@ export default {
       showAction: false,
       showFilter: true,
       toggleActionsFilter: 0,
-      dateranges: DATERANGES,
       operatorItems: OPERATORS,
-      pazeSizes: PAGE_SIZES
+      pazeSizes: PAGE_SIZES,
+      datePicker: ref(new Date()),
+      maxDate: new Date(),
+      myDateRange: null
     }
   },
   components: {
@@ -461,7 +460,6 @@ export default {
   computed: {
     ...mapState(traceMyMoneyStore, [
       "getLoggedInStatus",
-      "getExpenseEntryCreationDate",
       "getBankItems",
       "getLoginPageStatus",
       "getFilteredExpensesList",
@@ -478,7 +476,9 @@ export default {
       "getCurrentTotalOfExpenses",
       "getCurrentTotalOfTopupExpenses",
       "getIsAdvancedSearch",
-      "getIsDarkMode"
+      "getIsDarkMode",
+      "getSelectedTags",
+      "getPrivacyModeEnabled"
     ])
   },
   async created() {
@@ -502,7 +502,8 @@ export default {
       "setSearchSelectedBanks",
       "setSearchEntryKeyword",
       "setSearchSelectedDaterange",
-      "setAdvancedSearch"
+      "setAdvancedSearch",
+      "setSelectedTags"
     ]),
 
     // API related functions
@@ -556,10 +557,12 @@ export default {
     removeInitialExpenseEntry(counter) {
       this.initialExpenseEntriesList.splice(counter, 1)
     },
-    changeExpenseEntryCreationDate(chagnedDate) {
-      this.setExpenseEntryCreationDate(chagnedDate)
+    changeExpenseEntryCreationDate(changedDate) {
+      const formatedChangedDate = `${formatMyDates(changedDate)} 00:00`
+      this.setExpenseEntryCreationDate(formatedChangedDate)
     },
     getEntryInformation(expense, entry) {
+      this.setSelectedTags(this.getSelectedTags.length ? this.getSelectedTags : entry.entry_tags);
       this.applyTagInfo = {
         ...entry,
         ...{
@@ -598,13 +601,25 @@ export default {
     },
     resetAdvancedSearch() {
       this.setPageNumber(DEFAULT_PAGE_NUMBER)
-      this.setPageSize(DEFAULT_PAGE_SIZE)
+      this.setPageSize(this.getPageSize)
       this.setSearchOperator("and")
       this.setSearchSelectedTags([])
       this.setSearchSelectedBanks([])
       this.setSearchEntryKeyword("")
       this.setSearchSelectedDaterange(null)
       this.setAdvancedSearch(false)
+    },
+    formatMyDaterange(myDates) {
+      if (myDates.length == 2) {
+        return `FROM : ${formatMyDates(myDates[0])}   TO : ${formatMyDates(myDates[1])}`
+      }
+      return ''
+    },
+    formatInitialDate(date) {
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
     }
   }
 }

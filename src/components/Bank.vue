@@ -32,7 +32,7 @@
                                     <v-card-title class="text-h2">{{ bank.bankName }}</v-card-title>
                                 </v-col>
                                 <v-col cols="12" class="text-center">
-                                    <v-card-subtitle class="text-h2">{{ bank.remainingBalance }}</v-card-subtitle>
+                                    <v-card-subtitle class="text-h2">{{ this.getPrivacyModeEnabled ? "--" : bank.remainingBalance }}</v-card-subtitle>
                                 </v-col>
                             </v-row>
                         </v-scale-transition>
@@ -93,7 +93,7 @@
                                     <v-card-title class="text-h6">{{ bank.bankName }}</v-card-title>
                                 </v-col>
                                 <v-col cols="12" class="text-center">
-                                    <v-card-subtitle class="text-h5">{{ bank.remainingBalance }}</v-card-subtitle>
+                                    <v-card-subtitle class="text-h5">{{ this.getPrivacyModeEnabled ? "--" : bank.remainingBalance }}</v-card-subtitle>
                                 </v-col>
                             </v-row>
                         </v-scale-transition>
@@ -154,7 +154,8 @@ export default {
     computed: {
         ...mapState(traceMyMoneyStore, [
             "getBanksList",
-            "getIsDarkMode"
+            "getIsDarkMode",
+            "getPrivacyModeEnabled"
         ])
     },
     methods: {

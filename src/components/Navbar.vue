@@ -3,11 +3,14 @@
       <v-container class="w-lg-75 w-100">
         <div class="d-flex w-lg-75 mx-auto justify-space-between align-center">
           <div class="d-flex align-center">
-            <v-icon
-              :color="getIsDarkMode ? 'white' : 'success'"
-              @click="makeBgWhite"
-            > mdi-theme-light-dark
-            </v-icon> &nbsp;
+            <v-img
+              :src="currentThemeIcon"
+              width="24"
+              height="24"
+              class="cursor-pointer"
+              @click="makeBgWhiteSoft"
+              v-if="getLoggedInStatus"
+            />&nbsp;&nbsp;&nbsp;
             <span
               @click="reloadPage"
               class="text-sm-h5 text-md-h4 text-h6 cursor-pointer dynapuff text-success">
@@ -15,7 +18,15 @@
             </span>
           </div>
           <span>
-            <span v-if="getLoggedInStatus" class="text-success dynapuff">
+            <span v-if="getLoggedInStatus" class="text-success dynapuff d-flex align-center">
+              <v-btn
+                icon
+                @click="updatePrivacyMode"
+              >
+                <v-icon>
+                  {{ getPrivacyModeEnabled ? 'mdi-eye-off' : 'mdi-eye' }}
+                </v-icon>
+              </v-btn>
               Hello@{{ getUserName }}
               <span
                 color="primary"
@@ -47,6 +58,8 @@
 <script>
 import { traceMyMoneyStore } from "@/stores/traceMyMoneyStore";
 import { mapActions, mapState } from 'pinia'
+import darkmode from '@/assets/darkmode.svg';
+import whitemode from '@/assets/whitemode.svg';
 
 export default {
     data() {
@@ -59,20 +72,28 @@ export default {
       ...mapState(traceMyMoneyStore, [
         "getUserName",
         "getLoggedInStatus",
-        "getIsDarkMode"
-      ])
+        "getIsDarkMode",
+        "getPrivacyModeEnabled"
+      ]),
+      currentThemeIcon() {
+        return this.getIsDarkMode ? whitemode : darkmode;
+      }
     },
     methods: {
       ...mapActions(traceMyMoneyStore, [
         "logoutUser",
         "setLoginPageStatus",
-        "setIsDarkMode"
+        "setIsDarkMode",
+        "updateUserPreferences"
       ]),
       reloadPage() {
         location.reload()
       },
-      makeBgWhite(){
-        this.setIsDarkMode()
+      makeBgWhiteSoft(){
+        this.updateUserPreferences({"is_dark_mode":!this.getIsDarkMode})
+      },
+      updatePrivacyMode() {
+        this.updateUserPreferences({"privacy_mode_enabled": !this.getPrivacyModeEnabled})
       }
     }
 }

@@ -42,50 +42,6 @@ export const fetchAccessToken = () => {
     }
 }
 
-export const getDateRange = (rangeType) => {
-  const now = new Date();
-  let startDate, endDate;
-
-  switch (rangeType) {
-    case 'mtd':
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      endDate = now;
-      break;
-    case 'ytd':
-      startDate = new Date(now.getFullYear(), 0, 1);
-      endDate = now;
-      break;
-    case 'last_month':
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      startDate = lastMonth;
-      endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-      break;
-    case 'current_week':  // This Week
-      const startOfCurrentWeek = new Date(now); // Create a fresh date object to preserve `now`
-      startOfCurrentWeek.setDate(now.getDate() - now.getDay()); // Set to Sunday of current week
-      startDate = startOfCurrentWeek;
-      endDate = now;
-      break;
-    case 'last_week':  // Last Week
-      const startOfLastWeek = new Date(now); // Create a fresh date object for last week
-      startOfLastWeek.setDate(now.getDate() - now.getDay() - 7); // Set to Sunday of last week
-      const endOfLastWeek = new Date(now); // Create a new Date object for the end of last week
-      endOfLastWeek.setDate(now.getDate() - now.getDay()); // Set to Sunday of this week
-      startDate = startOfLastWeek;
-      endDate = endOfLastWeek;
-      break;
-
-    default:
-      throw new Error('Invalid date range type');
-  }
-  const formatDate = (d) => `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()} 00:00`;
-
-  return {
-    start_date: formatDate(startDate),
-    end_date: formatDate(endDate)
-  };
-};
-
 export const handleError = (err) => {
   console.log(err)
   let pushToData = null;
@@ -108,4 +64,11 @@ export const handleError = (err) => {
       pushToData = err?.message
   }
   return pushToData
+}
+
+export const formatMyDates = (date) => {
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 }

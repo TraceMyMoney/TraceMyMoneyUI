@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from "axios";
-import { fetchAccessToken, getDateRange, handleError } from '@/helper/helper';
+import { fetchAccessToken, formatMyDates, handleError } from '@/helper/helper';
 import { ALL } from '@/constants/constants'
 
 export const traceMyMoneyStore = defineStore("traceMyMoney", {
@@ -27,7 +27,8 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         pageNumber: 1,
         pageSize: 5,
         showLoader: false,
-        isDarkMode: true,
+        isDarkMode: false,
+        privacyModeEnabled: false,
 
         // advanced expenses searching variables
         searchSelectedTags: [],
@@ -39,6 +40,7 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         currentTotalOfTopupExpenses: 0,
         isAdvancedSearch: false,
         TM_BACKEND_URL: import.meta.env.VITE_TM_BACKEND_URL,
+        selectedTags: []
     }),
     getters: {
         getUserName: (state) => state.userName,
@@ -70,11 +72,17 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         getCurrentTotalOfTopupExpenses: (state) => state.currentTotalOfTopupExpenses,
         getIsAdvancedSearch: (state) => state.isAdvancedSearch,
         getShowLoader: (state) => state.showLoader,
-        getIsDarkMode: (state) => state.isDarkMode
+        getIsDarkMode: (state) => state.isDarkMode,
+        getSelectedTags: (state) => state.selectedTags,
+        getPrivacyModeEnabled: (state) => state.privacyModeEnabled,
+
     },
     actions: {
         setUserName(userName) {
             this.userName = userName
+        },
+        setSelectedTags(tagsList) {
+            this.selectedTags = tagsList
         },
         setLoggedInStatus(status) {
             this.isLoggedIn = status
@@ -130,17 +138,29 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         setAdvancedSearch(status) {
             this.isAdvancedSearch = status
         },
-        setIsDarkMode() {
-            this.isDarkMode = !this.isDarkMode
+        setIsDarkMode(value) {
+            this.isDarkMode = value
+        },
+        setPrivacyModeEnabled(value) {
+            this.privacyModeEnabled = value
         },
         async getInitialData() {
             if (this.isLoggedIn) {
                 this.showLoader = true
                 const date = new Date()
-                this.expenseEntryCreationDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()} 00:00`
+                this.expenseEntryCreationDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} 00:00`
 
                 try {
                     const banksResponse = await axios.get(`${this.TM_BACKEND_URL}banks/`)
+                    const userPreferencesResponse = await axios.get(`${this.TM_BACKEND_URL}user-preferences/`)
+                    if (userPreferencesResponse) {
+                        const data = userPreferencesResponse?.data?.user_preferences;
+                        if (data) {
+                            this.setPageSize(data.page_size);
+                            this.setIsDarkMode(data.is_dark_mode);
+                            this.setPrivacyModeEnabled(data.privacy_mode_enabled);
+                        }
+                    }
                     if (banksResponse) {
                         this.banksList = banksResponse.data?.banks.map(ele => ({
                             "bankName": ele.name,
@@ -153,7 +173,8 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
                             const responses = await Promise.all([
                                 axios.get(`${this.TM_BACKEND_URL}expenses/`, {
                                     params: {
-                                        bank_id: this.currentSelectedBankId
+                                        bank_id: this.currentSelectedBankId,
+                                        per_page: this.pageSize
                                     }
                                 }),
                                 axios.get(`${this.TM_BACKEND_URL}entry-tags/`),
@@ -366,7 +387,9 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
                     { baseURL: this.TM_BACKEND_URL }
                 )
                 if (response.status == 201) {
-                    location.reload()
+                    this.setSelectedTags(response.data.data.selected_tags)
+                    this.showLoader = false
+                    this.setApplyEntryTagVisible(false)
                 }
             } catch(err) {
                 this.showLoader = false
@@ -430,7 +453,10 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
                         data["search_by_keyword"] = this.searchEntryKeyword
                     }
                     if (this.searchSelectedDaterange) {
-                        data["search_by_daterange"] = getDateRange(this.searchSelectedDaterange)
+                        data["search_by_daterange"] = {
+                            start_date: `${formatMyDates(this.searchSelectedDaterange[0])} 00:00`,
+                            end_date: `${formatMyDates(this.searchSelectedDaterange[1])} 00:00`
+                        }
                     }
                 } else {
                     data["bank_id"] = this.currentSelectedBankId
@@ -457,6 +483,22 @@ export const traceMyMoneyStore = defineStore("traceMyMoney", {
         logoutUser() {
             localStorage.removeItem("access_token")
             location.reload()
+        },
+        updateUserPreferences(payload){
+            this.showLoader = true
+            axios.patch("user-preferences/update",
+                payload,
+                {baseURL: this.TM_BACKEND_URL}
+            ).then(res => {
+                if (res.status ==  200) {
+                    window.location.reload()
+                }
+            }).catch(err => {
+                this.showLoader = false
+                const pushToData = handleError(err)
+                this.showAlert = true
+                this.alertErrorMessages.push(pushToData)
+            })
         }
     }
 })

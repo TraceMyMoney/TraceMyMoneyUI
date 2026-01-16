@@ -16,9 +16,10 @@
           class="mx-4"
           color="success"
           label="Select the tag"
-          v-model="selectedTags"
+          v-model="getSelectedTags"
           :items="getEntryTags"
           multiple
+          @update:model-value="(value) => onTagsUpdated(value)"
         >
         </v-select>
         <v-divider class="w-75 mx-auto mb-3"></v-divider>
@@ -44,7 +45,6 @@
 <script>
 import { traceMyMoneyStore } from "@/stores/traceMyMoneyStore";
 import { mapActions, mapState } from 'pinia'
-import { toRaw } from "vue";
 
 export default {
   data() {
@@ -53,22 +53,19 @@ export default {
     }
   },
   props: ['tagInfo'],
-  watch: {
-    tagInfo(newVal, oldVal) {
-      this.selectedTags = toRaw(newVal.entry_tags)
-    },
-  },
   computed: {
     ...mapState(traceMyMoneyStore, [
       "getApplyEntryTagVisible",
       "getEntryTags",
-      "getIsDarkMode"
+      "getIsDarkMode",
+      "getSelectedTags"
     ])
   },
   methods: {
     ...mapActions(traceMyMoneyStore, [
       "setApplyEntryTagVisible",
-      "applyTagsToExpenseEntry"
+      "applyTagsToExpenseEntry",
+      "setSelectedTags"
     ]),
     applyTagsSoft() {
       const applyTagData = {
@@ -78,6 +75,10 @@ export default {
         "updated_description": this.tagInfo.description
       }
       this.applyTagsToExpenseEntry(applyTagData)
+    },
+    onTagsUpdated(value) {
+      this.selectedTags = value
+      this.setSelectedTags(value)
     }
   }
 }

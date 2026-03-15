@@ -32,7 +32,7 @@ jobs:
           aws-region: ap-south-1
 
       - name: deploy the AWS s3
-        run: aws s3 sync dist s3://myapp.trace-my-money.life --delete
+        run: aws s3 sync dist s3://app.stalk-my-money.in --delete
 
       - name: Invalidate CloudFront Cache
         run: |

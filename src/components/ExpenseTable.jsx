@@ -105,7 +105,7 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
                   {item.amount<0?`+₹${fmtNum(Math.abs(item.amount))}` : `₹${fmtNum(item.amount)}`}
                 </div>
               </div>
-              <button className="entry-del-btn" style={{opacity:hovEnt===item.ee_id?1:0}} onClick={()=>{if(confirm('Delete entry?')) deleteExpenseEntry(exp.id,item.ee_id)}}>×</button>
+              <button className="entry-del-btn" style={{opacity:hovEnt===item.ee_id?1:0}} onClick={()=>{if(confirm('Delete entry?')) deleteExpenseEntry(exp.id,item.ee_id)}}>x</button>
             </div>
           ))}
           <InlineAddEntries expenseId={exp.id} />
@@ -118,8 +118,8 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
 /* ── Mobile card ── */
 function MobileCard({ exp, open, onToggle, onEditEntry }) {
   const { privacyMode, deleteExpense, deleteExpenseEntry } = useStore()
-  const day = (exp.created_at||'').slice(8,10)
-  const mon = monthName((exp.created_at||'').slice(5,7))
+  const day = (exp.created_at || '').slice(0, 2)
+  const mon = monthName((exp.created_at || '').slice(3, 5))
   const allTags = (exp.expenses||[]).flatMap(e=>e.entry_tags||[]).filter((v,i,a)=>a.indexOf(v)===i).slice(0,4)
 
   return (
@@ -134,22 +134,19 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
             <div className="exp-meta-dot"/>
             {exp.bank_name}
           </div>
-          <div className="expense-card-amounts">
+          <div className="expense-card-amounts" >
             {exp.topup_expense_total < 0 && (
               <span className="expense-card-amt" style={{color:'var(--green)',fontSize:15}}>{privacyMode?'••••':`+₹${fmtNum(Math.abs(exp.topup_expense_total))}`}</span>
             )}
-            <span className="expense-card-amt" style={{color:'var(--red)'}}>{privacyMode?'••••':`₹${fmtNum(exp.expense_total)}`}</span>
-            <span className="expense-card-remaining">=₹{privacyMode?'••••':fmtNum(exp.remaining_amount_till_now)}</span>
-          </div>
-          {allTags.length > 0 && (
-            <div className="expense-card-tags">
-              {allTags.map(t=><div key={t} className="exp-preview-tag">{t}</div>)}
+            <div className='my__flex'>
+              <span className="expense-card-amt" style={{color:'var(--red)'}}>{privacyMode?'••••':`₹${fmtNum(exp.expense_total)}`}</span>
+              <span className="expense-card-amt">₹{privacyMode?'••••':fmtNum(exp.remaining_amount_till_now)}</span>
             </div>
-          )}
+          </div>
         </div>
         <div className="expense-card-actions" onClick={e=>e.stopPropagation()}>
-          <button style={{background:'transparent',border:'none',cursor:'pointer',color:'var(--faint)',fontSize:18}} onClick={()=>{if(confirm('Delete?')) deleteExpense(exp.id)}}>🗑</button>
-          <div className={`exp-card-chev${open?' open':''}`}>▾</div>
+          <button style={{background:'transparent',border:'none',cursor:'pointer',color:'var(--faint)',fontSize:18}} onClick={()=>{if(confirm('Delete?')) deleteExpense(exp.id)}}>x</button>
+
         </div>
       </div>
 
@@ -159,12 +156,12 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
             <div key={item.ee_id} className="mobile-entry-item">
               <div style={{flex:1,minWidth:0}}>
                 <div className="mobile-entry-desc" onClick={()=>onEditEntry({...item,expenseId:exp.id})}>{item.description}</div>
-                {item.entry_tags?.length > 0 && <div className="entry-tag-list" style={{marginTop:4}}>{item.entry_tags.map(t=><span key={t} className="entry-tag">{t}</span>)}</div>}
+                {item.entry_tags?.length > 0 && <Tag color="#5C970B" size={12} className="entry-tagged-icon" />}
               </div>
               <div className="mobile-entry-amt" style={{color:item.amount<0?'var(--green)':'var(--red)'}}>
                 {item.amount<0?`+₹${fmtNum(Math.abs(item.amount))}` : `₹${fmtNum(item.amount)}`}
               </div>
-              <button style={{background:'transparent',border:'none',cursor:'pointer',color:'var(--faint)',fontSize:16,flexShrink:0}} onClick={()=>{if(confirm('Delete entry?')) deleteExpenseEntry(exp.id,item.ee_id)}}>×</button>
+              <button style={{background:'transparent',border:'none',cursor:'pointer',color:'var(--faint)',fontSize:16,flexShrink:0}} onClick={()=>{if(confirm('Delete entry?')) deleteExpenseEntry(exp.id,item.ee_id)}}>x</button>
             </div>
           ))}
           <InlineAddEntries expenseId={exp.id} mini />

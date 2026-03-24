@@ -51,7 +51,7 @@ export function fmtNum(v, privacy = false) {
 export function initAxiosToken() {
   const token = localStorage.getItem('access_token')
   if (token) {
-    axios.defaults.headers.common['x-access-token'] = token
+    axios.defaults.headers.common['authorization'] = token
     return parseJwt(token)
   }
   return null
@@ -96,7 +96,7 @@ export const useStore = create((set, get) => ({
 
   expenseEntryCreationDate: (() => {
     const d = new Date()
-    return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} 00:00`
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} 00:00`
   })(),
 
   // ── setters ──────────────────────────────────────────────
@@ -127,11 +127,11 @@ export const useStore = create((set, get) => ({
   },
 
   // ── helpers ───────────────────────────────────────────────
-  _parseExpenses(list) {
-    const arr = [...list]
-    const topup = arr.pop()?.topup_total ?? 0
-    const nonTopup = arr.pop()?.non_topup_total ?? 0
-    const total = arr.pop()?.total_expenses ?? 0
+  _parseExpenses(data) {
+    const arr = [...data.expenses]
+    const topup = data.topup_total ?? 0
+    const nonTopup = data.non_topup_total ?? 0
+    const total = data.total_expenses ?? 0
     return { expenses: arr, topup, nonTopup, total }
   },
 
@@ -142,8 +142,8 @@ export const useStore = create((set, get) => ({
     set({ showLoader: true })
     try {
       const [banksRes, prefsRes] = await Promise.all([
-        axios.get(`${BASE_URL}banks/`),
-        axios.get(`${BASE_URL}user-preferences/`)
+        axios.get(`${BASE_URL}/banks/`),
+        axios.get(`${BASE_URL}/user-preferences/`)
       ])
       const prefs = prefsRes?.data?.user_preferences
       const ps = prefs?.page_size ?? 5
@@ -162,10 +162,10 @@ export const useStore = create((set, get) => ({
 
       if (selectedBankId) {
         const [expRes, tagRes] = await Promise.all([
-          axios.get(`${BASE_URL}expenses/`, { params: { bank_id: selectedBankId, per_page: ps } }),
-          axios.get(`${BASE_URL}entry-tags/`)
+          axios.get(`${BASE_URL}/expenses/`, { params: { bank_id: selectedBankId, per_page: ps } }),
+          axios.get(`${BASE_URL}/entry-tags/`)
         ])
-        const { expenses, topup, nonTopup, total } = get()._parseExpenses(expRes.data?.expenses || [])
+        const { expenses, topup, nonTopup, total } = get()._parseExpenses(expRes.data || [])
         const tags = (tagRes.data?.entry_tags || [])
           .map(e => ({ title: e.name, value: e.id }))
           .sort((a, b) => a.title.localeCompare(b.title))
@@ -186,7 +186,7 @@ export const useStore = create((set, get) => ({
     try {
       const s = get()
       const ps = s.pageSize === ALL ? s.currentTotalExpenses * 100 : s.pageSize
-      const r = await axios.get(`${BASE_URL}expenses/`, { params: { per_page: ps, page_number: s.pageNumber, bank_id: bank.bankId } })
+      const r = await axios.get(`${BASE_URL}/expenses/`, { params: { per_page: ps, page_number: s.pageNumber, bank_id: bank.bankId } })
       const { expenses, topup, nonTopup, total } = get()._parseExpenses(r.data?.expenses || [])
       set({ filteredExpensesList: expenses, currentTotalOfTopupExpenses: topup, currentTotalOfExpenses: nonTopup, currentTotalExpenses: total })
     } catch (err) { get().pushAlert(handleError(err)) }
@@ -210,7 +210,7 @@ export const useStore = create((set, get) => ({
       } else {
         data.bank_id = s.currentSelectedBankId
       }
-      const r = await axios.get(`${BASE_URL}expenses/`, { params: { data: JSON.stringify(data) } })
+      const r = await axios.get(`${BASE_URL}/expenses/`, { params: { data: JSON.stringify(data) } })
       const { expenses, topup, nonTopup, total } = get()._parseExpenses(r.data?.expenses || [])
       set({ filteredExpensesList: expenses, currentTotalOfTopupExpenses: topup, currentTotalOfExpenses: nonTopup, currentTotalExpenses: total })
     } catch (err) { get().pushAlert(handleError(err)) }
@@ -221,7 +221,7 @@ export const useStore = create((set, get) => ({
     set({ showLoader: true })
     try {
       data.created_at = get().expenseEntryCreationDate
-      const r = await axios.post(`${BASE_URL}expenses/create`, data)
+      const r = await axios.post(`${BASE_URL}/expenses/create`, data)
       if (r.status === 201) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -229,7 +229,7 @@ export const useStore = create((set, get) => ({
   async submitExpenseEntry(expenseId, list) {
     set({ showLoader: true })
     try {
-      const r = await axios.patch(`${BASE_URL}expenses/add-entry`, list, { params: { id: expenseId } })
+      const r = await axios.patch(`${BASE_URL}/expenses/add-entry`, list, { params: { id: expenseId } })
       if (r.status === 201) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -237,7 +237,7 @@ export const useStore = create((set, get) => ({
   async deleteExpense(id) {
     set({ showLoader: true })
     try {
-      const r = await axios.delete(`${BASE_URL}expenses/delete`, { params: { id } })
+      const r = await axios.delete(`${BASE_URL}/expenses/delete`, { params: { id } })
       if (r.status === 204) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -245,7 +245,7 @@ export const useStore = create((set, get) => ({
   async deleteExpenseEntry(expenseId, eeId) {
     set({ showLoader: true })
     try {
-      const r = await axios.delete(`${BASE_URL}expenses/delete-entry`, { params: { id: expenseId, ee_id: eeId } })
+      const r = await axios.delete(`${BASE_URL}/expenses/delete-entry`, { params: { id: expenseId, ee_id: eeId } })
       if (r.status === 204) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -253,7 +253,7 @@ export const useStore = create((set, get) => ({
   async createNewTag(name) {
     set({ showLoader: true })
     try {
-      const r = await axios.post(`${BASE_URL}entry-tags/create`, { name })
+      const r = await axios.post(`${BASE_URL}/entry-tags/create`, { name })
       if (r.status === 201) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -261,7 +261,7 @@ export const useStore = create((set, get) => ({
   async applyTagsToExpenseEntry(data) {
     set({ showLoader: true })
     try {
-      const r = await axios.patch(`${BASE_URL}expenses/update-entry`, data)
+      const r = await axios.patch(`${BASE_URL}/expenses/update-entry`, data)
       if (r.status === 201) {
         set({ selectedTags: r.data.data.selected_tags, showLoader: false, isApplyEntryTagVisible: false })
         window.location.reload()
@@ -272,7 +272,7 @@ export const useStore = create((set, get) => ({
   async createBank(data) {
     set({ showLoader: true })
     try {
-      const r = await axios.post(`${BASE_URL}banks/create`, { ...data, current_balance: data.initial_balance, total_disbursed_till_now: 0 })
+      const r = await axios.post(`${BASE_URL}/banks/create`, { ...data, current_balance: data.initial_balance, total_disbursed_till_now: 0 })
       if (r.status === 200) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -280,7 +280,7 @@ export const useStore = create((set, get) => ({
   async deleteBank(bankId) {
     set({ showLoader: true })
     try {
-      const r = await axios.delete(`${BASE_URL}banks/delete`, { params: { bank_id: bankId } })
+      const r = await axios.delete(`${BASE_URL}/banks/delete`, { params: { bank_id: bankId } })
       if (r.status === 204) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -288,7 +288,7 @@ export const useStore = create((set, get) => ({
   async loginUser(data) {
     set({ showLoader: true })
     try {
-      const r = await axios.post(`${BASE_URL}login`, data)
+      const r = await axios.post(`${BASE_URL}/login`, data)
       localStorage.setItem('access_token', r.data.token)
       axios.defaults.headers.common['x-access-token'] = r.data.token
       window.location.reload()
@@ -298,7 +298,7 @@ export const useStore = create((set, get) => ({
   async registerUser(data) {
     set({ showLoader: true })
     try {
-      const r = await axios.post(`${BASE_URL}register`, data)
+      const r = await axios.post(`${BASE_URL}/register`, data)
       if (r.status === 200) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -306,7 +306,7 @@ export const useStore = create((set, get) => ({
   async updateUserPreferences(payload) {
     set({ showLoader: true })
     try {
-      const r = await axios.patch(`${BASE_URL}user-preferences/update`, payload)
+      const r = await axios.patch(`${BASE_URL}/user-preferences/update`, payload)
       if (r.status === 200) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },

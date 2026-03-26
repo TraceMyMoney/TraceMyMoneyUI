@@ -18,7 +18,7 @@ export default function AddExpenseDrawer({ open, onClose }) {
   const submit = () => {
     const d = new Date(date)
     setExpenseEntryCreationDate(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} 00:00`)
-    const valid = filterValidExpenses(entries.map(e => ({ amount:Number(e.amount), description:e.description, selected_tags:e.tags })))
+    const valid = filterValidExpenses(entries.map(e => ({ amount:Number(e.amount), description:e.description, entry_tags:e.tags })))
     if (valid.length && bank) submitExpense({ bank_id: bank, expenses: valid })
   }
 

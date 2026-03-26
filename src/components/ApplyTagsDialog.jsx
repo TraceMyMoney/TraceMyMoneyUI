@@ -10,7 +10,7 @@ export default function ApplyTagsDialog() {
   const toggle = v => setTags(t => t.includes(v) ? t.filter(x=>x!==v) : [...t,v])
   const save = () => {
     if (!applyTagEntry) return
-    applyTagsToExpenseEntry({ entry_id:applyTagEntry.ee_id, expense_id:applyTagEntry.expenseId, selected_tags:tags, updated_description:desc })
+    applyTagsToExpenseEntry({ entry_id:applyTagEntry.ee_id, expense_id:applyTagEntry.expenseId, entry_tags:tags, updated_description:desc })
   }
   if (!isApplyEntryTagVisible) return null
   return (

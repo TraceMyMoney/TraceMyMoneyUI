@@ -14,12 +14,19 @@ function parseJwt(token) {
 }
 
 function handleError(err) {
+  // JSON.parse(err.request.response).detail
   if (err?.status === 401 || err?.response?.status === 401) {
     localStorage.removeItem('access_token')
-    delete axios.defaults.headers.common['x-access-token']
+    delete axios.defaults.headers.common['authorization']
     return 'Session expired. Please login again.'
   }
-  if (err?.response?.data?.error) return err.response.data.error
+  if (err.request.response) {
+    const errData = JSON.parse(err.request.response).detail
+    if (Array.isArray(errData)) {
+      return errData[0].msg
+    }
+    return errData
+  }
   if (Array.isArray(err?.response?.data?.errors)) {
     const e = err.response.data.errors[0]
     return Object.keys(e).map(f => `${f}: ${e[f]}`).join(', ')
@@ -37,7 +44,7 @@ export function filterValidExpenses(list) {
   return list
     .filter(e => e.amount && e.description)
     .map(e => e.amount < 0
-      ? { amount: e.amount, description: e.description, expense_entry_type: 'ADD' }
+      ? { amount: e.amount, description: e.description, expense_entry_type: 'ADD', entry_tags: e.entry_tags }
       : e)
 }
 
@@ -187,7 +194,7 @@ export const useStore = create((set, get) => ({
       const s = get()
       const ps = s.pageSize === ALL ? s.currentTotalExpenses * 100 : s.pageSize
       const r = await axios.get(`${BASE_URL}/expenses/`, { params: { per_page: ps, page_number: s.pageNumber, bank_id: bank.bankId } })
-      const { expenses, topup, nonTopup, total } = get()._parseExpenses(r.data?.expenses || [])
+      const { expenses, topup, nonTopup, total } = get()._parseExpenses(r.data || [])
       set({ filteredExpensesList: expenses, currentTotalOfTopupExpenses: topup, currentTotalOfExpenses: nonTopup, currentTotalExpenses: total })
     } catch (err) { get().pushAlert(handleError(err)) }
     finally { set({ showLoader: false }) }
@@ -211,7 +218,8 @@ export const useStore = create((set, get) => ({
         data.bank_id = s.currentSelectedBankId
       }
       const r = await axios.get(`${BASE_URL}/expenses/`, { params: { data: JSON.stringify(data) } })
-      const { expenses, topup, nonTopup, total } = get()._parseExpenses(r.data?.expenses || [])
+
+      const { expenses, topup, nonTopup, total } = get()._parseExpenses(r.data || [])
       set({ filteredExpensesList: expenses, currentTotalOfTopupExpenses: topup, currentTotalOfExpenses: nonTopup, currentTotalExpenses: total })
     } catch (err) { get().pushAlert(handleError(err)) }
     finally { set({ showLoader: false }) }
@@ -223,13 +231,15 @@ export const useStore = create((set, get) => ({
       data.created_at = get().expenseEntryCreationDate
       const r = await axios.post(`${BASE_URL}/expenses/create`, data)
       if (r.status === 201) window.location.reload()
-    } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
+    } catch (err) { 
+      set({ showLoader: false }); get().pushAlert(handleError(err)) 
+    }
   },
 
   async submitExpenseEntry(expenseId, list) {
     set({ showLoader: true })
     try {
-      const r = await axios.patch(`${BASE_URL}/expenses/add-entry`, list, { params: { id: expenseId } })
+      const r = await axios.patch(`${BASE_URL}/expenses/add-entry`, {entries: list}, { params: { id: expenseId } })
       if (r.status === 201) window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -290,7 +300,7 @@ export const useStore = create((set, get) => ({
     try {
       const r = await axios.post(`${BASE_URL}/login`, data)
       localStorage.setItem('access_token', r.data.token)
-      axios.defaults.headers.common['x-access-token'] = r.data.token
+      axios.defaults.headers.common['authorization'] = r.data.token
       window.location.reload()
     } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
   },
@@ -313,7 +323,7 @@ export const useStore = create((set, get) => ({
 
   logoutUser() {
     localStorage.removeItem('access_token')
-    delete axios.defaults.headers.common['x-access-token']
+    delete axios.defaults.headers.common['authorization']
     window.location.reload()
   }
 }))

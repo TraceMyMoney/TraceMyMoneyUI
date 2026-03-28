@@ -14,7 +14,7 @@ export default function Topbar({ onMenuClick }) {
       <div className="my__flex">
         <div className="topbar-logo" onClick={() => window.location.reload()} style={{ marginLeft: 8, marginRight: 0 }}>
           <div className="topbar-logo-hex">₹</div>
-          <div className="topbar-logo-text">Trace<span>My</span>Money</div>
+          <div className="topbar-logo-text">Stalk<span>My</span>Money</div>
         </div>
 
         <div className="topbar-controls">

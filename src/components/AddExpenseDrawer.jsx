@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import DatePicker from 'react-datepicker'
 import { useStore, filterValidExpenses } from '../store/useStore.js'
+import TagSearchSelect from './TagSearchSelect.jsx'
 
 export default function AddExpenseDrawer({ open, onClose }) {
   const { bankItems, entryTags, setExpenseEntryCreationDate, submitExpense } = useStore()
@@ -13,8 +14,6 @@ export default function AddExpenseDrawer({ open, onClose }) {
   const addEntry = () => setEntries(e => [...e, { amount:'', description:'', tags:[] }])
   const removeEntry = i => setEntries(e => e.filter((_,j)=>j!==i))
   const updateEntry = (i,k,v) => setEntries(e => e.map((en,j) => j===i ? {...en,[k]:v} : en))
-  const toggleTag = (i,v) => setEntries(e => e.map((en,j) => j===i ? {...en,tags:en.tags.includes(v)?en.tags.filter(t=>t!==v):[...en.tags,v]} : en))
-
   const submit = () => {
     const d = new Date(date)
     setExpenseEntryCreationDate(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} 00:00`)
@@ -53,10 +52,13 @@ export default function AddExpenseDrawer({ open, onClose }) {
                     <button className="d-entry-del" onClick={()=>removeEntry(i)}>×</button>
                   </div>
                   {entryTags.length > 0 && (
-                    <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-                      {entryTags.slice(0,10).map(t => (
-                        <div key={t.value} className={`d-tag-pill${en.tags.includes(t.value)?' active':''}`} onClick={()=>toggleTag(i,t.value)}>{t.title}</div>
-                      ))}
+                    <div className="d-entry-tags-field">
+                      <label className="d-label d-label-inline">Tags</label>
+                      <TagSearchSelect
+                        tags={entryTags}
+                        selected={en.tags}
+                        onChange={next => updateEntry(i, 'tags', next)}
+                      />
                     </div>
                   )}
                 </div>

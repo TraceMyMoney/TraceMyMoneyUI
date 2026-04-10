@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import DatePicker from 'react-datepicker'
 import { useStore } from '../store/useStore.js'
+import TagSearchSelect from './TagSearchSelect.jsx'
 
 const PAGE_SIZES = [5, 10, 15, 20, 'ALL']
 
@@ -12,7 +13,6 @@ export default function SearchPanel({ open }) {
   const [dateRange, setDateRange] = useState([null, null])
   const [start, end] = dateRange
 
-  const toggleTag  = v => setSearchSelectedTags(searchSelectedTags.includes(v)  ? searchSelectedTags.filter(t => t !== v)  : [...searchSelectedTags, v])
   const toggleBank = v => setSearchSelectedBanks(searchSelectedBanks.includes(v) ? searchSelectedBanks.filter(b => b !== v) : [...searchSelectedBanks, v])
 
   const search = () => {
@@ -31,13 +31,14 @@ export default function SearchPanel({ open }) {
     <div className={`search-panel${open ? ' open' : ''}`}>
       <div className="search-panel-inner">
         <div className="search-grid">
-          <div>
+          <div className="search-tag-filter-field">
             <label className="search-field-label">Filter by Tag</label>
-            <div className="search-tags-cloud">
-              {entryTags.slice(0,8).map(t => (
-                <div key={t.value} className={`search-chip${searchSelectedTags.includes(t.value) ? ' active' : ''}`} onClick={() => toggleTag(t.value)}>{t.title}</div>
-              ))}
-            </div>
+            <TagSearchSelect
+              tags={entryTags}
+              selected={searchSelectedTags}
+              onChange={setSearchSelectedTags}
+              placeholder="Search tags to filter…"
+            />
           </div>
           <div>
             <label className="search-field-label">Filter by Account</label>

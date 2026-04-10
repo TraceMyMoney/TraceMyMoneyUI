@@ -459,6 +459,8 @@ body::after {
 
 .search-tags-cloud { display: flex; flex-wrap: wrap; gap: 5px; }
 
+.search-tag-filter-field { min-width: 0; }
+
 .search-chip {
   padding: 3px 9px; border-radius: 3px; cursor: pointer;
   font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
@@ -919,6 +921,75 @@ body::after {
 }
 .d-tag-pill:hover, .d-tag-pill.active { background: var(--acid-dim); border-color: var(--acid-mid); color: var(--acid); }
 
+.d-entry-tags-field { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.d-label-inline { margin-bottom: 0; font-size: 10px; }
+
+.tag-search-select { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.tag-search-selected { display: flex; flex-wrap: wrap; gap: 5px; min-height: 0; }
+.tag-search-chip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  min-width: 0;
+  padding: 3px 6px 3px 9px; border-radius: 3px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  font-family: var(--f-head);
+  background: var(--acid-dim); border: 1px solid var(--acid-mid); color: var(--acid);
+}
+.tag-search-chip-text {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0;
+}
+.tag-search-chip-remove {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; margin: 0; border: none; background: transparent;
+  cursor: pointer; color: inherit; font-size: 14px; line-height: 1; opacity: 0.75;
+}
+.tag-search-chip-remove:hover { opacity: 1; color: var(--red); }
+
+.tag-search-input {
+  width: 100%; box-sizing: border-box;
+  padding: 8px 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--ink-3); color: var(--text);
+  font-size: 13px; font-family: var(--f-body);
+  transition: border-color 0.15s;
+}
+.tag-search-input::placeholder { color: var(--faint); }
+.tag-search-input:focus {
+  outline: none; border-color: var(--acid-mid);
+  box-shadow: 0 0 0 1px var(--acid-mid);
+}
+
+.tag-search-dropdown-portal {
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+}
+
+.tag-search-list {
+  max-height: 220px; overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: var(--ink-2); border: 1px solid var(--line-mid);
+  border-radius: var(--r-sm); box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+.tag-search-empty { padding: 12px 14px; font-size: 12px; color: var(--faint); text-align: center; }
+
+.tag-search-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  box-sizing: border-box;
+  width: 100%; min-height: 40px; padding: 9px 12px; border: none; border-bottom: 1px solid var(--line);
+  background: transparent; cursor: pointer; text-align: left;
+  font-size: 12px; font-family: var(--f-body); color: var(--text);
+  transition: background 0.12s;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+.tag-search-option:last-child { border-bottom: none; }
+.tag-search-option:hover { background: var(--ink-4); }
+.tag-search-option.active { background: var(--acid-dim); color: var(--acid); }
+.tag-search-option-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag-search-check { font-size: 11px; font-weight: 800; color: var(--acid); flex-shrink: 0; }
+
 .d-btn {
   flex: 1; padding: 11px; border-radius: var(--r-sm); border: none; cursor: pointer;
   font-family: var(--f-head); font-weight: 800; font-size: 14px;
@@ -1267,8 +1338,27 @@ body::after {
   /* Drawer full screen on mobile */
   .drawer { width: 100vw; border-left: none; }
   .drawer-header { padding: 16px 18px; }
-  .drawer-body { padding: 18px; }
-  .drawer-footer { padding: 12px 18px; }
+  .drawer-body { padding: 18px; padding-bottom: max(18px, env(safe-area-inset-bottom, 0px)); }
+  .drawer-footer { padding: 12px 18px; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+
+  /* Tag search (add expense) — touch targets & no iOS input zoom */
+  .tag-search-input { font-size: 16px; padding: 10px 12px; }
+  .tag-search-chip {
+    max-width: 100%;
+    font-size: 11px;
+    padding: 6px 8px 6px 10px;
+  }
+  .tag-search-chip-remove {
+    min-width: 40px; min-height: 40px; margin: -6px -8px -6px 0;
+    font-size: 18px;
+  }
+  .tag-search-option {
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  .tag-search-empty { padding: 16px; font-size: 14px; }
+  .d-entry-tags-field { margin-top: 10px; gap: 8px; }
 
   /* Auth screen */
   .auth-top { padding: 22px 22px 20px; }

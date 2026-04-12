@@ -200,8 +200,9 @@ export const useStore = create((set, get) => ({
     finally { set({ showLoader: false }) }
   },
 
-  async fetchExpenses() {
-    set({ showLoader: true })
+  async fetchExpenses(options = {}) {
+    const silent = options.silent === true
+    if (!silent) set({ showLoader: true })
     try {
       const s = get()
       const ps = s.pageSize === ALL ? s.currentTotalExpenses * 100 : s.pageSize
@@ -222,7 +223,7 @@ export const useStore = create((set, get) => ({
       const { expenses, topup, nonTopup, total } = get()._parseExpenses(r.data || [])
       set({ filteredExpensesList: expenses, currentTotalOfTopupExpenses: topup, currentTotalOfExpenses: nonTopup, currentTotalExpenses: total })
     } catch (err) { get().pushAlert(handleError(err)) }
-    finally { set({ showLoader: false }) }
+    finally { if (!silent) set({ showLoader: false }) }
   },
 
   async submitExpense(data) {
@@ -230,34 +231,58 @@ export const useStore = create((set, get) => ({
     try {
       data.created_at = get().expenseEntryCreationDate
       const r = await axios.post(`${BASE_URL}/expenses/create`, data)
-      if (r.status === 201) window.location.reload()
-    } catch (err) { 
-      set({ showLoader: false }); get().pushAlert(handleError(err)) 
+      if (r.status === 201) {
+        await get().fetchExpenses({ silent: true })
+        return true
+      }
+      return false
+    } catch (err) {
+      get().pushAlert(handleError(err))
+      return false
+    } finally {
+      set({ showLoader: false })
     }
   },
 
   async submitExpenseEntry(expenseId, list) {
     set({ showLoader: true })
     try {
-      const r = await axios.patch(`${BASE_URL}/expenses/add-entry`, {entries: list}, { params: { id: expenseId } })
-      if (r.status === 201) window.location.reload()
-    } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
+      const r = await axios.patch(`${BASE_URL}/expenses/add-entry`, { entries: list }, { params: { id: expenseId } })
+      if (r.status === 201) {
+        await get().fetchExpenses({ silent: true })
+        return true
+      }
+      return false
+    } catch (err) {
+      get().pushAlert(handleError(err))
+      return false
+    } finally {
+      set({ showLoader: false })
+    }
   },
 
   async deleteExpense(id) {
     set({ showLoader: true })
     try {
       const r = await axios.delete(`${BASE_URL}/expenses/delete`, { params: { id } })
-      if (r.status === 204) window.location.reload()
-    } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
+      if (r.status === 204) await get().fetchExpenses({ silent: true })
+    } catch (err) {
+      get().pushAlert(handleError(err))
+    } finally {
+      set({ showLoader: false })
+    }
   },
 
   async deleteExpenseEntry(expenseId, eeId) {
     set({ showLoader: true })
     try {
       const r = await axios.delete(`${BASE_URL}/expenses/delete-entry`, { params: { id: expenseId, ee_id: eeId } })
-      if (r.status === 204) window.location.reload()
-    } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
+      if (r.status === 204) await get().fetchExpenses({ silent: true })
+    } catch (err) {
+      get().pushAlert(handleError(err))
+    } finally {
+      set({ showLoader: false })
+    }
   },
 
   async createNewTag(name) {
@@ -273,10 +298,18 @@ export const useStore = create((set, get) => ({
     try {
       const r = await axios.patch(`${BASE_URL}/expenses/update-entry`, data)
       if (r.status === 201) {
-        set({ selectedTags: r.data.data.selected_tags, showLoader: false, isApplyEntryTagVisible: false })
-        window.location.reload()
+        set({
+          selectedTags: r.data?.data?.selected_tags ?? get().selectedTags,
+          isApplyEntryTagVisible: false,
+          applyTagEntry: null
+        })
+        await get().fetchExpenses({ silent: true })
       }
-    } catch (err) { set({ showLoader: false }); get().pushAlert(handleError(err)) }
+    } catch (err) {
+      get().pushAlert(handleError(err))
+    } finally {
+      set({ showLoader: false })
+    }
   },
 
   async createBank(data) {

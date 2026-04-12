@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useStore } from '../store/useStore.js'
 import Topbar from './Topbar.jsx'
 import Sidebar from './Sidebar.jsx'
@@ -9,6 +9,15 @@ import AddExpenseDrawer from './AddExpenseDrawer.jsx'
 import CreateBankDialog from './CreateBankDialog.jsx'
 import CreateTagDialog from './CreateTagDialog.jsx'
 import ApplyTagsDialog from './ApplyTagsDialog.jsx'
+import ChatAssistantDialog from './ChatAssistantDialog.jsx'
+
+function isTypingInField(el) {
+  if (!el || !el.tagName) return false
+  const tag = el.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  if (el.isContentEditable) return true
+  return false
+}
 
 export default function Dashboard() {
   const { setApplyEntryTagVisible, setApplyTagEntry } = useStore()
@@ -18,11 +27,36 @@ export default function Dashboard() {
   const [tagDialogOpen, setTagDialogOpen] = useState(false)
   const [tagFilter,   setTagFilter]   = useState(null)
   const [activeTab,   setActiveTab]   = useState('home') // for bottom nav
+  const [chatOpen, setChatOpen] = useState(false)
   const handleEditEntry = entry => { setApplyTagEntry(entry); setApplyEntryTagVisible(true) }
+
+  const openChat = useCallback(() => setChatOpen(true), [])
+  const closeChat = useCallback(() => setChatOpen(false), [])
+
+  useEffect(() => {
+    let lastSpaceAt = 0
+    const DOUBLE_MS = 480
+    const onKeyDown = e => {
+      if (e.code !== 'Space' && e.key !== ' ') return
+      if (document.querySelector('.chat-dialog-overlay')) return
+      if (isTypingInField(document.activeElement)) return
+      if (document.activeElement?.closest?.('.tag-search-dropdown-portal')) return
+      e.preventDefault()
+      const now = Date.now()
+      if (now - lastSpaceAt < DOUBLE_MS) {
+        lastSpaceAt = 0
+        setChatOpen(true)
+      } else {
+        lastSpaceAt = now
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   return (
     <div className="app-shell">
-      <Topbar onMenuClick={() => setSidebarOpen(v => !v)} />
+      <Topbar onMenuClick={() => setSidebarOpen(v => !v)} onOpenChat={openChat} />
 
       <div className="body-layout">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} activeTagFilter={tagFilter} onTagFilter={setTagFilter} />
@@ -87,6 +121,9 @@ export default function Dashboard() {
       <CreateBankDialog />
       <CreateTagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} />
       <ApplyTagsDialog />
+      <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
+
+      <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
     </div>
   )
 }

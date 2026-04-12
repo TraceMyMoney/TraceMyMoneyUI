@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useStore, fmtNum, filterValidExpenses } from '../store/useStore.js'
 import { Trash2, Tag } from 'lucide-react'
+import TagSearchSelect from './TagSearchSelect.jsx'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const monthName = m => MONTHS[parseInt(m,10)-1] || ''
@@ -12,10 +13,11 @@ function InlineAddEntries({ expenseId, mini }) {
   const add = () => setEntries(e => [...e, { amount:'', description:'', tags:[] }])
   const remove = i => setEntries(e => e.filter((_,j)=>j!==i))
   const update = (i,k,v) => setEntries(e => e.map((en,j) => j===i ? {...en,[k]:v} : en))
-  const toggleTag = (i,v) => setEntries(e => e.map((en,j) => j===i ? {...en, tags: en.tags.includes(v) ? en.tags.filter(t=>t!==v) : [...en.tags,v]} : en))
-  const submit = () => {
+  const submit = async () => {
     const valid = filterValidExpenses(entries.map(e => ({ amount: Number(e.amount), description: e.description, entry_tags: e.tags })))
-    if (valid.length) submitExpenseEntry(expenseId, valid)
+    if (!valid.length) return
+    const ok = await submitExpenseEntry(expenseId, valid)
+    if (ok) setEntries([])
   }
   const padClass = mini ? 'mobile-inline-add' : 'inline-add-entries'
   return (
@@ -28,10 +30,12 @@ function InlineAddEntries({ expenseId, mini }) {
             <button className="inline-remove-btn" onClick={()=>remove(i)}>×</button>
           </div>
           {entryTags.length > 0 && (
-            <div className="inline-entry-tags">
-              {entryTags.slice(0,8).map(t => (
-                <div key={t.value} className={`inline-tag-pill${en.tags.includes(t.value)?' active':''}`} onClick={()=>toggleTag(i,t.value)}>{t.title}</div>
-              ))}
+            <div style={{ marginBottom: 10, width: '100%' }}>
+              <TagSearchSelect
+                tags={entryTags}
+                selected={en.tags}
+                onChange={next => update(i, 'tags', next)}
+              />
             </div>
           )}
         </div>

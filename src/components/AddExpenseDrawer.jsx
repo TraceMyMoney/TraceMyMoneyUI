@@ -14,11 +14,16 @@ export default function AddExpenseDrawer({ open, onClose }) {
   const addEntry = () => setEntries(e => [...e, { amount:'', description:'', tags:[] }])
   const removeEntry = i => setEntries(e => e.filter((_,j)=>j!==i))
   const updateEntry = (i,k,v) => setEntries(e => e.map((en,j) => j===i ? {...en,[k]:v} : en))
-  const submit = () => {
+  const submit = async () => {
     const d = new Date(date)
     setExpenseEntryCreationDate(`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} 00:00`)
     const valid = filterValidExpenses(entries.map(e => ({ amount:Number(e.amount), description:e.description, entry_tags:e.tags })))
-    if (valid.length && bank) submitExpense({ bank_id: bank, expenses: valid })
+    if (!valid.length || !bank) return
+    const ok = await submitExpense({ bank_id: bank, expenses: valid })
+    if (ok) {
+      setEntries([{ amount: '', description: '', tags: [] }])
+      onClose?.()
+    }
   }
 
   if (!open) return null

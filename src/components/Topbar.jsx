@@ -1,8 +1,8 @@
 import React from 'react'
 import { useStore, fmtNum } from '../store/useStore.js'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, MessageCircle } from 'lucide-react'
 
-export default function Topbar({ onMenuClick }) {
+export default function Topbar({ onMenuClick, onOpenChat }) {
   const { userName, isDarkMode, privacyMode, currentTotalOfTopupExpenses, currentTotalOfExpenses, currentTotalExpenses, updateUserPreferences, logoutUser } = useStore()
 
   return (
@@ -18,6 +18,15 @@ export default function Topbar({ onMenuClick }) {
         </div>
 
         <div className="topbar-controls">
+          <button
+            type="button"
+            className="icon-btn keep-mobile"
+            onClick={() => onOpenChat?.()}
+            title="Chat assistant"
+            aria-label="Open chat assistant"
+          >
+            <MessageCircle size={18} />
+          </button>
           <button className="icon-btn keep-mobile" onClick={() => updateUserPreferences({ is_dark_mode: !isDarkMode })} title={isDarkMode ? 'Light mode' : 'Dark mode'}>
             {isDarkMode ? '☀' : '◑'}
           </button>

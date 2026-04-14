@@ -1842,6 +1842,51 @@ body::after {
     border-color: var(--acid-mid);
 }
 
+/* ── Debit / Credit toggle ── */
+.entry-type-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    width: fit-content;
+    margin-bottom: 10px;
+}
+.entry-type-toggle--inline {
+    margin-bottom: 8px;
+}
+.entry-type-btn {
+    padding: 5px 16px;
+    border: none;
+    background: transparent;
+    color: var(--faint);
+    font-family: var(--f-head);
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        color 0.15s;
+    line-height: 1;
+}
+.entry-type-btn:first-child {
+    border-right: 1px solid var(--line-mid);
+}
+.entry-type-btn:hover {
+    color: var(--text);
+    background: var(--ink-3);
+}
+.entry-type-btn--debit.active {
+    background: var(--red-dim);
+    color: var(--red);
+}
+.entry-type-btn--credit.active {
+    background: rgba(0, 240, 160, 0.08);
+    color: var(--green);
+}
+
 .d-entry-row {
     display: grid;
     grid-template-columns: 100px 1fr 28px;

@@ -24,14 +24,30 @@ function InlineAddEntries({ expenseId, mini }) {
   const { entryTags, submitExpenseEntry } = useStore();
   const [entries, setEntries] = useState([]);
   const add = () =>
-    setEntries((e) => [...e, { amount: "", description: "", tags: [] }]);
+    setEntries((e) => [
+      ...e,
+      { amount: "", description: "", tags: [], type: "debit" },
+    ]);
   const remove = (i) => setEntries((e) => e.filter((_, j) => j !== i));
   const update = (i, k, v) =>
-    setEntries((e) => e.map((en, j) => (j === i ? { ...en, [k]: v } : en)));
+    setEntries((e) =>
+      e.map((en, j) => {
+        if (j !== i) return en;
+        const updated = { ...en, [k]: v };
+        // Auto-switch toggle when a negative/positive amount is typed
+        if (k === "amount" && v !== "" && v !== "-") {
+          updated.type = Number(v) < 0 ? "credit" : "debit";
+        }
+        return updated;
+      }),
+    );
   const submit = async () => {
     const valid = filterValidExpenses(
       entries.map((e) => ({
-        amount: Number(e.amount),
+        amount:
+          e.type === "credit"
+            ? -Math.abs(Number(e.amount))
+            : Math.abs(Number(e.amount)),
         description: e.description,
         entry_tags: e.tags,
       })),
@@ -45,17 +61,33 @@ function InlineAddEntries({ expenseId, mini }) {
     <div className={padClass}>
       {entries.map((en, i) => (
         <div key={i}>
+          <div className="entry-type-toggle entry-type-toggle--inline">
+            <button
+              type="button"
+              className={`entry-type-btn${en.type === "debit" ? " entry-type-btn--debit active" : ""}`}
+              onClick={() => update(i, "type", "debit")}
+            >
+              Debit
+            </button>
+            <button
+              type="button"
+              className={`entry-type-btn${en.type === "credit" ? " entry-type-btn--credit active" : ""}`}
+              onClick={() => update(i, "type", "credit")}
+            >
+              Credit
+            </button>
+          </div>
           <div className="inline-entry-row">
             <input
               className="inline-input"
               type="number"
-              placeholder="₹ Amount"
+              placeholder="Amount"
               value={en.amount}
               onChange={(e) => update(i, "amount", e.target.value)}
             />
             <input
               className="inline-input desc"
-              placeholder="Description..."
+              placeholder="Description"
               value={en.description}
               onChange={(e) => update(i, "description", e.target.value)}
             />

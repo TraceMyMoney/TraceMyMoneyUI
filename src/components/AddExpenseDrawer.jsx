@@ -13,22 +13,35 @@ export default function AddExpenseDrawer({ open, onClose }) {
   } = useStore();
   const [date, setDate] = useState(new Date());
   const [entries, setEntries] = useState([
-    { amount: "", description: "", tags: [] },
+    { amount: "", description: "", tags: [], type: "debit" },
   ]);
 
   // Reset entries + date when drawer opens
   useEffect(() => {
     if (open) {
       setDate(new Date());
-      setEntries([{ amount: "", description: "", tags: [] }]);
+      setEntries([{ amount: "", description: "", tags: [], type: "debit" }]);
     }
   }, [open]);
 
   const addEntry = () =>
-    setEntries((e) => [...e, { amount: "", description: "", tags: [] }]);
+    setEntries((e) => [
+      ...e,
+      { amount: "", description: "", tags: [], type: "debit" },
+    ]);
   const removeEntry = (i) => setEntries((e) => e.filter((_, j) => j !== i));
   const updateEntry = (i, k, v) =>
-    setEntries((e) => e.map((en, j) => (j === i ? { ...en, [k]: v } : en)));
+    setEntries((e) =>
+      e.map((en, j) => {
+        if (j !== i) return en;
+        const updated = { ...en, [k]: v };
+        // Auto-switch toggle when a negative/positive amount is typed
+        if (k === "amount" && v !== "" && v !== "-") {
+          updated.type = Number(v) < 0 ? "credit" : "debit";
+        }
+        return updated;
+      }),
+    );
 
   const submit = async () => {
     if (!currentSelectedBankId) return;
@@ -38,7 +51,10 @@ export default function AddExpenseDrawer({ open, onClose }) {
     );
     const valid = filterValidExpenses(
       entries.map((e) => ({
-        amount: Number(e.amount),
+        amount:
+          e.type === "credit"
+            ? -Math.abs(Number(e.amount))
+            : Math.abs(Number(e.amount)),
         description: e.description,
         entry_tags: e.tags,
       })),
@@ -49,7 +65,7 @@ export default function AddExpenseDrawer({ open, onClose }) {
       expenses: valid,
     });
     if (ok) {
-      setEntries([{ amount: "", description: "", tags: [] }]);
+      setEntries([{ amount: "", description: "", tags: [], type: "debit" }]);
       onClose?.();
     }
   };
@@ -98,17 +114,34 @@ export default function AddExpenseDrawer({ open, onClose }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {entries.map((en, i) => (
                 <div key={i} className="d-entry-card">
+                  {/* Debit / Credit toggle */}
+                  <div className="entry-type-toggle">
+                    <button
+                      type="button"
+                      className={`entry-type-btn${en.type === "debit" ? " entry-type-btn--debit active" : ""}`}
+                      onClick={() => updateEntry(i, "type", "debit")}
+                    >
+                      Debit
+                    </button>
+                    <button
+                      type="button"
+                      className={`entry-type-btn${en.type === "credit" ? " entry-type-btn--credit active" : ""}`}
+                      onClick={() => updateEntry(i, "type", "credit")}
+                    >
+                      Credit
+                    </button>
+                  </div>
                   <div className="d-entry-row">
                     <input
                       className="d-entry-input"
                       type="number"
-                      placeholder="₹ Amount"
+                      placeholder="Amount"
                       value={en.amount}
                       onChange={(e) => updateEntry(i, "amount", e.target.value)}
                     />
                     <input
                       className="d-entry-input desc"
-                      placeholder="Description (-ve = top-up)"
+                      placeholder="Description"
                       value={en.description}
                       onChange={(e) =>
                         updateEntry(i, "description", e.target.value)

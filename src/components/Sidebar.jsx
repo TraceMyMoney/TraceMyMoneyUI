@@ -133,7 +133,7 @@ export default function Sidebar({
             ⏻<span>Logout</span>
           </button>
         </div>
-        <br />
+        <div style={{marginTop: 10}}></div>
         <div className="sidebar-footer">
           SMM v2.0 · {new Date().toLocaleDateString("en-IN")}
         </div>

@@ -16,7 +16,7 @@ export default function Login() {
         <div className="auth-top">
           <div className="auth-logo-row">
             <div className="auth-logo-hex">₹</div>
-            <div className="auth-logo-name">Trace<span>My</span>Money</div>
+            <div className="auth-logo-name">Stalk<span>My</span>Money</div>
           </div>
           <div className="auth-heading">Sign<span className="auth-heading-accent">In.</span></div>
           <div className="auth-sub">Track every rupee. Know where it all goes.</div>

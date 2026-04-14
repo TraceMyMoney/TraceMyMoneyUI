@@ -17,7 +17,7 @@ export default function Register() {
         <div className="auth-top">
           <div className="auth-logo-row">
             <div className="auth-logo-hex" style={{ background: 'var(--blue)' }}>₹</div>
-            <div className="auth-logo-name">Trace<span>My</span>Money</div>
+            <div className="auth-logo-name">Stalk<span>My</span>Money</div>
           </div>
           <div className="auth-heading" style={{ color: 'var(--blue)' }}>Get Started.</div>
           <div className="auth-sub">Create your account and start tracking every rupee.</div>

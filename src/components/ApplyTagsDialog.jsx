@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useStore } from '../store/useStore.js'
+import TagSearchSelect from './TagSearchSelect.jsx'
 export default function ApplyTagsDialog() {
   const { isApplyEntryTagVisible, setApplyEntryTagVisible, applyTagEntry, entryTags, applyTagsToExpenseEntry } = useStore()
   const [desc, setDesc] = useState('')
@@ -7,10 +8,9 @@ export default function ApplyTagsDialog() {
   useEffect(() => {
     if (isApplyEntryTagVisible && applyTagEntry) { setDesc(applyTagEntry.description||''); setTags(applyTagEntry.entry_tags||[]) }
   }, [isApplyEntryTagVisible, applyTagEntry])
-  const toggle = v => setTags(t => t.includes(v) ? t.filter(x=>x!==v) : [...t,v])
   const save = () => {
     if (!applyTagEntry) return
-    applyTagsToExpenseEntry({ entry_id:applyTagEntry.ee_id, expense_id:applyTagEntry.expenseId, selected_tags:tags, updated_description:desc })
+    applyTagsToExpenseEntry({ entry_id:applyTagEntry.ee_id, expense_id:applyTagEntry.expenseId, entry_tags:tags, updated_description:desc })
   }
   if (!isApplyEntryTagVisible) return null
   return (
@@ -29,14 +29,12 @@ export default function ApplyTagsDialog() {
               <input className="d-input-field" style={{fontFamily:'var(--f-body)'}} value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Entry description..." />
             </div>
           </div>
-          <div>
-            <label className="d-label">Tags ({tags.length} selected)</label>
-            <div className="tag-pills-grid">
-              {entryTags.map(t => (
-                <div key={t.value} className={`tag-select-pill${tags.includes(t.value)?' active':''}`} onClick={()=>toggle(t.value)}>{t.title}</div>
-              ))}
+          {entryTags.length > 0 && (
+            <div className="d-entry-tags-field">
+              <label className="d-label d-label-inline">Tags ({tags.length} selected)</label>
+              <TagSearchSelect tags={entryTags} selected={tags} onChange={setTags} zIndex={650} />
             </div>
-          </div>
+          )}
         </div>
         <div className="dialog-footer">
           <button className="d-btn-cancel" onClick={()=>setApplyEntryTagVisible(false)}>Cancel</button>

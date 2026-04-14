@@ -409,6 +409,38 @@ body::after {
     background: var(--ink-3);
     border-color: var(--line-mid);
 }
+.account-card--drag-over {
+    border-color: var(--acid);
+    background: var(--ink-3);
+    box-shadow: 0 0 0 2px var(--acid-glow);
+}
+.account-card--dragging {
+    opacity: 0.4;
+    border-style: dashed;
+}
+.drag-handle {
+    font-size: 14px;
+    color: var(--faint);
+    cursor: grab;
+    margin-right: 7px;
+    flex-shrink: 0;
+    user-select: none;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.account-card:hover .drag-handle {
+    opacity: 1;
+}
+@media (hover: none) {
+    .drag-handle {
+        opacity: 0.45;
+    }
+}
+.account-card--dragging .drag-handle {
+    opacity: 0.4;
+    cursor: grabbing;
+}
 
 .account-card-indicator {
     position: absolute;

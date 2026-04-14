@@ -97,6 +97,7 @@ export const useStore = create((set, get) => ({
 
   banksList: [],
   bankItems: [],
+  banksDisplayOrder: [],
   currentSelectedBankId: null,
 
   filteredExpensesList: [],
@@ -170,6 +171,16 @@ export const useStore = create((set, get) => ({
         remainingBalance: e.current_balance,
         bankId: e.id,
       }));
+      // Apply saved display order from state (persisted from prefs)
+      const displayOrder = get().banksDisplayOrder;
+      if (Array.isArray(displayOrder) && displayOrder.length > 0) {
+        const orderMap = new Map(displayOrder.map((id, idx) => [id, idx]));
+        banks.sort((a, b) => {
+          const ai = orderMap.has(a.bankId) ? orderMap.get(a.bankId) : Infinity;
+          const bi = orderMap.has(b.bankId) ? orderMap.get(b.bankId) : Infinity;
+          return ai - bi;
+        });
+      }
       const bankItems = banks.map((e) => ({
         title: e.bankName,
         value: e.bankId,
@@ -189,7 +200,13 @@ export const useStore = create((set, get) => ({
         axios.get(`${BASE_URL}/banks/`),
         axios.get(`${BASE_URL}/user-preferences/`),
       ]);
-      const prefs = prefsRes?.data?.user_preferences;
+      const prefs = prefsRes?.data?.user_preferences ?? prefsRes?.data;
+      console.log("[getInitialData] raw prefs response:", prefsRes?.data);
+      console.log("[getInitialData] prefs resolved:", prefs);
+      console.log(
+        "[getInitialData] banks_display_order:",
+        prefs?.banks_display_order,
+      );
       const ps = prefs?.page_size ?? 5;
       const dark = prefs?.is_dark_mode ?? true;
       const privacy = prefs?.privacy_mode_enabled ?? false;
@@ -201,6 +218,15 @@ export const useStore = create((set, get) => ({
         remainingBalance: e.current_balance,
         bankId: e.id,
       }));
+      const displayOrder = prefs?.banks_display_order ?? [];
+      if (Array.isArray(displayOrder) && displayOrder.length > 0) {
+        const orderMap = new Map(displayOrder.map((id, idx) => [id, idx]));
+        banks.sort((a, b) => {
+          const ai = orderMap.has(a.bankId) ? orderMap.get(a.bankId) : Infinity;
+          const bi = orderMap.has(b.bankId) ? orderMap.get(b.bankId) : Infinity;
+          return ai - bi;
+        });
+      }
       const bankItems = banks.map((e) => ({
         title: e.bankName,
         value: e.bankId,
@@ -210,6 +236,7 @@ export const useStore = create((set, get) => ({
       set({
         banksList: banks,
         bankItems,
+        banksDisplayOrder: displayOrder,
         currentSelectedBankId: selectedBankId,
         pageSize: ps,
         isDarkMode: dark,
@@ -494,6 +521,28 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       set({ showLoader: false });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  async reorderBanks(orderedIds) {
+    // Optimistically reorder banksList in state
+    const { banksList } = get();
+    const reordered = orderedIds
+      .map((id) => banksList.find((b) => b.bankId === id))
+      .filter(Boolean);
+    const bankItems = reordered.map((e) => ({
+      title: e.bankName,
+      value: e.bankId,
+    }));
+    set({ banksList: reordered, bankItems, banksDisplayOrder: orderedIds });
+    try {
+      await axios.patch(`${BASE_URL}/user-preferences/update`, {
+        banks_display_order: orderedIds,
+      });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      // Revert on failure by re-fetching
+      get().fetchBanks();
     }
   },
 

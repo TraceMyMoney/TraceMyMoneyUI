@@ -511,15 +511,36 @@ export const useStore = create((set, get) => ({
   },
 
   async updateUserPreferences(payload) {
-    set({ showLoader: true });
+    // ── Optimistic UI update — apply immediately, no loader ──
+    const prev = {};
+    if ("is_dark_mode" in payload) {
+      prev.isDarkMode = get().isDarkMode;
+      set({ isDarkMode: payload.is_dark_mode });
+      if (payload.is_dark_mode) document.body.classList.remove("light");
+      else document.body.classList.add("light");
+    }
+    if ("privacy_mode_enabled" in payload) {
+      prev.privacyMode = get().privacyMode;
+      set({ privacyMode: payload.privacy_mode_enabled });
+    }
+    if ("page_size" in payload) {
+      prev.pageSize = get().pageSize;
+      set({ pageSize: payload.page_size });
+    }
+
+    // ── Fire API in the background ──
     try {
-      const r = await axios.patch(
-        `${BASE_URL}/user-preferences/update`,
-        payload,
-      );
-      if (r.status === 200) window.location.reload();
+      await axios.patch(`${BASE_URL}/user-preferences/update`, payload);
     } catch (err) {
-      set({ showLoader: false });
+      // Revert optimistic changes on failure
+      if ("is_dark_mode" in payload) {
+        set({ isDarkMode: prev.isDarkMode });
+        if (prev.isDarkMode) document.body.classList.remove("light");
+        else document.body.classList.add("light");
+      }
+      if ("privacy_mode_enabled" in payload)
+        set({ privacyMode: prev.privacyMode });
+      if ("page_size" in payload) set({ pageSize: prev.pageSize });
       get().pushAlert(handleError(err));
     }
   },

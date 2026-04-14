@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: App build
-        run: npm run build
+        run: npm run build:prod
 
       - name: Configure the AWS creds
         uses: aws-actions/configure-aws-credentials@v1

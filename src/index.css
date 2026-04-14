@@ -2596,6 +2596,139 @@ body::after {
     flex-wrap: wrap;
     gap: 6px;
 }
+
+/* ── Create Tag dialog — fixed-size body so it never resizes ── */
+.create-tag-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Hint line — always present, same height, just changes text/colour */
+.create-tag-hint {
+    min-height: 18px;
+    font-size: 11px;
+    font-family: var(--f-mono);
+    color: var(--faint);
+    line-height: 1.5;
+}
+.create-tag-hint--error {
+    color: var(--red);
+}
+.create-tag-hint--error strong {
+    color: var(--red);
+}
+.create-tag-hint--ok {
+    color: var(--muted);
+}
+.create-tag-hint--ok strong {
+    color: var(--text);
+}
+
+/* ── Floating tag search dropdown (fixed, outside dialog flow) ── */
+.tag-search-dropdown {
+    position: fixed;
+    z-index: 10000;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-sm);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    max-height: 200px;
+    overflow-y: auto;
+    animation: fadeUp 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tag-search-dropdown__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    cursor: default;
+    font-size: 12px;
+    font-family: var(--f-mono);
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    gap: 10px;
+}
+.tag-search-dropdown__item:last-child {
+    border-bottom: none;
+}
+.tag-search-dropdown__item--exact {
+    background: var(--red-dim);
+    color: var(--red);
+}
+.tag-search-dropdown__name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tag-search-dropdown__badge {
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: var(--f-head);
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 59, 92, 0.25);
+    color: var(--red);
+    flex-shrink: 0;
+}
+
+/* ── Tag input status badge ── */
+.tag-input-badge {
+    padding: 3px 9px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: var(--f-head);
+    white-space: nowrap;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.tag-input-badge--new {
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--acid);
+}
+.tag-input-badge--exists {
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 59, 92, 0.25);
+    color: var(--red);
+}
+
+/* ── Input wrap error state ── */
+.d-input-wrap--error {
+    border-color: rgba(255, 59, 92, 0.45) !important;
+    box-shadow: 0 0 0 2px rgba(255, 59, 92, 0.08);
+}
+
+/* ── Duplicate tag warning notice ── */
+.tag-exists-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 11px 14px;
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 59, 92, 0.2);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+}
+.tag-exists-notice__icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    color: var(--red);
+    margin-top: 1px;
+}
+.tag-exists-notice strong {
+    color: var(--text);
+}
 .tag-select-pill {
     padding: 5px 12px;
     border-radius: 3px;

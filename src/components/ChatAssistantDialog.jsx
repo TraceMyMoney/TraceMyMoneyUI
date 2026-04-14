@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Fragment } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore.js";
 
@@ -30,6 +30,87 @@ function extractChatReply(data) {
   } catch {
     return "No reply";
   }
+}
+
+/**
+ * Renders a markdown-like text string into React elements.
+ * Supports:
+ *   - **bold** → <strong>
+ *   - bullet lines starting with "- " → <ul><li> list
+ *   - newlines → line breaks (or list grouping)
+ */
+function renderMarkdown(text) {
+  if (!text) return null;
+
+  const lines = text.split("\n");
+  const elements = [];
+  let listItems = [];
+  let keyCounter = 0;
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul
+          key={`ul-${keyCounter++}`}
+          style={{ margin: "4px 0 4px 16px", padding: 0 }}
+        >
+          {listItems}
+        </ul>,
+      );
+      listItems = [];
+    }
+  };
+
+  const parseBold = (str, baseKey) => {
+    // First, normalize **text** markers and currency+amount patterns into a
+    // single token stream using a combined regex.
+    // Group 1: **bold**  |  Group 2: currency symbol + optional space + optional sign + number
+    const tokenRegex =
+      /\*\*(.+?)\*\*|([\u20B9$€£¥₩₺₴₦₨\u00A3\u00A5]+\s*[-\u2011\u2012\u2013\u2014+]?\s*[\d,]+(?:\.\d+)?)/g;
+    const result = [];
+    let last = 0;
+    let match;
+    let idx = 0;
+    while ((match = tokenRegex.exec(str)) !== null) {
+      if (match.index > last) {
+        result.push(str.slice(last, match.index));
+      }
+      const content = match[1] ?? match[2];
+      result.push(<strong key={`${baseKey}-b${idx++}`}>{content}</strong>);
+      last = match.index + match[0].length;
+    }
+    if (last < str.length) {
+      result.push(str.slice(last));
+    }
+    return result;
+  };
+
+  lines.forEach((line, lineIdx) => {
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      const content = trimmed.slice(2);
+      listItems.push(
+        <li key={`li-${keyCounter++}`}>
+          {parseBold(content, `li-${lineIdx}`)}
+        </li>,
+      );
+    } else {
+      flushList();
+      if (line === "") {
+        elements.push(<br key={`br-${keyCounter++}`} />);
+      } else {
+        elements.push(
+          <span key={`line-${keyCounter++}`}>
+            {parseBold(line, `line-${lineIdx}`)}
+            {"\n"}
+          </span>,
+        );
+      }
+    }
+  });
+
+  flushList();
+  return elements;
 }
 
 async function postChatQuestion(question) {
@@ -148,7 +229,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
         <div className="chat-dialog-messages" ref={listRef} aria-busy={sending}>
           {messages.map((m, i) => (
             <div key={i} className={`chat-bubble chat-bubble--${m.role}`}>
-              {m.text}
+              {m.role === "assistant" ? renderMarkdown(m.text) : m.text}
             </div>
           ))}
           {sending &&

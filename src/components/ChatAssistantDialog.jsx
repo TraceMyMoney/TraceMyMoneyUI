@@ -124,6 +124,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
   const [sending, setSending] = useState(false);
   const [bufferingVisible, setBufferingVisible] = useState(false);
   const listRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (!sending) {
@@ -144,6 +145,13 @@ export default function ChatAssistantDialog({ open, onClose }) {
       setSending(false);
       return;
     }
+    // Focus the input as soon as the dialog opens
+    const id = window.setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
 
     const name = useStore.getState().userName;
     const displayName = (name && String(name).trim()) || "there";
@@ -248,6 +256,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
 
         <div className="chat-dialog-footer">
           <textarea
+            ref={inputRef}
             className="chat-dialog-input"
             rows={2}
             placeholder="Type a message…"

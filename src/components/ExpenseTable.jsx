@@ -199,7 +199,9 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
               onMouseEnter={() => setHovEnt(item.ee_id)}
               onMouseLeave={() => setHovEnt(null)}
             >
-              {/* Description + tag icon inline */}
+              {/* col 1 — date spacer */}
+              <div />
+              {/* col 2 — Description + tag icon */}
               <div
                 className="entry-desc-wrap"
                 onClick={() => onEditEntry({ ...item, expenseId: exp.id })}
@@ -214,7 +216,11 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
                   />
                 )}
               </div>
-              {/* Amount */}
+              {/* col 3 — preview spacer */}
+              <div className="exp-preview-col" />
+              {/* col 4 — top-up spacer */}
+              <div className="exp-remaining-col" />
+              {/* col 5 — Amount (Spent column) */}
               <div
                 className="entry-amt-val"
                 style={{
@@ -225,7 +231,9 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
                   ? `+₹${fmtNum(Math.abs(item.amount))}`
                   : `₹${fmtNum(item.amount)}`}
               </div>
-              {/* Delete */}
+              {/* col 6 — remaining spacer */}
+              <div className="exp-remaining-col" />
+              {/* col 7 — Delete */}
               <button
                 className="entry-del-btn"
                 style={{ opacity: hovEnt === item.ee_id ? 1 : 0 }}

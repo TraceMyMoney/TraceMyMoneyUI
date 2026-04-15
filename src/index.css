@@ -1564,13 +1564,13 @@ body::after {
 .mobile-entries-panel {
     border-top: 1px solid var(--line);
     animation: slideDown 0.2s ease;
+    margin: 12px -16px -16px -16px;
 }
 .mobile-entry-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 12px 16px;
+    gap: 8px;
+    padding: 10px 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     transition: background 0.12s;
 }
@@ -1601,9 +1601,11 @@ body::after {
 
 .mobile-entry-amt {
     font-family: var(--f-mono);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
+    text-align: right;
     flex-shrink: 0;
+    min-width: 60px;
 }
 
 /* Delete button on mobile entries — always visible (no hover state on touch) */
@@ -1615,12 +1617,12 @@ body::after {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: 4px;
     border-radius: 4px;
-    flex-shrink: 0;
     transition: all 0.15s;
-    min-width: 32px;
-    min-height: 32px;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
 }
 .mobile-entry-del-btn:hover,
 .mobile-entry-del-btn:active {

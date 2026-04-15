@@ -1419,6 +1419,45 @@ body::after {
     color: var(--ghost);
 }
 
+/* ── Expense totals footer row (desktop) ── */
+.expense-totals-row {
+    display: grid;
+    grid-template-columns: 72px 1fr 110px 100px 100px 100px 44px;
+    padding: 0 20px;
+    height: 44px;
+    align-items: center;
+    border-top: 1px solid var(--line-mid);
+    background: var(--ink-2);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+.expense-totals-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-family: var(--f-head);
+}
+.expense-totals-cell {
+    font-size: 14px;
+    font-family: var(--f-mono);
+    font-weight: 700;
+    text-align: right;
+}
+.expense-totals-topup {
+    color: var(--green);
+}
+.expense-totals-spent {
+    color: var(--red);
+}
+
+/* Mobile totals card — hidden on desktop */
+.expense-totals-mobile {
+    display: none;
+}
+
 /* ═══════════════════════════════════════════════════════
    MOBILE EXPENSE CARDS (replaces table on small screens)
 ═══════════════════════════════════════════════════════ */
@@ -3310,7 +3349,8 @@ body::after {
 /* ── Tablet landscape (≤ 1100px) ── */
 @media (max-width: 1100px) {
     .table-head,
-    .expense-row {
+    .expense-row,
+    .expense-totals-row {
         grid-template-columns: 68px 1fr 90px 90px 44px;
     }
     /* Hide preview column on tablet */
@@ -3388,7 +3428,8 @@ body::after {
 
     /* Table columns - simplified */
     .table-head,
-    .expense-row {
+    .expense-row,
+    .expense-totals-row {
         grid-template-columns: 64px 1fr 90px 90px 40px;
     }
     .exp-preview-col {
@@ -3399,7 +3440,8 @@ body::after {
         display: none;
     }
     .table-head,
-    .expense-row {
+    .expense-row,
+    .expense-totals-row {
         grid-template-columns: 64px 1fr 100px 40px;
     }
 
@@ -3527,6 +3569,46 @@ body::after {
     /* Hide desktop table, show mobile cards */
     .table-area .table-head {
         display: none;
+    }
+    /* Hide desktop totals row, show mobile totals card */
+    .expense-totals-row {
+        display: none;
+    }
+    .expense-totals-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid var(--line-mid);
+        background: var(--ink-2);
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+    }
+    .expense-totals-mobile__label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--faint);
+        font-family: var(--f-head);
+    }
+    .expense-totals-mobile__vals {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .expense-totals-mobile__topup {
+        font-size: 14px;
+        font-family: var(--f-mono);
+        font-weight: 700;
+        color: var(--green);
+    }
+    .expense-totals-mobile__spent {
+        font-size: 14px;
+        font-family: var(--f-mono);
+        font-weight: 700;
+        color: var(--red);
     }
     .expense-row {
         display: none;
@@ -3693,7 +3775,8 @@ body::after {
         font-size: 26px;
     }
     .table-head,
-    .expense-row {
+    .expense-row,
+    .expense-totals-row {
         grid-template-columns: 80px 1fr 130px 110px 110px 110px 52px;
     }
 }

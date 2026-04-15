@@ -355,7 +355,17 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
 
 /* ── Main component ── */
 export default function ExpenseTable({ onEditEntry }) {
-  const { filteredExpensesList } = useStore();
+  const { filteredExpensesList, privacyMode } = useStore();
+
+  // Compute totals from only the currently visible page
+  const pageTotalSpent = filteredExpensesList.reduce(
+    (sum, exp) => sum + (exp.expense_total || 0),
+    0,
+  );
+  const pageTotalTopup = filteredExpensesList.reduce(
+    (sum, exp) => sum + Math.abs(exp.topup_expense_total || 0),
+    0,
+  );
   const [openRows, setOpenRows] = useState(new Set());
 
   const toggle = (id) =>
@@ -409,6 +419,47 @@ export default function ExpenseTable({ onEditEntry }) {
           />
         </React.Fragment>
       ))}
+
+      {/* ── Totals footer ── */}
+      {filteredExpensesList.length > 0 && (
+        <>
+          {/* Desktop totals row */}
+          <div className="expense-totals-row">
+            <div className="expense-totals-label">Total</div>
+            <div />
+            <div className="exp-preview-col" />
+            <div className="expense-totals-cell expense-totals-topup exp-remaining-col">
+              {pageTotalTopup > 0 ? (
+                <span>
+                  {privacyMode ? "••••" : `+₹${fmtNum(pageTotalTopup)}`}
+                </span>
+              ) : (
+                <span style={{ color: "var(--faint)" }}>—</span>
+              )}
+            </div>
+            <div className="expense-totals-cell expense-totals-spent">
+              {privacyMode ? "••••" : `₹${fmtNum(pageTotalSpent)}`}
+            </div>
+            <div className="exp-remaining-col" />
+            <div />
+          </div>
+
+          {/* Mobile totals card */}
+          <div className="expense-totals-mobile">
+            <span className="expense-totals-mobile__label">Total</span>
+            <div className="expense-totals-mobile__vals">
+              {pageTotalTopup > 0 && (
+                <span className="expense-totals-mobile__topup">
+                  {privacyMode ? "••••" : `+₹${fmtNum(pageTotalTopup)}`}
+                </span>
+              )}
+              <span className="expense-totals-mobile__spent">
+                {privacyMode ? "••••" : `₹${fmtNum(pageTotalSpent)}`}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

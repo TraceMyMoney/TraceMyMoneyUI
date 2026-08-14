@@ -4,6 +4,11 @@ import axios from "axios";
 const BASE_URL =
   import.meta.env.VITE_TM_BACKEND_URL || "https://api.stalk-my-money.in/";
 const ALL = "all";
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+
+let refreshPromise = null;
+let authInterceptorReady = false;
 
 // ── helpers ──────────────────────────────────────────────
 function parseJwt(token) {
@@ -23,11 +28,97 @@ function parseJwt(token) {
   }
 }
 
+function saveTokens({ token, refresh_token }) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  if (refresh_token) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
+  }
+  axios.defaults.headers.common["authorization"] = token;
+}
+
+function clearTokens() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  delete axios.defaults.headers.common["authorization"];
+}
+
+function isTokenExpired(token) {
+  const payload = parseJwt(token);
+  if (!payload?.exp) return true;
+  return payload.exp * 1000 <= Date.now() + 30_000;
+}
+
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!refreshToken) {
+    throw new Error("No refresh token");
+  }
+
+  const r = await axios.post(`${BASE_URL}/refresh`, {
+    refresh_token: refreshToken,
+  });
+  saveTokens({
+    token: r.data.token,
+    refresh_token: r.data.refresh_token,
+  });
+  return r.data.token;
+}
+
+function setupAxiosAuthInterceptor() {
+  if (authInterceptorReady) return;
+  authInterceptorReady = true;
+
+  axios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+      const status = error.response?.status;
+      const url = originalRequest?.url || "";
+
+      if (
+        status !== 401 ||
+        originalRequest?._retry ||
+        url.includes("/login") ||
+        url.includes("/register") ||
+        url.includes("/refresh")
+      ) {
+        return Promise.reject(error);
+      }
+
+      if (!localStorage.getItem(REFRESH_TOKEN_KEY)) {
+        clearTokens();
+        return Promise.reject(error);
+      }
+
+      originalRequest._retry = true;
+
+      if (!refreshPromise) {
+        refreshPromise = refreshAccessToken()
+        .catch((refreshErr) => {
+          clearTokens();
+          throw refreshErr;
+        })
+        .finally(() => {
+          refreshPromise = null;
+        });
+      }
+
+      try {
+        const newToken = await refreshPromise;
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.authorization = newToken;
+        return axios(originalRequest);
+      } catch {
+        return Promise.reject(error);
+      }
+    },
+  );
+}
+
 function handleError(err) {
   // JSON.parse(err.request.response).detail
   if (err?.status === 401 || err?.response?.status === 401) {
-    localStorage.removeItem("access_token");
-    delete axios.defaults.headers.common["authorization"];
+    clearTokens();
     return "Session expired. Please login again.";
   }
   if (err.request.response) {
@@ -74,12 +165,28 @@ export function fmtNum(v, privacy = false) {
 }
 
 // ── init axios token ──────────────────────────────────────
-export function initAxiosToken() {
-  const token = localStorage.getItem("access_token");
-  if (token) {
+export async function initAxiosToken() {
+  setupAxiosAuthInterceptor();
+
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+
+  if (token && !isTokenExpired(token)) {
     axios.defaults.headers.common["authorization"] = token;
     return parseJwt(token);
   }
+
+  if (refreshToken) {
+    try {
+      await refreshAccessToken();
+      return parseJwt(localStorage.getItem(ACCESS_TOKEN_KEY));
+    } catch {
+      clearTokens();
+      return null;
+    }
+  }
+
+  if (token) clearTokens();
   return null;
 }
 
@@ -201,12 +308,6 @@ export const useStore = create((set, get) => ({
         axios.get(`${BASE_URL}/user-preferences/`),
       ]);
       const prefs = prefsRes?.data?.user_preferences ?? prefsRes?.data;
-      console.log("[getInitialData] raw prefs response:", prefsRes?.data);
-      console.log("[getInitialData] prefs resolved:", prefs);
-      console.log(
-        "[getInitialData] banks_display_order:",
-        prefs?.banks_display_order,
-      );
       const ps = prefs?.page_size ?? 5;
       const dark = prefs?.is_dark_mode ?? true;
       const privacy = prefs?.privacy_mode_enabled ?? false;
@@ -490,8 +591,10 @@ export const useStore = create((set, get) => ({
     set({ showLoader: true });
     try {
       const r = await axios.post(`${BASE_URL}/login`, data);
-      localStorage.setItem("access_token", r.data.token);
-      axios.defaults.headers.common["authorization"] = r.data.token;
+      saveTokens({
+        token: r.data.token,
+        refresh_token: r.data.refresh_token,
+      });
       window.location.reload();
     } catch (err) {
       set({ showLoader: false });
@@ -568,8 +671,7 @@ export const useStore = create((set, get) => ({
   },
 
   logoutUser() {
-    localStorage.removeItem("access_token");
-    delete axios.defaults.headers.common["authorization"];
+    clearTokens();
     window.location.reload();
   },
 }));

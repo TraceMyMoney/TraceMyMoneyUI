@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Eye, EyeOff } from "lucide-react";
 import { useStore } from '../store/useStore.js'
 
 export default function Login() {
@@ -34,7 +35,7 @@ export default function Login() {
             <div className="auth-input-wrap">
               <div className="auth-input-icon">🔒</div>
               <input className="auth-input" type={showPw ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
-              <button className="auth-toggle" onClick={() => setShowPw(v => !v)}>{showPw ? '🙈' : '👁'}</button>
+              <button className="auth-toggle" onClick={() => setShowPw(v => !v)}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
             </div>
           </div>
           <button className="auth-submit" disabled={!username || !password} onClick={submit}>

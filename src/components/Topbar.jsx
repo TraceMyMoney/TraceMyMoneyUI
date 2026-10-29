@@ -1,6 +1,6 @@
 import React from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import { Eye, EyeOff, MessageCircle } from "lucide-react";
+import { Eye, EyeOff, MessageCircle, LogOut } from "lucide-react";
 
 export default function Topbar({ onMenuClick, onOpenChat }) {
   const {
@@ -16,7 +16,7 @@ export default function Topbar({ onMenuClick, onOpenChat }) {
       <div className="topbar-glow" />
 
       <button
-        className="topbar-menu-btn icon-btn"
+        className="topbar-menu-btn"
         onClick={onMenuClick}
         aria-label="Menu"
       >
@@ -80,8 +80,9 @@ export default function Topbar({ onMenuClick, onOpenChat }) {
             className="icon-btn danger topbar-desktop-only"
             onClick={logoutUser}
             title="Logout"
+            aria-label="Logout"
           >
-            ⏻
+            <LogOut size={16} />
           </button>
         </div>
       </div>

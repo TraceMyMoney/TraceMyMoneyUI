@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, Fragment } from "react";
 import axios from "axios";
+import { Send, Copy, Check } from "lucide-react";
 import { useStore } from "../store/useStore.js";
 
 const pushChatAlert = (msg) => useStore.getState().pushAlert(msg);
@@ -11,6 +12,17 @@ const CHAT_URL = `${BASE_URL}/user/chat`;
 
 /** Only show buffering UI after this delay so fast replies do not flicker. */
 const BUFFERING_SHOW_MS = 380;
+
+let messageIdCounter = 0;
+const nextMessageId = () => `m${++messageIdCounter}`;
+
+const formatMessageTime = (ts) =>
+  new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+/** The backend's own error/guardrail-refusal replies all start this way
+ * (see ChatService._run/_validate_and_prepare) - used to style them as a
+ * distinct "this didn't work" state rather than a normal answer. */
+const isErrorReply = (text) => /^sorry[,.]/i.test((text || "").trim());
 
 function extractChatReply(data) {
   if (data == null) return "";
@@ -118,13 +130,53 @@ async function postChatQuestion(question) {
   return extractChatReply(r.data);
 }
 
+const isMobileViewport = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(max-width: 860px)").matches;
+
+// Explicit, self-owned {left, top, width, height} in px - computed once per
+// open, then only ever changed by drag/resize math below. Deliberately NOT
+// relying on the overlay's flex-centering for position: a flex-centered box
+// recenters itself whenever its width/height changes, which was silently
+// moving the *opposite* edge during a resize (shrink from the west edge and
+// the east edge drifted too, since the browser kept re-centering the box).
+// A fully explicit rect sidesteps that entirely.
+const computeDefaultRect = () => {
+  if (isMobileViewport()) {
+    // Full-screen-ish sheet, not a floating window - dragging/resizing are
+    // also disabled below this breakpoint (see isMobileViewport() checks).
+    const margin = 10;
+    return {
+      left: margin,
+      top: margin,
+      width: window.innerWidth - margin * 2,
+      height: window.innerHeight * 0.9 - margin,
+    };
+  }
+  const width = Math.min(640, window.innerWidth * 0.95);
+  const height = Math.min(720, window.innerHeight * 0.95);
+  return {
+    left: (window.innerWidth - width) / 2,
+    top: (window.innerHeight - height) / 2,
+    width,
+    height,
+  };
+};
+
 export default function ChatAssistantDialog({ open, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [bufferingVisible, setBufferingVisible] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+  const [rect, setRect] = useState(computeDefaultRect);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const listRef = useRef(null);
   const inputRef = useRef(null);
+  const panelRef = useRef(null);
+  const dragStateRef = useRef(null);
+  const resizeStateRef = useRef(null);
 
   useEffect(() => {
     if (!sending) {
@@ -150,13 +202,34 @@ export default function ChatAssistantDialog({ open, onClose }) {
     return () => clearTimeout(id);
   }, [open]);
 
+  // Auto-grow the textarea to fit its content, capped at roughly half the
+  // *current* dialog height (not a small fixed px value - that just meant
+  // hitting the cap sooner and going back to hiding earlier lines behind
+  // an internal scrollbar, the original complaint). Recomputed against
+  // `rect.height` too, so resizing the whole dialog raises/lowers the cap
+  // along with it. Runs after every change, with the DOM already having
+  // committed the new value, so scrollHeight reflects it correctly.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const maxHeight = Math.max(80, rect.height * 0.5);
+    el.style.maxHeight = `${maxHeight}px`;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+  }, [input, rect.height]);
+
   useEffect(() => {
     if (!open) return;
 
     const name = useStore.getState().userName;
     const displayName = (name && String(name).trim()) || "there";
     setMessages([
-      { role: "assistant", text: `Hello ${displayName}, how are you?` },
+      {
+        id: nextMessageId(),
+        role: "assistant",
+        text: `Hello ${displayName}, how are you?`,
+        ts: Date.now(),
+      },
     ]);
   }, [open]);
 
@@ -174,15 +247,169 @@ export default function ChatAssistantDialog({ open, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  // Keep at least ~48px of the header grabbable on every edge so the panel
+  // can never be dragged somewhere it can't be dragged back from.
+  const DRAG_MARGIN = 48;
+
+  const onDragMove = (e) => {
+    const drag = dragStateRef.current;
+    if (!drag) return;
+    const left = Math.min(
+      Math.max(
+        drag.baseLeft + (e.clientX - drag.startX),
+        DRAG_MARGIN - drag.width,
+      ),
+      window.innerWidth - DRAG_MARGIN,
+    );
+    const top = Math.min(
+      Math.max(
+        drag.baseTop + (e.clientY - drag.startY),
+        DRAG_MARGIN - drag.height,
+      ),
+      window.innerHeight - DRAG_MARGIN,
+    );
+    setRect((r) => ({ ...r, left, top }));
+  };
+
+  const endDrag = () => {
+    dragStateRef.current = null;
+    document.body.style.cursor = "";
+    setIsDragging(false);
+    window.removeEventListener("pointermove", onDragMove);
+    window.removeEventListener("pointerup", endDrag);
+  };
+
+  // Safety net: if the dialog unmounts mid-drag, don't leave stray
+  // window-level listeners behind.
+  useEffect(() => endDrag, []);
+
+  const startDrag = (e) => {
+    if (isMobileViewport()) return; // full-screen on mobile - dragging doesn't apply
+    if (e.target.closest(".dialog-close")) return;
+    dragStateRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      baseLeft: rect.left,
+      baseTop: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+    // Forced on <body> (not just the header) so the cursor stays a closed
+    // hand even when a fast drag carries the pointer over other elements
+    // with their own cursor styles - the header's CSS `cursor: grab` alone
+    // only applies while actually hovering it.
+    document.body.style.cursor = "grabbing";
+    setIsDragging(true);
+    window.addEventListener("pointermove", onDragMove);
+    window.addEventListener("pointerup", endDrag);
+  };
+
+  // ── Resize: 8 invisible handles (4 edges + 4 corners), each dragged via
+  // pointer events so every edge gets its own correct two-arrow cursor -
+  // the native CSS `resize` property only ever gives a single corner handle.
+  const RESIZE_MIN = 320;
+  const resizeCursor = {
+    n: "ns-resize",
+    s: "ns-resize",
+    e: "ew-resize",
+    w: "ew-resize",
+    ne: "nesw-resize",
+    sw: "nesw-resize",
+    nw: "nwse-resize",
+    se: "nwse-resize",
+  };
+
+  const onResizeMove = (e) => {
+    const st = resizeStateRef.current;
+    if (!st) return;
+    const dx = e.clientX - st.startX;
+    const dy = e.clientY - st.startY;
+    const maxW = Math.min(window.innerWidth * 0.95, 1100);
+    const maxH = window.innerHeight * 0.95;
+
+    let { left, top, width, height } = st.base;
+
+    if (st.direction.includes("e")) {
+      // East edge moves; west edge (left) is untouched - stays exactly put.
+      width = Math.min(Math.max(st.base.width + dx, RESIZE_MIN), maxW);
+    }
+    if (st.direction.includes("w")) {
+      width = Math.min(Math.max(st.base.width - dx, RESIZE_MIN), maxW);
+      // Move `left` by exactly the width delta (in the opposite direction)
+      // so `left + width` - the east edge - is algebraically constant,
+      // regardless of clamping. That's what actually pins the opposite
+      // edge in place; relying on flex-centering to do it (the old
+      // approach) silently moved both edges together instead.
+      left = st.base.left + (st.base.width - width);
+    }
+    if (st.direction.includes("s")) {
+      height = Math.min(Math.max(st.base.height + dy, RESIZE_MIN), maxH);
+    }
+    if (st.direction.includes("n")) {
+      height = Math.min(Math.max(st.base.height - dy, RESIZE_MIN), maxH);
+      top = st.base.top + (st.base.height - height);
+    }
+
+    setRect({ left, top, width, height });
+  };
+
+  const endResize = () => {
+    resizeStateRef.current = null;
+    document.body.style.cursor = "";
+    setIsResizing(false);
+    window.removeEventListener("pointermove", onResizeMove);
+    window.removeEventListener("pointerup", endResize);
+  };
+
+  useEffect(() => endResize, []);
+
+  const startResize = (e, direction) => {
+    if (isMobileViewport()) return; // full-screen on mobile - resizing doesn't apply
+    e.stopPropagation();
+    e.preventDefault();
+    resizeStateRef.current = {
+      direction,
+      startX: e.clientX,
+      startY: e.clientY,
+      base: { ...rect },
+    };
+    document.body.style.cursor = resizeCursor[direction];
+    setIsResizing(true);
+    window.addEventListener("pointermove", onResizeMove);
+    window.addEventListener("pointerup", endResize);
+  };
+
+  const copyMessage = async (id, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1400);
+    } catch {
+      pushChatAlert("Couldn't copy to clipboard");
+    }
+  };
+
   const sendUserMessage = async () => {
     const q = input.trim();
     if (!q || sending) return;
     setInput("");
-    setMessages((m) => [...m, { role: "user", text: q }]);
+    setMessages((m) => [
+      ...m,
+      { id: nextMessageId(), role: "user", text: q, ts: Date.now() },
+    ]);
     setSending(true);
     try {
       const reply = await postChatQuestion(q);
-      setMessages((m) => [...m, { role: "assistant", text: reply }]);
+      setMessages((m) => [
+        ...m,
+        {
+          id: nextMessageId(),
+          role: "assistant",
+          text: reply,
+          ts: Date.now(),
+          isError: isErrorReply(reply),
+        },
+      ]);
     } catch (err) {
       const msg =
         err?.response?.data?.detail ||
@@ -193,8 +420,11 @@ export default function ChatAssistantDialog({ open, onClose }) {
       setMessages((m) => [
         ...m,
         {
+          id: nextMessageId(),
           role: "assistant",
           text: "Sorry, something went wrong. Try again in a moment.",
+          ts: Date.now(),
+          isError: true,
         },
       ]);
     } finally {
@@ -205,14 +435,32 @@ export default function ChatAssistantDialog({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="chat-dialog-overlay" onClick={onClose} role="presentation">
+    <div className="chat-dialog-overlay">
       <div
-        className="chat-dialog-panel"
-        onClick={(e) => e.stopPropagation()}
+        ref={panelRef}
+        className={`chat-dialog-panel${isDragging ? " is-dragging" : ""}${isResizing ? " is-resizing" : ""}`}
         role="dialog"
         aria-labelledby="chat-dialog-title"
+        style={{
+          // Fully explicit position/size (see computeDefaultRect above) -
+          // `scale` for the drag/resize lift effect (.is-dragging/
+          // .is-resizing below) stays independent of these since it's a
+          // separate CSS property from left/top/width/height.
+          position: "fixed",
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+        }}
       >
-        <div className="chat-dialog-header">
+        {["n", "s", "e", "w", "ne", "nw", "se", "sw"].map((dir) => (
+          <div
+            key={dir}
+            className={`chat-resize-handle chat-resize-handle--${dir}`}
+            onPointerDown={(e) => startResize(e, dir)}
+          />
+        ))}
+        <div className="chat-dialog-header" onPointerDown={startDrag}>
           <div className="chat-dialog-title-wrap">
             <div className="chat-dialog-icon">💬</div>
             <div>
@@ -235,21 +483,53 @@ export default function ChatAssistantDialog({ open, onClose }) {
         </div>
 
         <div className="chat-dialog-messages" ref={listRef} aria-busy={sending}>
-          {messages.map((m, i) => (
-            <div key={i} className={`chat-bubble chat-bubble--${m.role}`}>
-              {m.role === "assistant" ? renderMarkdown(m.text) : m.text}
-            </div>
-          ))}
+          {messages.map((m, i) => {
+            const grouped = i > 0 && messages[i - 1].role === m.role;
+            const isCopied = copiedId === m.id;
+            return (
+              <Fragment key={m.id}>
+                {!grouped && (
+                  <div className="chat-time-divider">
+                    {formatMessageTime(m.ts)}
+                  </div>
+                )}
+                <div
+                  className={`chat-row chat-row--${m.role}${grouped ? " chat-row--grouped" : ""}`}
+                >
+                  <div className="chat-bubble-col">
+                    <div
+                      className={`chat-bubble chat-bubble--${m.role}${m.isError ? " chat-bubble--error" : ""}`}
+                    >
+                      <div className="chat-bubble-text">
+                        {m.role === "assistant" ? renderMarkdown(m.text) : m.text}
+                      </div>
+                      <button
+                        type="button"
+                        className="chat-bubble-copy"
+                        onClick={() => copyMessage(m.id, m.text)}
+                        aria-label="Copy message"
+                        title="Copy"
+                      >
+                        {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </Fragment>
+            );
+          })}
           {sending &&
             bufferingVisible &&
             (messages.length === 0 ||
               messages[messages.length - 1].role === "user") && (
-              <div
-                className="chat-bubble chat-bubble--assistant chat-bubble--buffering"
-                role="status"
-              >
-                <span className="chat-buffer-spinner" aria-hidden />
-                <span className="chat-buffer-text">Getting reply…</span>
+              <div className="chat-row chat-row--assistant">
+                <div
+                  className="chat-bubble chat-bubble--assistant chat-bubble--buffering"
+                  role="status"
+                >
+                  <span className="chat-buffer-spinner" aria-hidden />
+                  <span className="chat-buffer-text">Getting reply…</span>
+                </div>
               </div>
             )}
         </div>
@@ -258,7 +538,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
           <textarea
             ref={inputRef}
             className="chat-dialog-input"
-            rows={2}
+            rows={1}
             placeholder="Type a message…"
             enterKeyHint="send"
             autoComplete="off"
@@ -278,8 +558,9 @@ export default function ChatAssistantDialog({ open, onClose }) {
             className="chat-dialog-send"
             onClick={sendUserMessage}
             disabled={sending || !input.trim()}
+            aria-label="Send message"
           >
-            Send
+            <Send size={17} strokeWidth={2.25} />
           </button>
         </div>
       </div>

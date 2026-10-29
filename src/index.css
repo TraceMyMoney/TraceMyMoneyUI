@@ -312,6 +312,11 @@ body::after {
     flex-shrink: 0;
     transition: all 0.18s;
 }
+.topbar-menu-btn:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
+}
 
 /* Icon button base */
 .icon-btn {
@@ -2184,6 +2189,14 @@ body::after {
     background: var(--acid-dim);
     color: var(--acid);
 }
+.tag-search-option.highlighted {
+    background: var(--ink-5);
+}
+.tag-search-option.active.highlighted {
+    background: var(--acid-dim);
+    outline: 1px solid var(--acid);
+    outline-offset: -1px;
+}
 .tag-search-option-label {
     flex: 1;
     overflow: hidden;
@@ -2439,36 +2452,28 @@ body::after {
 
 /* Chat assistant (user/chat) */
 .chat-dialog-overlay {
+    /* Not a modal backdrop - a floating window. No background/blur, and
+       pointer-events:none lets every click pass straight through to the
+       rest of the app; only the panel itself (pointer-events:auto below)
+       is interactive. The panel positions itself (position:fixed with
+       explicit left/top/width/height - see ChatAssistantDialog.jsx), so
+       this wrapper does nothing layout-wise anymore; it only carries the
+       z-index above every other overlay in the app (loader: 9998, alerts:
+       9997, grain/datepicker: 9999, tag-search dropdown: 10000). */
     position: fixed;
     inset: 0;
-    background: rgba(8, 11, 17, 0.88);
-    z-index: 620;
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.15s ease;
-    padding: max(16px, calc(env(safe-area-inset-top, 0px) + 12px))
-        max(16px, calc(env(safe-area-inset-right, 0px) + 12px))
-        max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px))
-        max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
-    touch-action: manipulation;
+    z-index: 10050;
+    pointer-events: none;
 }
 .chat-dialog-panel {
-    width: 100%;
-    max-width: min(640px, 100%);
-    min-height: 0;
-    height: min(
-        720px,
-        calc(
-            100dvh - env(safe-area-inset-top, 0px) -
-                env(safe-area-inset-bottom, 0px) - 56px
-        )
-    );
-    max-height: calc(
-        100dvh - env(safe-area-inset-top, 0px) -
-            env(safe-area-inset-bottom, 0px) - 56px
-    );
+    pointer-events: auto;
+    /* width/height/left/top come from inline style (computeDefaultRect +
+       drag/resize state in ChatAssistantDialog.jsx) - these min/max act
+       only as a defense-in-depth clamp on top of that. */
+    max-width: min(95vw, 1100px);
+    min-width: 320px;
+    min-height: 320px;
+    max-height: 95dvh;
     background: var(--ink-2);
     border: 1px solid var(--line-mid);
     border-radius: var(--r-lg);
@@ -2477,14 +2482,95 @@ body::after {
     flex-direction: column;
     overflow: hidden;
     animation: fadeUp 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Lift feedback for .is-dragging/.is-resizing below. Deliberately not
+       transitioning `translate`/`width`/`height` themselves - those are
+       driven every pointermove in JS and must track the cursor exactly,
+       with no easing lag. */
+    transition: scale 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.chat-dialog-panel.is-dragging {
+    scale: 1.015;
+    box-shadow: 0 32px 88px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--acid-mid);
+}
+.chat-dialog-panel.is-resizing {
+    border-color: var(--acid-mid);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--acid-mid);
 }
 .chat-dialog-header {
     display: flex;
     align-items: center;
     gap: 12px;
+    cursor: grab;
+    user-select: none;
     padding: 16px 18px;
     border-bottom: 1px solid var(--line);
     flex-shrink: 0;
+}
+.chat-dialog-header:active {
+    cursor: grabbing;
+}
+
+/* Resize handles: 4 edges + 4 corners (JS drags via pointer events - see
+   ChatAssistantDialog.jsx - since the native CSS `resize` property only
+   ever gives a single bottom-right handle). Corners sit on top of the
+   edges at each intersection via source order + matching z-index. */
+.chat-resize-handle {
+    position: absolute;
+    z-index: 2;
+}
+.chat-resize-handle--n,
+.chat-resize-handle--s {
+    left: 10px;
+    right: 10px;
+    height: 6px;
+    cursor: ns-resize;
+}
+.chat-resize-handle--n {
+    top: 0;
+}
+.chat-resize-handle--s {
+    bottom: 0;
+}
+.chat-resize-handle--e,
+.chat-resize-handle--w {
+    top: 10px;
+    bottom: 10px;
+    width: 6px;
+    cursor: ew-resize;
+}
+.chat-resize-handle--e {
+    right: 0;
+}
+.chat-resize-handle--w {
+    left: 0;
+}
+.chat-resize-handle--ne,
+.chat-resize-handle--nw,
+.chat-resize-handle--se,
+.chat-resize-handle--sw {
+    width: 14px;
+    height: 14px;
+    z-index: 3;
+}
+.chat-resize-handle--ne {
+    top: 0;
+    right: 0;
+    cursor: nesw-resize;
+}
+.chat-resize-handle--nw {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+}
+.chat-resize-handle--se {
+    bottom: 0;
+    right: 0;
+    cursor: nwse-resize;
+}
+.chat-resize-handle--sw {
+    bottom: 0;
+    left: 0;
+    cursor: nesw-resize;
 }
 .chat-dialog-title-wrap {
     display: flex;
@@ -2523,33 +2609,141 @@ body::after {
     padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     touch-action: pan-y;
 }
+
+/* One row = one message (as .chat-bubble-col). Positioned left/right via
+   justify-content, no avatar - that repeatedly caused cross-axis alignment
+   issues (floating away from the bubble) without adding much. Consecutive
+   messages from the same sender are "grouped": tighter spacing between
+   them than between a new sender's turn. */
+.chat-row {
+    display: flex;
+    margin-top: 14px;
+    animation: chatRowIn 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.chat-row:first-child {
+    margin-top: 0;
+}
+.chat-row--grouped {
+    margin-top: 4px;
+}
+.chat-row--user {
+    justify-content: flex-end;
+}
+.chat-row--assistant {
+    justify-content: flex-start;
+}
+@keyframes chatRowIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-row {
+        animation: none;
+    }
+}
+
+/* Centered timestamp between message groups (iMessage-style), shown once
+   per group instead of repeated under every bubble. */
+.chat-time-divider {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+    margin: 18px 0 6px;
+}
+.chat-row:first-child .chat-time-divider,
+.chat-time-divider:first-child {
+    margin-top: 0;
+}
+
+.chat-bubble-col {
+    display: flex;
+    flex-direction: column;
+    max-width: 78%;
+    min-width: 0;
+}
+.chat-row--user .chat-bubble-col {
+    align-items: flex-end;
+}
+.chat-row--assistant .chat-bubble-col {
+    align-items: flex-start;
+}
+
 .chat-bubble {
-    max-width: 92%;
-    padding: 10px 12px;
-    border-radius: var(--r-md);
-    font-size: 13px;
-    line-height: 1.45;
+    position: relative;
+    max-width: 100%;
+    padding: 9px 34px 9px 14px;
+    /* iMessage-style "tail": rounder on three corners, tighter on the one
+       nearest the sender's own edge. */
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
     font-family: var(--f-body);
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
+    transition: box-shadow 0.15s;
+}
+.chat-bubble:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+.chat-row--user .chat-bubble {
+    border-top-right-radius: 5px;
+}
+.chat-row--assistant .chat-bubble {
+    border-top-left-radius: 5px;
 }
 .chat-bubble--user {
-    align-self: flex-end;
+    background: var(--green);
+    color: var(--ink);
+}
+.chat-bubble--assistant {
     background: var(--ink-4);
     border: 1px solid var(--line-mid);
     color: var(--text);
 }
-.chat-bubble--assistant {
-    align-self: flex-start;
-    background: var(--purple-dim);
-    border: 1px solid rgba(155, 127, 255, 0.2);
+.chat-bubble--error {
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 59, 92, 0.3);
     color: var(--text);
+}
+.chat-bubble-copy {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.15);
+    color: inherit;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s;
+}
+.chat-bubble--assistant .chat-bubble-copy {
+    background: rgba(255, 255, 255, 0.08);
+}
+.chat-bubble:hover .chat-bubble-copy,
+.chat-bubble-copy:focus-visible {
+    opacity: 0.85;
+}
+.chat-bubble-copy:hover {
+    opacity: 1 !important;
 }
 .chat-bubble--buffering {
     display: inline-flex;
@@ -2591,20 +2785,35 @@ body::after {
     padding: 12px 14px max(14px, env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line);
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    /* Top-aligned, not stretched/bottom - the textarea grows downward from
+       a fixed top as you type, so this is the one alignment that keeps the
+       button's top edge matching the input's top border regardless of how
+       tall the input gets, without the button itself stretching tall too. */
+    align-items: flex-start;
+    gap: 8px;
     flex-shrink: 0;
 }
 .chat-dialog-input {
+    flex: 1;
+    min-width: 0;
     width: 100%;
     max-width: 100%;
     resize: none;
+    /* Grown by JS to fit content, capped at ~half the dialog's current
+       height (see autoresize effect in ChatAssistantDialog.jsx, which sets
+       max-height inline since that cap depends on the dialog's own size) -
+       overflow-y:auto takes over as a normal internal scroll past that,
+       instead of growing without bound. */
+    min-height: 44px;
+    overflow-y: auto;
     border-radius: var(--r-sm);
     border: 1px solid var(--line-mid);
     background: var(--ink-3);
     color: var(--text);
     font-family: var(--f-body);
     font-size: 13px;
+    line-height: 1.4;
     padding: 10px 12px;
     outline: none;
     transition: border-color 0.15s;
@@ -2620,29 +2829,35 @@ body::after {
     opacity: 0.55;
 }
 .chat-dialog-send {
-    align-self: flex-end;
-    min-height: 44px;
-    height: auto;
-    padding: 10px 20px;
+    flex-shrink: 0;
+    /* Matches .chat-dialog-input's min-height exactly, so the top (and, in
+       the common single-line state, bottom) edges land flush instead of
+       being a few px off. */
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: var(--r-sm);
     border: none;
     cursor: pointer;
-    font-family: var(--f-head);
-    font-weight: 800;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: linear-gradient(135deg, #9b7fff, #7b5ce5);
-    color: #fff;
+    background: var(--acid);
+    color: var(--ink);
     transition:
         opacity 0.15s,
-        box-shadow 0.18s;
+        box-shadow 0.18s,
+        scale 0.1s;
 }
 .chat-dialog-send:hover:not(:disabled) {
-    box-shadow: 0 4px 18px rgba(155, 127, 255, 0.35);
+    box-shadow: 0 0 16px var(--acid-glow);
+}
+.chat-dialog-send:active:not(:disabled) {
+    scale: 0.92;
 }
 .chat-dialog-send:disabled {
-    opacity: 0.4;
+    background: var(--ink-4);
+    color: var(--faint);
+    opacity: 1;
     cursor: not-allowed;
 }
 
@@ -3494,31 +3709,17 @@ body::after {
         display: none;
     }
 
-    .chat-dialog-overlay {
-        align-items: center;
-        justify-content: center;
-        padding: max(10px, calc(env(safe-area-inset-top, 0px) + 8px))
-            max(10px, calc(env(safe-area-inset-right, 0px) + 8px))
-            max(10px, calc(env(safe-area-inset-bottom, 0px) + 8px))
-            max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
-    }
-    .chat-dialog-panel {
-        width: 100%;
-        max-width: none;
-        max-height: calc(
-            100dvh - env(safe-area-inset-top, 0px) -
-                env(safe-area-inset-bottom, 0px) - 20px
-        );
-        height: min(
-            90dvh,
-            calc(
-                100dvh - env(safe-area-inset-top, 0px) -
-                    env(safe-area-inset-bottom, 0px) - 20px
-            )
-        );
-        border-radius: var(--r-lg);
+    /* chat-dialog-overlay/panel sizing & position are fully JS-driven now
+       (computeDefaultRect in ChatAssistantDialog.jsx is itself mobile-aware
+       via isMobileViewport()) - no CSS override needed here. */
+    /* Full-screen-ish on mobile already - dragging/resizing a sheet that
+       size doesn't make sense (JS also skips starting either gesture
+       below this breakpoint). */
+    .chat-resize-handle {
+        display: none;
     }
     .chat-dialog-header {
+        cursor: default;
         padding: 14px 14px;
     }
     .chat-dialog-title {
@@ -3526,12 +3727,18 @@ body::after {
     }
     .chat-dialog-messages {
         padding: 14px 14px;
-        gap: 10px;
+    }
+    .chat-bubble-col {
+        max-width: 85%;
     }
     .chat-bubble {
-        max-width: 100%;
         font-size: 15px;
-        padding: 12px 14px;
+        padding: 12px 38px 12px 14px;
+    }
+    /* No hover on touch devices - keep it discoverable/tappable instead of
+       permanently invisible. */
+    .chat-bubble-copy {
+        opacity: 1;
     }
     .chat-dialog-footer {
         padding: 12px 12px
@@ -3545,10 +3752,8 @@ body::after {
         min-height: 48px;
     }
     .chat-dialog-send {
-        align-self: stretch;
-        width: 100%;
-        min-height: 48px;
-        font-size: 13px;
+        width: 48px;
+        height: 48px;
     }
     .topbar-chat-btn {
         width: 44px;

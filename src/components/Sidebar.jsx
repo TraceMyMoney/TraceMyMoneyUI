@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LogOut } from "lucide-react";
 
 const COLORS = [
   "var(--acid)",
@@ -329,7 +329,8 @@ export default function Sidebar({
             onClick={logoutUser}
             title="Logout"
           >
-            ⏻<span>Logout</span>
+            <LogOut size={15} />
+            <span>Logout</span>
           </button>
         </div>
         <div style={{ marginTop: 10 }} />

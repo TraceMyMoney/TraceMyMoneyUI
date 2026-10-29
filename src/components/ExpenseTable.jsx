@@ -122,7 +122,8 @@ function InlineAddEntries({ expenseId, mini }) {
 
 /* ── Desktop table row ── */
 function DesktopRow({ exp, open, onToggle, onEditEntry }) {
-  const { privacyMode, deleteExpense, deleteExpenseEntry } = useStore();
+  const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm } =
+    useStore();
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
   const [hovEnt, setHovEnt] = useState(null);
@@ -179,9 +180,10 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
         <div className="exp-chev-wrap">
           <button
             className="exp-del-btn"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              if (confirm("Delete?")) deleteExpense(exp.id);
+              if (await requestConfirm("Delete this expense?"))
+                deleteExpense(exp.id);
             }}
           >
             <Trash2 size={16} />
@@ -237,8 +239,8 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
               <button
                 className="entry-del-btn"
                 style={{ opacity: hovEnt === item.ee_id ? 1 : 0 }}
-                onClick={() => {
-                  if (confirm("Delete entry?"))
+                onClick={async () => {
+                  if (await requestConfirm("Delete this entry?"))
                     deleteExpenseEntry(exp.id, item.ee_id);
                 }}
               >
@@ -255,7 +257,8 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
 
 /* ── Mobile card ── */
 function MobileCard({ exp, open, onToggle, onEditEntry }) {
-  const { privacyMode, deleteExpense, deleteExpenseEntry } = useStore();
+  const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm } =
+    useStore();
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
 
@@ -273,22 +276,29 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
           </div>
           <div className="expense-card-amounts">
             {exp.topup_expense_total < 0 && (
-              <span
-                className="expense-card-amt"
-                style={{ color: "var(--green)", fontSize: 15 }}
-              >
-                {privacyMode
-                  ? "••••"
-                  : `+₹${fmtNum(Math.abs(exp.topup_expense_total))}`}
-              </span>
+              <div className="expense-card-amt-group">
+                <span className="expense-card-amt-label">Top-up</span>
+                <span
+                  className="expense-card-amt"
+                  style={{ color: "var(--green)", fontSize: 15 }}
+                >
+                  {privacyMode
+                    ? "••••"
+                    : `+₹${fmtNum(Math.abs(exp.topup_expense_total))}`}
+                </span>
+              </div>
             )}
-            <div className="my__flex">
+            <div className="expense-card-amt-group">
+              <span className="expense-card-amt-label">Spent</span>
               <span
                 className="expense-card-amt"
                 style={{ color: "var(--red)" }}
               >
                 {privacyMode ? "••••" : `₹${fmtNum(exp.expense_total)}`}
               </span>
+            </div>
+            <div className="expense-card-amt-group">
+              <span className="expense-card-amt-label">Remaining</span>
               <span className="expense-card-amt">
                 ₹{privacyMode ? "••••" : fmtNum(exp.remaining_amount_till_now)}
               </span>
@@ -301,8 +311,9 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
         >
           <button
             className="mobile-exp-del-btn"
-            onClick={() => {
-              if (confirm("Delete?")) deleteExpense(exp.id);
+            onClick={async () => {
+              if (await requestConfirm("Delete this expense?"))
+                deleteExpense(exp.id);
             }}
           >
             <Trash2 size={15} />
@@ -345,8 +356,8 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
               {/* Delete — always visible on mobile (no hover state) */}
               <button
                 className="mobile-entry-del-btn"
-                onClick={() => {
-                  if (confirm("Delete entry?"))
+                onClick={async () => {
+                  if (await requestConfirm("Delete this entry?"))
                     deleteExpenseEntry(exp.id, item.ee_id);
                 }}
               >

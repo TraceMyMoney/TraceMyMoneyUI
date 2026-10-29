@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef, Fragment } from "react";
 import axios from "axios";
-import { Send, Copy, Check } from "lucide-react";
+import { Send, Copy, Check, X } from "lucide-react";
 import { useStore } from "../store/useStore.js";
 
 const pushChatAlert = (msg) => useStore.getState().pushAlert(msg);
 
+// Same dynamic dev-mode fallback as useStore.js - see there for rationale.
 const BASE_URL = (
-  import.meta.env.VITE_TM_BACKEND_URL || "https://api.stalk-my-money.in/"
+  import.meta.env.VITE_TM_BACKEND_URL ||
+  (import.meta.env.DEV
+    ? `http://${window.location.hostname}:5000`
+    : "https://api.stalk-my-money.in/")
 ).replace(/\/?$/, "");
 const CHAT_URL = `${BASE_URL}/user/chat`;
 
@@ -125,9 +129,24 @@ function renderMarkdown(text) {
   return elements;
 }
 
-async function postChatQuestion(question) {
-  const r = await axios.post(CHAT_URL, { question });
-  return extractChatReply(r.data);
+/** Both resolve to {answer, pendingConfirmation} - the agent backend may
+ * pause a write action (add/delete expense, create tag) for the user's
+ * explicit approval instead of answering immediately; see
+ * app/services/agent/ on the backend. */
+async function postChatQuestion(threadId, question) {
+  const r = await axios.post(CHAT_URL, { thread_id: threadId, question });
+  return {
+    answer: extractChatReply(r.data),
+    pendingConfirmation: !!r.data?.pending_confirmation,
+  };
+}
+
+async function postChatConfirm(threadId, approve) {
+  const r = await axios.post(CHAT_URL, { thread_id: threadId, confirm: approve });
+  return {
+    answer: extractChatReply(r.data),
+    pendingConfirmation: !!r.data?.pending_confirmation,
+  };
 }
 
 const isMobileViewport = () =>
@@ -143,14 +162,17 @@ const isMobileViewport = () =>
 // A fully explicit rect sidesteps that entirely.
 const computeDefaultRect = () => {
   if (isMobileViewport()) {
-    // Full-screen-ish sheet, not a floating window - dragging/resizing are
-    // also disabled below this breakpoint (see isMobileViewport() checks).
-    const margin = 10;
+    // A modest centered floating window, not an edge-to-edge takeover -
+    // dragging/resizing are disabled below this breakpoint (see
+    // isMobileViewport() checks), but it still shouldn't swallow the
+    // whole screen by default.
+    const width = Math.min(window.innerWidth - 32, 360);
+    const height = Math.min(window.innerHeight * 0.6, 520);
     return {
-      left: margin,
-      top: margin,
-      width: window.innerWidth - margin * 2,
-      height: window.innerHeight * 0.9 - margin,
+      left: (window.innerWidth - width) / 2,
+      top: (window.innerHeight - height) / 2,
+      width,
+      height,
     };
   }
   const width = Math.min(640, window.innerWidth * 0.95);
@@ -177,6 +199,11 @@ export default function ChatAssistantDialog({ open, onClose }) {
   const panelRef = useRef(null);
   const dragStateRef = useRef(null);
   const resizeStateRef = useRef(null);
+  // Identifies this conversation to the backend agent (which keeps its own
+  // per-thread memory, including any action awaiting confirmation) - a
+  // fresh one each time the dialog is opened, so reopening starts a clean
+  // conversation rather than resuming wherever a previous one left off.
+  const threadIdRef = useRef(null);
 
   useEffect(() => {
     if (!sending) {
@@ -202,6 +229,20 @@ export default function ChatAssistantDialog({ open, onClose }) {
     return () => clearTimeout(id);
   }, [open]);
 
+  // On mobile, always (re)apply the full-screen sheet rect on open - rather
+  // than keep whatever `rect` was last computed/left at. Dragging/resizing
+  // are disabled on mobile anyway, so there's no user customization to
+  // preserve there, and without this, a `rect` computed once at mount
+  // against a desktop-sized viewport (or left over from a desktop session)
+  // would keep being used after switching to a narrow viewport - rendering
+  // the dialog off-screen/mis-sized, which looked like it "wasn't opening"
+  // rather than just being positioned for the wrong viewport. Desktop rects
+  // are left untouched here, so dragged/resized position still persists
+  // across close/reopen there.
+  useEffect(() => {
+    if (open && isMobileViewport()) setRect(computeDefaultRect());
+  }, [open]);
+
   // Auto-grow the textarea to fit its content, capped at roughly half the
   // *current* dialog height (not a small fixed px value - that just meant
   // hitting the cap sooner and going back to hiding earlier lines behind
@@ -220,6 +261,11 @@ export default function ChatAssistantDialog({ open, onClose }) {
 
   useEffect(() => {
     if (!open) return;
+
+    threadIdRef.current =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `t${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const name = useStore.getState().userName;
     const displayName = (name && String(name).trim()) || "there";
@@ -268,10 +314,29 @@ export default function ChatAssistantDialog({ open, onClose }) {
       ),
       window.innerHeight - DRAG_MARGIN,
     );
-    setRect((r) => ({ ...r, left, top }));
+    // Mutate the DOM directly instead of setRect() here - calling setRect
+    // on every single pointermove re-renders the whole dialog (every chat
+    // bubble, every markdown re-parse) dozens of times a second, which is
+    // what actually made dragging feel slow. The panel's position is only
+    // committed back to React state once, in endDrag below.
+    drag.lastLeft = left;
+    drag.lastTop = top;
+    const panel = panelRef.current;
+    if (panel) {
+      panel.style.left = `${left}px`;
+      panel.style.top = `${top}px`;
+    }
   };
 
   const endDrag = () => {
+    const drag = dragStateRef.current;
+    if (drag && (drag.lastLeft !== undefined || drag.lastTop !== undefined)) {
+      setRect((r) => ({
+        ...r,
+        left: drag.lastLeft ?? r.left,
+        top: drag.lastTop ?? r.top,
+      }));
+    }
     dragStateRef.current = null;
     document.body.style.cursor = "";
     setIsDragging(false);
@@ -284,7 +349,6 @@ export default function ChatAssistantDialog({ open, onClose }) {
   useEffect(() => endDrag, []);
 
   const startDrag = (e) => {
-    if (isMobileViewport()) return; // full-screen on mobile - dragging doesn't apply
     if (e.target.closest(".dialog-close")) return;
     dragStateRef.current = {
       startX: e.clientX,
@@ -350,10 +414,23 @@ export default function ChatAssistantDialog({ open, onClose }) {
       top = st.base.top + (st.base.height - height);
     }
 
-    setRect({ left, top, width, height });
+    // Same reasoning as onDragMove above: mutate the DOM directly during
+    // the gesture, commit to React state once at the end, so resizing
+    // doesn't re-render (and re-parse every message's markdown) on every
+    // pointermove.
+    st.last = { left, top, width, height };
+    const panel = panelRef.current;
+    if (panel) {
+      panel.style.left = `${left}px`;
+      panel.style.top = `${top}px`;
+      panel.style.width = `${width}px`;
+      panel.style.height = `${height}px`;
+    }
   };
 
   const endResize = () => {
+    const st = resizeStateRef.current;
+    if (st?.last) setRect(st.last);
     resizeStateRef.current = null;
     document.body.style.cursor = "";
     setIsResizing(false);
@@ -389,9 +466,41 @@ export default function ChatAssistantDialog({ open, onClose }) {
     }
   };
 
+  // Block sending a new free-text message while a proposed action is
+  // awaiting Confirm/Cancel - the backend's conversation is paused there
+  // and wouldn't know what to do with an unrelated new question.
+  const hasPendingConfirmation = messages.some((m) => m.pendingConfirmation);
+
+  const addAssistantMessage = (answer, pendingConfirmation) => {
+    setMessages((m) => [
+      ...m,
+      {
+        id: nextMessageId(),
+        role: "assistant",
+        text: answer,
+        ts: Date.now(),
+        isError: !pendingConfirmation && isErrorReply(answer),
+        pendingConfirmation,
+      },
+    ]);
+  };
+
+  const reportChatError = (err) => {
+    const msg =
+      err?.response?.data?.detail ||
+      err?.response?.data?.message ||
+      err?.message ||
+      "Chat request failed";
+    pushChatAlert(typeof msg === "string" ? msg : JSON.stringify(msg));
+    addAssistantMessage(
+      "Sorry, something went wrong. Try again in a moment.",
+      false,
+    );
+  };
+
   const sendUserMessage = async () => {
     const q = input.trim();
-    if (!q || sending) return;
+    if (!q || sending || hasPendingConfirmation) return;
     setInput("");
     setMessages((m) => [
       ...m,
@@ -399,34 +508,39 @@ export default function ChatAssistantDialog({ open, onClose }) {
     ]);
     setSending(true);
     try {
-      const reply = await postChatQuestion(q);
-      setMessages((m) => [
-        ...m,
-        {
-          id: nextMessageId(),
-          role: "assistant",
-          text: reply,
-          ts: Date.now(),
-          isError: isErrorReply(reply),
-        },
-      ]);
+      const { answer, pendingConfirmation } = await postChatQuestion(
+        threadIdRef.current,
+        q,
+      );
+      addAssistantMessage(answer, pendingConfirmation);
     } catch (err) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Chat request failed";
-      pushChatAlert(typeof msg === "string" ? msg : JSON.stringify(msg));
-      setMessages((m) => [
-        ...m,
-        {
-          id: nextMessageId(),
-          role: "assistant",
-          text: "Sorry, something went wrong. Try again in a moment.",
-          ts: Date.now(),
-          isError: true,
-        },
-      ]);
+      reportChatError(err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  /** approve=true/false in response to a message with pendingConfirmation. */
+  const respondToConfirmation = async (messageId, approve) => {
+    // Lock in the user's choice on that specific bubble immediately (so the
+    // Confirm/Cancel buttons disappear right away, even before the network
+    // call resolves) rather than leaving them clickable while sending.
+    setMessages((m) =>
+      m.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, pendingConfirmation: false, decidedApprove: approve }
+          : msg,
+      ),
+    );
+    setSending(true);
+    try {
+      const { answer, pendingConfirmation } = await postChatConfirm(
+        threadIdRef.current,
+        approve,
+      );
+      addAssistantMessage(answer, pendingConfirmation);
+    } catch (err) {
+      reportChatError(err);
     } finally {
       setSending(false);
     }
@@ -498,11 +612,34 @@ export default function ChatAssistantDialog({ open, onClose }) {
                 >
                   <div className="chat-bubble-col">
                     <div
-                      className={`chat-bubble chat-bubble--${m.role}${m.isError ? " chat-bubble--error" : ""}`}
+                      className={`chat-bubble chat-bubble--${m.role}${m.isError ? " chat-bubble--error" : ""}${m.pendingConfirmation ? " chat-bubble--pending" : ""}`}
                     >
                       <div className="chat-bubble-text">
                         {m.role === "assistant" ? renderMarkdown(m.text) : m.text}
                       </div>
+                      {m.pendingConfirmation && (
+                        <div className="chat-confirm-row">
+                          <button
+                            type="button"
+                            className="chat-confirm-btn chat-confirm-btn--approve"
+                            onClick={() => respondToConfirmation(m.id, true)}
+                          >
+                            <Check size={13} /> Confirm
+                          </button>
+                          <button
+                            type="button"
+                            className="chat-confirm-btn chat-confirm-btn--reject"
+                            onClick={() => respondToConfirmation(m.id, false)}
+                          >
+                            <X size={13} /> Cancel
+                          </button>
+                        </div>
+                      )}
+                      {m.decidedApprove !== undefined && (
+                        <div className="chat-confirm-decided">
+                          {m.decidedApprove ? "✓ You confirmed" : "✗ You cancelled"}
+                        </div>
+                      )}
                       <button
                         type="button"
                         className="chat-bubble-copy"
@@ -539,7 +676,6 @@ export default function ChatAssistantDialog({ open, onClose }) {
             ref={inputRef}
             className="chat-dialog-input"
             rows={1}
-            placeholder="Type a message…"
             enterKeyHint="send"
             autoComplete="off"
             autoCorrect="on"
@@ -551,13 +687,18 @@ export default function ChatAssistantDialog({ open, onClose }) {
                 sendUserMessage();
               }
             }}
-            disabled={sending}
+            placeholder={
+              hasPendingConfirmation
+                ? "Confirm or cancel the action above…"
+                : "Type a message…"
+            }
+            disabled={sending || hasPendingConfirmation}
           />
           <button
             type="button"
             className="chat-dialog-send"
             onClick={sendUserMessage}
-            disabled={sending || !input.trim()}
+            disabled={sending || hasPendingConfirmation || !input.trim()}
             aria-label="Send message"
           >
             <Send size={17} strokeWidth={2.25} />

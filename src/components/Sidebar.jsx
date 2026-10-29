@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import { Eye, EyeOff, LogOut } from "lucide-react";
+import { Eye, EyeOff, LogOut, Sun, Moon } from "lucide-react";
 
 const COLORS = [
   "var(--acid)",
@@ -29,6 +29,7 @@ export default function Sidebar({
     updateUserPreferences,
     logoutUser,
     reorderBanks,
+    requestConfirm,
   } = useStore();
 
   const [activeIdx, setActiveIdx] = useState(0);
@@ -55,9 +56,9 @@ export default function Sidebar({
     onClose?.();
   };
 
-  const delBank = (e, id) => {
+  const delBank = async (e, id) => {
     e.stopPropagation();
-    if (confirm("Delete this account?")) deleteBank(id);
+    if (await requestConfirm("Delete this account?")) deleteBank(id);
   };
 
   /** Return the card index whose bounding rect contains the point (cx, cy). */
@@ -311,7 +312,7 @@ export default function Sidebar({
             onClick={() => updateUserPreferences({ is_dark_mode: !isDarkMode })}
             title={isDarkMode ? "Light mode" : "Dark mode"}
           >
-            {isDarkMode ? "☀" : "◑"}
+            {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
             <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
           </button>
           <button

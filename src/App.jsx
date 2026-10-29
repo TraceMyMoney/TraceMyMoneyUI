@@ -5,6 +5,7 @@ import Login from './components/Login.jsx'
 import Register from './components/Register.jsx'
 import Loader from './components/Loader.jsx'
 import AlertToast from './components/AlertToast.jsx'
+import ConfirmDialog from './components/ConfirmDialog.jsx'
 
 export default function App() {
   const { isLoggedIn, showLoginPage, isDarkMode, getInitialData } = useStore()
@@ -22,6 +23,7 @@ export default function App() {
     <>
       <Loader />
       <AlertToast />
+      <ConfirmDialog />
       {isLoggedIn
         ? <Dashboard />
         : showLoginPage ? <Login /> : <Register />

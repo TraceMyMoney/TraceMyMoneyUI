@@ -110,7 +110,7 @@ export default function Dashboard() {
           </div>
 
           {/* Search Panel */}
-          <SearchPanel open={searchOpen} />
+          <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} />
 
           {/* Expense Table */}
           <ExpenseTable onEditEntry={handleEditEntry} />

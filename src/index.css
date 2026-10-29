@@ -384,7 +384,7 @@ body::after {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 16px;
 }
 .sidebar-section-label::after {
     content: "";
@@ -396,11 +396,13 @@ body::after {
 .account-card {
     display: flex;
     align-items: center;
-    padding: 11px 12px;
-    border-radius: var(--r-sm);
-    margin-bottom: 5px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    margin-bottom: 6px;
     cursor: pointer;
-    border: 1px solid transparent;
+    /* Faint outline even at rest - unselected cards were invisible as
+       cards, just text floating on the sidebar background. */
+    border: 1px solid var(--line);
     background: transparent;
     position: relative;
     overflow: hidden;
@@ -413,6 +415,7 @@ body::after {
 .account-card.active {
     background: var(--ink-3);
     border-color: var(--line-mid);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 .account-card--drag-over {
     border-color: var(--acid);
@@ -449,19 +452,19 @@ body::after {
 
 .account-card-indicator {
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    left: 6px;
+    top: 10px;
+    bottom: 10px;
     width: 3px;
     background: var(--acid);
     box-shadow: 0 0 8px var(--acid-glow);
-    border-radius: 0 2px 2px 0;
+    border-radius: 2px;
 }
 
 .account-initial {
-    width: 34px;
-    height: 34px;
-    border-radius: var(--r-sm);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -469,16 +472,17 @@ body::after {
     font-weight: 800;
     font-size: 16px;
     flex-shrink: 0;
-    margin-right: 10px;
+    margin-right: 12px;
     background: var(--ink-4);
     border: 1px solid var(--line);
     color: var(--muted);
     transition: all 0.18s;
 }
 .account-card.active .account-initial {
-    background: rgba(184, 255, 0, 0.1);
-    border-color: rgba(184, 255, 0, 0.25);
+    background: rgba(184, 255, 0, 0.12);
+    border-color: var(--acid-mid);
     color: var(--acid);
+    box-shadow: 0 0 0 3px var(--acid-dim), 0 0 16px var(--acid-glow);
 }
 
 .account-info {
@@ -611,7 +615,7 @@ body::after {
     align-items: center;
     gap: 10px;
     width: 100%;
-    padding: 10px 8px;
+    padding: 8px;
     border-radius: var(--r-sm);
     border: none;
     background: transparent;
@@ -629,11 +633,33 @@ body::after {
     background: var(--ink-3);
     color: var(--text);
 }
+/* Icon gets its own small rounded chip, matching the account avatars'
+   treatment, instead of sitting bare next to the label. */
+.sidebar-ctrl-btn > svg {
+    flex-shrink: 0;
+    /* Box is 22px, but padding keeps the drawn icon itself around 12-13px -
+       width/height here would otherwise override the size={} prop passed
+       in JSX and stretch the glyph to fill the whole box. */
+    width: 22px;
+    height: 22px;
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
+    background: var(--ink-4);
+    border: 1px solid var(--line);
+}
 .sidebar-ctrl-btn--danger {
     color: var(--red);
 }
 .sidebar-ctrl-btn--danger:hover {
     background: var(--red-dim);
+}
+.sidebar-ctrl-btn--danger > svg {
+    border-color: rgba(255, 59, 92, 0.25);
+    color: var(--red);
 }
 
 .sidebar-footer {
@@ -786,31 +812,24 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════════════════
-   SEARCH PANEL
+   SEARCH / FILTER DIALOG
+   (was an inline panel that expanded and pushed the expense list down -
+   now a proper modal, built on the shared .dialog-overlay/.dialog-panel
+   pattern used by the other dialogs in the app.)
 ═══════════════════════════════════════════════════════ */
-.search-panel {
-    background: var(--ink-2);
-    border-bottom: 1px solid var(--line);
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.search-panel.open {
-    max-height: 480px;
-}
-
-.search-panel-inner {
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+.search-dialog-panel {
+    max-width: 480px;
 }
 
 .search-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    /* Single column - a 4-up grid never fit well once this became a
+       ~480px-wide dialog instead of the full-width inline panel it used
+       to be. */
+    grid-template-columns: 1fr;
     gap: 14px;
     align-items: start;
+    margin-bottom: 18px;
 }
 
 .search-field-group {
@@ -1467,14 +1486,21 @@ body::after {
 .expense-card {
     display: none; /* shown only on mobile via media query */
     padding: 16px;
-    border-bottom: 1px solid var(--line);
+    margin: 0 12px 10px;
+    border-radius: var(--r-md);
+    background: var(--ink-2);
+    border: 1px solid var(--line);
     cursor: pointer;
-    transition: background 0.12s;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.18s;
     animation: fadeUp 0.3s ease both;
 }
-.expense-card:hover,
+.expense-card:active {
+    background: var(--ink-3);
+}
 .expense-card.open {
-    background: var(--ink-2);
+    background: var(--ink-3);
+    border-color: var(--line-mid);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .expense-card-top {
@@ -1487,15 +1513,15 @@ body::after {
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
-    padding: 8px 10px;
+    padding: 9px 10px;
     border-radius: var(--r-sm);
-    background: var(--ink-3);
-    border: 1px solid var(--line);
+    background: linear-gradient(160deg, var(--acid-dim), transparent);
+    border: 1px solid var(--acid-mid);
     min-width: 52px;
 }
 .expense-card-day {
     font-family: var(--f-head);
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 900;
     line-height: 1;
     color: var(--acid);
@@ -1507,7 +1533,7 @@ body::after {
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 .expense-card-body {
@@ -1521,22 +1547,35 @@ body::after {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     font-family: var(--f-head);
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 .expense-card-amounts {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    gap: 18px;
+    align-items: flex-end;
     flex-wrap: wrap;
-    margin-bottom: 6px;
+}
+.expense-card-amt-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.expense-card-amt-label {
+    font-family: var(--f-head);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
 }
 .expense-card-amt {
     font-family: var(--f-mono);
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
+    line-height: 1;
 }
 .expense-card-remaining {
     font-family: var(--f-mono);
@@ -1565,21 +1604,27 @@ body::after {
     color: var(--acid);
 }
 
-/* Mobile entries panel */
+/* Mobile entries panel — inset "well" look, distinct from the card itself */
 .mobile-entries-panel {
-    border-top: 1px solid var(--line);
+    margin: 14px -4px -4px -4px;
+    padding: 4px;
+    background: var(--ink);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
     animation: slideDown 0.2s ease;
-    margin: 12px -16px -16px -16px;
 }
 .mobile-entry-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding: 10px 10px;
+    border-radius: 6px;
     transition: background 0.12s;
 }
-.mobile-entry-item:hover {
+.mobile-entry-item:not(:last-child) {
+    margin-bottom: 2px;
+}
+.mobile-entry-item:active {
     background: var(--ink-3);
 }
 
@@ -1600,7 +1645,7 @@ body::after {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.mobile-entry-desc-wrap:hover .mobile-entry-desc {
+.mobile-entry-desc-wrap:active .mobile-entry-desc {
     color: var(--acid);
 }
 
@@ -1613,12 +1658,15 @@ body::after {
     min-width: 60px;
 }
 
-/* Delete button on mobile entries — always visible (no hover state on touch) */
+/* Delete button on mobile entries — lower-weight by default (muted/small),
+   touch devices have no hover so this just needs to read as "secondary"
+   at rest instead of visually competing with the amount/description. */
 .mobile-entry-del-btn {
     background: transparent;
     border: none;
     cursor: pointer;
     color: var(--faint);
+    opacity: 0.55;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1629,18 +1677,19 @@ body::after {
     width: 32px;
     height: 32px;
 }
-.mobile-entry-del-btn:hover,
 .mobile-entry-del-btn:active {
+    opacity: 1;
     color: var(--red);
     background: var(--red-dim);
 }
 
-/* Delete button on mobile expense cards — always visible */
+/* Delete button on mobile expense cards — same lower-weight-at-rest treatment */
 .mobile-exp-del-btn {
     background: transparent;
     border: none;
     cursor: pointer;
     color: var(--faint);
+    opacity: 0.55;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1652,13 +1701,23 @@ body::after {
 }
 .mobile-exp-del-btn:hover,
 .mobile-exp-del-btn:active {
+    opacity: 1;
     color: var(--red);
     background: var(--red-dim);
 }
 
 .mobile-inline-add {
-    padding: 12px 16px;
-    border-top: 1px solid var(--line);
+    padding: 10px 4px 2px;
+}
+.mobile-inline-add .inline-add-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 11px;
+    /* No hover on touch - give it a visible baseline instead of relying on
+       :hover to ever read as more than a faint dashed outline. */
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2299,6 +2358,10 @@ body::after {
     background: var(--purple-dim);
     border: 1px solid rgba(155, 127, 255, 0.2);
 }
+.dialog-icon.danger {
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 59, 92, 0.3);
+}
 
 .dialog-title {
     font-family: var(--f-head);
@@ -2430,6 +2493,24 @@ body::after {
 .d-btn-create:disabled {
     opacity: 0.35;
     cursor: not-allowed;
+}
+.d-btn-danger {
+    flex: 2;
+    height: 44px;
+    border-radius: var(--r-sm);
+    background: var(--red);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--f-head);
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.18s;
+}
+.d-btn-danger:hover {
+    box-shadow: 0 0 18px rgba(255, 59, 92, 0.45);
 }
 .d-btn-purple {
     flex: 2;
@@ -2717,6 +2798,58 @@ body::after {
     background: var(--red-dim);
     border: 1px solid rgba(255, 59, 92, 0.3);
     color: var(--text);
+}
+/* A proposed write action (add/delete expense, create tag) awaiting the
+   user's explicit approval - see app/services/agent/ on the backend. */
+.chat-bubble--pending {
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--text);
+}
+.chat-confirm-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.chat-confirm-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: var(--r-sm);
+    border: none;
+    cursor: pointer;
+    font-family: var(--f-head);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+}
+.chat-confirm-btn--approve {
+    background: var(--acid);
+    color: var(--ink);
+}
+.chat-confirm-btn--approve:hover {
+    box-shadow: 0 0 14px var(--acid-glow);
+}
+.chat-confirm-btn--reject {
+    background: transparent;
+    border: 1px solid var(--line-mid);
+    color: var(--muted);
+}
+.chat-confirm-btn--reject:hover {
+    color: var(--text);
+    border-color: var(--line-str);
+}
+.chat-confirm-decided {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--faint);
+    letter-spacing: 0.04em;
 }
 .chat-bubble-copy {
     position: absolute;
@@ -3563,17 +3696,23 @@ body::after {
 
 /* ── Tablet landscape (≤ 1100px) ── */
 @media (max-width: 1100px) {
+    /* Only .exp-preview-col is hidden at this breakpoint - top-up, spent,
+       and remaining (two separate .exp-remaining-col cells plus the plain
+       spent cell) are all still visible, so the grid needs a track for
+       each of those 3, not 2. The previous 5-track template (68px 1fr 90px
+       90px 44px) was one short, so spent and remaining's values were
+       cramming into the same track and running together. */
     .table-head,
     .expense-row,
     .expense-totals-row {
-        grid-template-columns: 68px 1fr 90px 90px 44px;
+        grid-template-columns: 68px 1fr 90px 90px 90px 44px;
     }
     /* Hide preview column on tablet */
     .exp-preview-col {
         display: none;
     }
     .entry-row {
-        grid-template-columns: 68px 1fr 90px 90px 44px;
+        grid-template-columns: 68px 1fr 90px 90px 90px 44px;
         padding: 0 20px;
     }
 }
@@ -3638,37 +3777,61 @@ body::after {
         padding: 7px 12px;
     }
 
-    /* Table columns - simplified */
-    .table-head,
-    .expense-row,
-    .expense-totals-row {
-        grid-template-columns: 64px 1fr 90px 90px 40px;
-    }
-    .entry-row {
-        grid-template-columns: 64px 1fr 90px 90px 40px;
-    }
-    .exp-preview-col {
+    /* Switch to the card-based mobile list for the whole narrow range, not
+       just ≤600px - the cramped grid-based desktop row (even with stacked
+       Top-up/Remaining sub-values) never read as well as the dedicated
+       mobile cards once the window got this narrow. */
+    .table-area .table-head {
         display: none;
     }
-    /* Hide remaining col on tablet portrait */
-    .exp-remaining-col {
+    .expense-totals-row {
         display: none;
     }
-    .table-head,
-    .expense-row,
-    .expense-totals-row {
-        grid-template-columns: 64px 1fr 100px 40px;
+    .expense-totals-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        margin: 4px 12px 12px;
+        border-top: 1px solid var(--line);
+        background: transparent;
     }
-    .entry-row {
-        grid-template-columns: 64px 1fr 100px 40px;
+    .expense-totals-mobile__label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--faint);
+        font-family: var(--f-head);
     }
-
-    /* Search panel grid */
-    .search-grid {
-        grid-template-columns: 1fr 1fr;
+    .expense-totals-mobile__vals {
+        display: flex;
+        align-items: center;
+        gap: 14px;
     }
-    .search-panel.open {
-        max-height: 560px;
+    .expense-totals-mobile__topup {
+        font-size: 14px;
+        font-family: var(--f-mono);
+        font-weight: 700;
+        color: var(--green);
+    }
+    .expense-totals-mobile__spent {
+        font-size: 14px;
+        font-family: var(--f-mono);
+        font-weight: 700;
+        color: var(--red);
+    }
+    .expense-row {
+        display: none;
+    }
+    .expense-card {
+        display: block;
+    }
+    .table-area {
+        padding-top: 12px;
+    }
+    .entries-panel {
+        display: none;
     }
 
     /* Summary - 2x2 grid */
@@ -3711,15 +3874,16 @@ body::after {
 
     /* chat-dialog-overlay/panel sizing & position are fully JS-driven now
        (computeDefaultRect in ChatAssistantDialog.jsx is itself mobile-aware
-       via isMobileViewport()) - no CSS override needed here. */
-    /* Full-screen-ish on mobile already - dragging/resizing a sheet that
-       size doesn't make sense (JS also skips starting either gesture
-       below this breakpoint). */
+       via isMobileViewport(), sizing it as a modest centered floating
+       window rather than full-screen) - no CSS override needed here.
+       Dragging/resizing stay disabled below this breakpoint regardless
+       (JS also skips starting either gesture here). */
     .chat-resize-handle {
         display: none;
     }
     .chat-dialog-header {
-        cursor: default;
+        /* Draggable here too (base .chat-dialog-header already sets
+           cursor: grab) - only resizing stays mobile-disabled. */
         padding: 14px 14px;
     }
     .chat-dialog-title {
@@ -3774,59 +3938,8 @@ body::after {
         display: flex;
     }
 
-    /* Hide desktop table, show mobile cards */
-    .table-area .table-head {
-        display: none;
-    }
-    /* Hide desktop totals row, show mobile totals card */
-    .expense-totals-row {
-        display: none;
-    }
-    .expense-totals-mobile {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 16px;
-        border-top: 1px solid var(--line-mid);
-        background: var(--ink-2);
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-    }
-    .expense-totals-mobile__label {
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--faint);
-        font-family: var(--f-head);
-    }
-    .expense-totals-mobile__vals {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-    }
-    .expense-totals-mobile__topup {
-        font-size: 14px;
-        font-family: var(--f-mono);
-        font-weight: 700;
-        color: var(--green);
-    }
-    .expense-totals-mobile__spent {
-        font-size: 14px;
-        font-family: var(--f-mono);
-        font-weight: 700;
-        color: var(--red);
-    }
-    .expense-row {
-        display: none;
-    }
-    .expense-card {
-        display: block;
-    }
-    .entries-panel {
-        display: none;
-    }
+    /* Card-based mobile list already switched on at ≤860px above - nothing
+       further to toggle here. */
 
     /* Command bar compact */
     .command-bar {
@@ -3940,13 +4053,6 @@ body::after {
         border-radius: var(--r-md);
     }
 
-    /* Search panel 1 col */
-    .search-grid {
-        grid-template-columns: 1fr;
-    }
-    .search-panel.open {
-        max-height: 700px;
-    }
 }
 
 /* ── Small mobile (≤ 380px) ── */

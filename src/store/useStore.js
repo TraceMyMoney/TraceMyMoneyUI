@@ -1,8 +1,15 @@
 import { create } from "zustand";
 import axios from "axios";
 
+// In dev, default to whatever host the page itself was loaded from (works
+// for localhost, a LAN IP, etc. - including from a phone on the same
+// network) instead of a hardcoded address that only resolves on one
+// machine. An explicit VITE_TM_BACKEND_URL always wins if set.
 const BASE_URL =
-  import.meta.env.VITE_TM_BACKEND_URL || "https://api.stalk-my-money.in/";
+  import.meta.env.VITE_TM_BACKEND_URL ||
+  (import.meta.env.DEV
+    ? `http://${window.location.hostname}:5000`
+    : "https://api.stalk-my-money.in/");
 const ALL = "all";
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -201,6 +208,9 @@ export const useStore = create((set, get) => ({
   showLoader: false,
   showAlert: false,
   alertMessages: [],
+  // { message, confirmLabel, resolve } | null - drives the shared
+  // ConfirmDialog, replacing native window.confirm() everywhere.
+  confirmState: null,
 
   banksList: [],
   bankItems: [],
@@ -258,6 +268,23 @@ export const useStore = create((set, get) => ({
 
   pushAlert(msg) {
     set((s) => ({ showAlert: true, alertMessages: [...s.alertMessages, msg] }));
+  },
+
+  /** Custom replacement for window.confirm() - await it, resolves to
+   * true/false once the user picks a button on the ConfirmDialog. If
+   * another confirmation is already pending, that one is auto-cancelled
+   * (resolved false) first, since only one can be shown at a time. */
+  requestConfirm(message, confirmLabel = "Delete") {
+    const prev = get().confirmState;
+    if (prev) prev.resolve(false);
+    return new Promise((resolve) => {
+      set({ confirmState: { message, confirmLabel, resolve } });
+    });
+  },
+  resolveConfirm(result) {
+    const cs = get().confirmState;
+    set({ confirmState: null });
+    cs?.resolve(result);
   },
 
   // ── helpers ───────────────────────────────────────────────

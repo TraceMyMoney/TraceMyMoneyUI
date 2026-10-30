@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import DatePicker from "react-datepicker";
+import { Sparkles } from "lucide-react";
 import { useStore, filterValidExpenses } from "../store/useStore.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
+
+// Same dynamic dev-mode fallback as useStore.js/ChatAssistantDialog.jsx.
+const BASE_URL = (
+  import.meta.env.VITE_TM_BACKEND_URL ||
+  (import.meta.env.DEV
+    ? `http://${window.location.hostname}:5000`
+    : "https://api.stalk-my-money.in/")
+).replace(/\/?$/, "");
+
+const SUGGEST_DEBOUNCE_MS = 600;
 
 export default function AddExpenseDrawer({ open, onClose }) {
   const {
@@ -15,21 +27,63 @@ export default function AddExpenseDrawer({ open, onClose }) {
   const [entries, setEntries] = useState([
     { amount: "", description: "", tags: [], type: "debit" },
   ]);
+  // Tag suggested by Jev (TypeSafe AI) for each entry's description, keyed
+  // by entry index - {tag_name, confidence} | undefined. Purely advisory;
+  // the suggest endpoint returns an empty body whenever Jev isn't
+  // configured, so this silently does nothing in that case.
+  const [suggestions, setSuggestions] = useState({});
+  const suggestTimers = useRef({});
 
   // Reset entries + date when drawer opens
   useEffect(() => {
     if (open) {
       setDate(new Date());
       setEntries([{ amount: "", description: "", tags: [], type: "debit" }]);
+      setSuggestions({});
     }
   }, [open]);
+
+  // Clear any pending debounce timers on unmount
+  useEffect(() => {
+    const timers = suggestTimers.current;
+    return () => Object.values(timers).forEach(clearTimeout);
+  }, []);
+
+  const fetchTagSuggestion = (index, description) => {
+    clearTimeout(suggestTimers.current[index]);
+    if (!description.trim() || entryTags.length === 0) {
+      setSuggestions((s) => ({ ...s, [index]: undefined }));
+      return;
+    }
+    suggestTimers.current[index] = setTimeout(async () => {
+      try {
+        const r = await axios.post(`${BASE_URL}/entry-tags/suggest`, {
+          description,
+        });
+        if (r.data?.tag_name) {
+          setSuggestions((s) => ({ ...s, [index]: r.data }));
+        } else {
+          setSuggestions((s) => ({ ...s, [index]: undefined }));
+        }
+      } catch {
+        // Advisory only - a failed suggestion is silently ignored.
+      }
+    }, SUGGEST_DEBOUNCE_MS);
+  };
 
   const addEntry = () =>
     setEntries((e) => [
       ...e,
       { amount: "", description: "", tags: [], type: "debit" },
     ]);
-  const removeEntry = (i) => setEntries((e) => e.filter((_, j) => j !== i));
+  const removeEntry = (i) => {
+    setEntries((e) => e.filter((_, j) => j !== i));
+    setSuggestions((s) => {
+      const next = { ...s };
+      delete next[i];
+      return next;
+    });
+  };
   const updateEntry = (i, k, v) =>
     setEntries((e) =>
       e.map((en, j) => {
@@ -42,6 +96,20 @@ export default function AddExpenseDrawer({ open, onClose }) {
         return updated;
       }),
     );
+
+  const applySuggestedTag = (index) => {
+    const suggestion = suggestions[index];
+    const tag = entryTags.find((t) => t.title === suggestion?.tag_name);
+    if (!tag) return;
+    setEntries((e) =>
+      e.map((en, j) =>
+        j === index && !en.tags.includes(tag.value)
+          ? { ...en, tags: [...en.tags, tag.value] }
+          : en,
+      ),
+    );
+    setSuggestions((s) => ({ ...s, [index]: undefined }));
+  };
 
   const submit = async () => {
     if (!currentSelectedBankId) return;
@@ -143,9 +211,11 @@ export default function AddExpenseDrawer({ open, onClose }) {
                       className="d-entry-input desc"
                       placeholder="Description"
                       value={en.description}
-                      onChange={(e) =>
-                        updateEntry(i, "description", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        updateEntry(i, "description", v);
+                        fetchTagSuggestion(i, v);
+                      }}
                     />
                     <button
                       className="d-entry-del"
@@ -154,6 +224,21 @@ export default function AddExpenseDrawer({ open, onClose }) {
                       ×
                     </button>
                   </div>
+                  {suggestions[i] &&
+                    !en.tags.includes(
+                      entryTags.find((t) => t.title === suggestions[i].tag_name)
+                        ?.value,
+                    ) && (
+                      <button
+                        type="button"
+                        className="d-tag-suggestion-chip"
+                        onClick={() => applySuggestedTag(i)}
+                        title="Suggested by Jev (TypeSafe AI)"
+                      >
+                        <Sparkles size={12} />
+                        Tag as "{suggestions[i].tag_name}"?
+                      </button>
+                    )}
                   {entryTags.length > 0 && (
                     <div className="d-entry-tags-field">
                       <label className="d-label d-label-inline">Tags</label>

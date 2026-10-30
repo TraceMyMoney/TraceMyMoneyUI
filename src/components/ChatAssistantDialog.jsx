@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef, Fragment } from "react";
 import axios from "axios";
-import { Send, Copy, Check, X } from "lucide-react";
+import { Send, Copy, Check, X, AlertTriangle, Mic } from "lucide-react";
 import { useStore } from "../store/useStore.js";
+
+// Web Speech API - only Chrome/Edge/Safari ship this, and only under the
+// vendor-prefixed name, so neither exists in Firefox at all. Resolved once
+// at module load; the mic button below hides itself entirely when both are
+// undefined rather than rendering something that can never work.
+const SpeechRecognitionCtor =
+  (typeof window !== "undefined" &&
+    (window.SpeechRecognition || window.webkitSpeechRecognition)) ||
+  null;
 
 const pushChatAlert = (msg) => useStore.getState().pushAlert(msg);
 
@@ -129,15 +138,18 @@ function renderMarkdown(text) {
   return elements;
 }
 
-/** Both resolve to {answer, pendingConfirmation} - the agent backend may
- * pause a write action (add/delete expense, create tag) for the user's
- * explicit approval instead of answering immediately; see
- * app/services/agent/ on the backend. */
+/** Both resolve to {answer, pendingConfirmation, risk} - the agent backend
+ * may pause a write action (add/delete expense, create tag) for the
+ * user's explicit approval instead of answering immediately; see
+ * app/services/agent/ on the backend. `risk` is Jev's (TypeSafe AI)
+ * advisory read on how unusual/risky a pending proposal looks - null
+ * whenever that's unconfigured or unsure, never required. */
 async function postChatQuestion(threadId, question) {
   const r = await axios.post(CHAT_URL, { thread_id: threadId, question });
   return {
     answer: extractChatReply(r.data),
     pendingConfirmation: !!r.data?.pending_confirmation,
+    risk: r.data?.risk ?? null,
   };
 }
 
@@ -146,6 +158,7 @@ async function postChatConfirm(threadId, approve) {
   return {
     answer: extractChatReply(r.data),
     pendingConfirmation: !!r.data?.pending_confirmation,
+    risk: r.data?.risk ?? null,
   };
 }
 
@@ -190,15 +203,28 @@ export default function ChatAssistantDialog({ open, onClose }) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [bufferingVisible, setBufferingVisible] = useState(false);
+  // True while a confirmed action's DB write has replied but the
+  // dashboard (banks/expenses/tags) is still being re-pulled in the
+  // background - shows a small "Updating dashboard…" indicator so it's
+  // clear the UI hasn't caught up yet, without blocking the chat input.
+  const [syncingDashboard, setSyncingDashboard] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [rect, setRect] = useState(computeDefaultRect);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const panelRef = useRef(null);
   const dragStateRef = useRef(null);
   const resizeStateRef = useRef(null);
+  const recognitionRef = useRef(null);
+  // The input text at the moment listening started - live speech is
+  // appended after this, not after whatever `input` is at render time
+  // (interim results fire many times per second and each one replaces the
+  // previous interim chunk, so appending onto a stale `input` closure would
+  // duplicate text instead of just updating the tail).
+  const baseTextRef = useRef("");
   // Identifies this conversation to the backend agent (which keeps its own
   // per-thread memory, including any action awaiting confirmation) - a
   // fresh one each time the dialog is opened, so reopening starts a clean
@@ -226,8 +252,13 @@ export default function ChatAssistantDialog({ open, onClose }) {
     }
     // Focus the input as soon as the dialog opens
     const id = window.setTimeout(() => inputRef.current?.focus(), 50);
+    useStore.getState().fetchPublicFeatureFlags();
     return () => clearTimeout(id);
   }, [open]);
+
+  // null (not yet fetched, or fetch failed) defaults to "on" - today's
+  // existing behavior, so a flag outage never silently removes the button.
+  const voiceInputEnabled = useStore((s) => s.featureFlags?.voice_input_enabled !== false);
 
   // On mobile, always (re)apply the full-screen sheet rect on open - rather
   // than keep whatever `rect` was last computed/left at. Dragging/resizing
@@ -282,7 +313,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
   useEffect(() => {
     if (!open || !listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
-  }, [open, messages, sending, bufferingVisible]);
+  }, [open, messages, sending, bufferingVisible, syncingDashboard]);
 
   useEffect(() => {
     if (!open) return;
@@ -293,26 +324,20 @@ export default function ChatAssistantDialog({ open, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // Keep at least ~48px of the header grabbable on every edge so the panel
-  // can never be dragged somewhere it can't be dragged back from.
-  const DRAG_MARGIN = 48;
-
   const onDragMove = (e) => {
     const drag = dragStateRef.current;
     if (!drag) return;
+    // The whole panel must stay fully inside the viewport on every edge -
+    // if any part of it (starting with the header, the only grabbable
+    // part) lands off-page, there's nothing left on-screen to grab it
+    // back with (it can end up behind the browser's own tab bar, etc.).
     const left = Math.min(
-      Math.max(
-        drag.baseLeft + (e.clientX - drag.startX),
-        DRAG_MARGIN - drag.width,
-      ),
-      window.innerWidth - DRAG_MARGIN,
+      Math.max(drag.baseLeft + (e.clientX - drag.startX), 0),
+      window.innerWidth - drag.width,
     );
     const top = Math.min(
-      Math.max(
-        drag.baseTop + (e.clientY - drag.startY),
-        DRAG_MARGIN - drag.height,
-      ),
-      window.innerHeight - DRAG_MARGIN,
+      Math.max(drag.baseTop + (e.clientY - drag.startY), 0),
+      window.innerHeight - drag.height,
     );
     // Mutate the DOM directly instead of setRect() here - calling setRect
     // on every single pointermove re-renders the whole dialog (every chat
@@ -414,6 +439,24 @@ export default function ChatAssistantDialog({ open, onClose }) {
       top = st.base.top + (st.base.height - height);
     }
 
+    // The whole panel must stay fully inside the viewport on every edge -
+    // none of it may land behind the browser's own chrome (tab bar, etc.)
+    // where there'd be nothing left on-screen to grab/resize from. Shrink
+    // from whichever side overflowed instead of letting that edge go
+    // out of bounds, so the opposite edge stays pinned wherever possible.
+    if (left < 0) {
+      width += left;
+      left = 0;
+    }
+    if (top < 0) {
+      height += top;
+      top = 0;
+    }
+    if (left + width > window.innerWidth) width = window.innerWidth - left;
+    if (top + height > window.innerHeight) height = window.innerHeight - top;
+    width = Math.max(width, RESIZE_MIN);
+    height = Math.max(height, RESIZE_MIN);
+
     // Same reasoning as onDragMove above: mutate the DOM directly during
     // the gesture, commit to React state once at the end, so resizing
     // doesn't re-render (and re-parse every message's markdown) on every
@@ -456,6 +499,61 @@ export default function ChatAssistantDialog({ open, onClose }) {
     window.addEventListener("pointerup", endResize);
   };
 
+  // Stop any in-progress recognition if the dialog closes or unmounts - it
+  // otherwise keeps the mic live (and the browser's recording indicator on)
+  // with nowhere for the transcript to go.
+  useEffect(() => {
+    if (!open) {
+      recognitionRef.current?.stop();
+    }
+    return () => recognitionRef.current?.stop();
+  }, [open]);
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setIsListening(false);
+  };
+
+  const startListening = () => {
+    if (!SpeechRecognitionCtor || sending || hasPendingConfirmation) return;
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "en-IN";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    baseTextRef.current = input ? `${input} ` : "";
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(`${baseTextRef.current}${transcript}`);
+    };
+    recognition.onerror = (event) => {
+      if (event.error !== "no-speech" && event.error !== "aborted") {
+        pushChatAlert("Couldn't hear you - check mic permissions and try again.");
+      }
+      stopListening();
+    };
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    try {
+      recognition.start();
+    } catch {
+      stopListening();
+    }
+  };
+
   const copyMessage = async (id, text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -471,7 +569,16 @@ export default function ChatAssistantDialog({ open, onClose }) {
   // and wouldn't know what to do with an unrelated new question.
   const hasPendingConfirmation = messages.some((m) => m.pendingConfirmation);
 
-  const addAssistantMessage = (answer, pendingConfirmation) => {
+  // Return focus to the input once a reply lands, so the user can keep
+  // typing without reaching for the mouse - but not while a confirmation
+  // is pending, since the input is disabled then.
+  useEffect(() => {
+    if (sending || hasPendingConfirmation) return;
+    const id = window.setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id);
+  }, [sending, hasPendingConfirmation]);
+
+  const addAssistantMessage = (answer, pendingConfirmation, risk = null) => {
     setMessages((m) => [
       ...m,
       {
@@ -481,6 +588,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
         ts: Date.now(),
         isError: !pendingConfirmation && isErrorReply(answer),
         pendingConfirmation,
+        risk,
       },
     ]);
   };
@@ -501,6 +609,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
   const sendUserMessage = async () => {
     const q = input.trim();
     if (!q || sending || hasPendingConfirmation) return;
+    if (isListening) stopListening();
     setInput("");
     setMessages((m) => [
       ...m,
@@ -508,14 +617,29 @@ export default function ChatAssistantDialog({ open, onClose }) {
     ]);
     setSending(true);
     try {
-      const { answer, pendingConfirmation } = await postChatQuestion(
+      const { answer, pendingConfirmation, risk } = await postChatQuestion(
         threadIdRef.current,
         q,
       );
-      addAssistantMessage(answer, pendingConfirmation);
+      addAssistantMessage(answer, pendingConfirmation, risk);
+      setSending(false);
+      // Most tools pause for a separate confirm step, but a few (display
+      // preferences - dark mode, privacy mode, page size, bank order)
+      // apply immediately within this same ask() turn, with no confirm
+      // round trip to hang a refresh off of. Since there's no reliable
+      // way to tell from here whether this particular answer came from
+      // one of those, just refresh whenever nothing is pending - it's a
+      // few cheap GETs, harmless when nothing actually changed.
+      if (!pendingConfirmation) {
+        setSyncingDashboard(true);
+        try {
+          await useStore.getState().refreshAfterAgentAction();
+        } finally {
+          setSyncingDashboard(false);
+        }
+      }
     } catch (err) {
       reportChatError(err);
-    } finally {
       setSending(false);
     }
   };
@@ -534,14 +658,27 @@ export default function ChatAssistantDialog({ open, onClose }) {
     );
     setSending(true);
     try {
-      const { answer, pendingConfirmation } = await postChatConfirm(
+      const { answer, pendingConfirmation, risk } = await postChatConfirm(
         threadIdRef.current,
         approve,
       );
-      addAssistantMessage(answer, pendingConfirmation);
+      addAssistantMessage(answer, pendingConfirmation, risk);
+      setSending(false);
+      // The approved action just wrote to the DB (expense/transfer/tag) -
+      // pull fresh banks/expenses/tags so the dashboard updates live
+      // instead of requiring a manual reload. Nothing to refresh on a
+      // cancel, since the agent never touched the DB for it. Awaited (not
+      // fire-and-forget) so syncingDashboard stays accurate.
+      if (approve) {
+        setSyncingDashboard(true);
+        try {
+          await useStore.getState().refreshAfterAgentAction();
+        } finally {
+          setSyncingDashboard(false);
+        }
+      }
     } catch (err) {
       reportChatError(err);
-    } finally {
       setSending(false);
     }
   };
@@ -617,6 +754,15 @@ export default function ChatAssistantDialog({ open, onClose }) {
                       <div className="chat-bubble-text">
                         {m.role === "assistant" ? renderMarkdown(m.text) : m.text}
                       </div>
+                      {m.pendingConfirmation && m.risk?.flagged && (
+                        <div className="chat-risk-badge">
+                          <AlertTriangle size={13} />
+                          <span>
+                            This looks unusually large or risky - double
+                            check before confirming.
+                          </span>
+                        </div>
+                      )}
                       {m.pendingConfirmation && (
                         <div className="chat-confirm-row">
                           <button
@@ -658,7 +804,11 @@ export default function ChatAssistantDialog({ open, onClose }) {
           {sending &&
             bufferingVisible &&
             (messages.length === 0 ||
-              messages[messages.length - 1].role === "user") && (
+              messages[messages.length - 1].role === "user" ||
+              // Also covers waiting on a Confirm/Cancel result - the last
+              // message there is the proposal bubble itself, now marked
+              // decided, not a fresh "user" message.
+              messages[messages.length - 1].decidedApprove !== undefined) && (
               <div className="chat-row chat-row--assistant">
                 <div
                   className="chat-bubble chat-bubble--assistant chat-bubble--buffering"
@@ -669,6 +819,17 @@ export default function ChatAssistantDialog({ open, onClose }) {
                 </div>
               </div>
             )}
+          {syncingDashboard && (
+            <div className="chat-row chat-row--assistant">
+              <div
+                className="chat-bubble chat-bubble--assistant chat-bubble--buffering"
+                role="status"
+              >
+                <span className="chat-buffer-spinner" aria-hidden />
+                <span className="chat-buffer-text">Updating dashboard…</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="chat-dialog-footer">
@@ -694,6 +855,18 @@ export default function ChatAssistantDialog({ open, onClose }) {
             }
             disabled={sending || hasPendingConfirmation}
           />
+          {SpeechRecognitionCtor && voiceInputEnabled && (
+            <button
+              type="button"
+              className={`chat-dialog-mic${isListening ? " chat-dialog-mic--active" : ""}`}
+              onClick={startListening}
+              disabled={sending || hasPendingConfirmation}
+              aria-label={isListening ? "Stop voice input" : "Start voice input"}
+              title={isListening ? "Stop voice input" : "Speak your message"}
+            >
+              <Mic size={17} strokeWidth={2.25} />
+            </button>
+          )}
           <button
             type="button"
             className="chat-dialog-send"

@@ -202,6 +202,16 @@ export const useStore = create((set, get) => ({
   // state
   userName: null,
   isLoggedIn: false,
+  isAdmin: false,
+  // Whether the AI chatbot is enabled for THIS user - a per-user
+  // entitlement an admin grants/revokes from the admin dashboard (see
+  // adminUsers/fetchAdminUsers/setUserChatbotAccess below), not a global
+  // switch.
+  chatbotEnabled: false,
+  // Admin dashboard state - only ever populated for isAdmin users.
+  adminUsers: [],
+  adminUsersLoading: false,
+  isAdminDashboardOpen: false,
   isDarkMode: true,
   privacyMode: false,
   showLoginPage: true,
@@ -246,6 +256,8 @@ export const useStore = create((set, get) => ({
   // ── setters ──────────────────────────────────────────────
   setUserName: (v) => set({ userName: v }),
   setLoggedInStatus: (v) => set({ isLoggedIn: v }),
+  setIsAdmin: (v) => set({ isAdmin: v }),
+  setChatbotAccess: (v) => set({ chatbotEnabled: v }),
   setLoginPageStatus: (v) => set({ showLoginPage: v }),
   setShowAlert: (v) => set({ showAlert: v }),
   setAlertMessages: (v) => set({ alertMessages: v }),
@@ -325,11 +337,81 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  // Re-pull everything the chat agent can touch (banks, expenses, tags,
+  // preferences) after it confirms a write action, so the dashboard
+  // reflects it immediately instead of needing a manual page reload.
+  async refreshAfterAgentAction() {
+    try {
+      // Preferences and banks don't depend on each other at the network
+      // level - fetch both at once instead of sequencing them, then apply
+      // the fresh display order to the fresh bank list directly (rather
+      // than going through fetchBanks(), which would re-read
+      // banksDisplayOrder from state before this set() below lands it).
+      const [prefsRes, banksRes] = await Promise.all([
+        axios.get(`${BASE_URL}/user-preferences/`),
+        axios.get(`${BASE_URL}/banks/`),
+      ]);
+
+      const prefs = prefsRes?.data?.user_preferences ?? prefsRes?.data;
+      const displayOrder = prefs?.banks_display_order ?? get().banksDisplayOrder;
+      if (prefs) {
+        const dark = prefs.is_dark_mode ?? get().isDarkMode;
+        if (dark) document.body.classList.remove("light");
+        else document.body.classList.add("light");
+        set({
+          isDarkMode: dark,
+          privacyMode: prefs.privacy_mode_enabled ?? get().privacyMode,
+          pageSize: prefs.page_size ?? get().pageSize,
+          banksDisplayOrder: displayOrder,
+        });
+      }
+
+      const banks = (banksRes.data?.banks || []).map((e) => ({
+        bankName: e.name,
+        remainingBalance: e.current_balance,
+        bankId: e.id,
+      }));
+      if (Array.isArray(displayOrder) && displayOrder.length > 0) {
+        const orderMap = new Map(displayOrder.map((id, idx) => [id, idx]));
+        banks.sort((a, b) => {
+          const ai = orderMap.has(a.bankId) ? orderMap.get(a.bankId) : Infinity;
+          const bi = orderMap.has(b.bankId) ? orderMap.get(b.bankId) : Infinity;
+          return ai - bi;
+        });
+      }
+      const bankItems = banks.map((e) => ({ title: e.bankName, value: e.bankId }));
+
+      // If the agent deleted the currently-selected bank, fall back to
+      // whatever's left instead of fetchExpenses silently querying a
+      // bank id that no longer exists.
+      const stillExists = banks.some((b) => b.bankId === get().currentSelectedBankId);
+      set({
+        banksList: banks,
+        bankItems,
+        ...(stillExists ? {} : { currentSelectedBankId: banks[0]?.bankId ?? null }),
+      });
+
+      await Promise.all([
+        get().fetchExpenses({ silent: true }),
+        axios.get(`${BASE_URL}/entry-tags/`).then((r) => {
+          const tags = (r.data?.entry_tags || [])
+            .map((e) => ({ title: e.name, value: e.id }))
+            .sort((a, b) => a.title.localeCompare(b.title));
+          set({ entryTags: tags });
+        }),
+      ]);
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    }
+  },
+
   async getInitialData() {
     const s = get();
     if (!s.isLoggedIn) return;
     set({ showLoader: true });
     try {
+      // chatbotEnabled/isAdmin come from the JWT at login (see main.jsx) -
+      // they're per-user flags, not something to re-fetch here.
       const [banksRes, prefsRes] = await Promise.all([
         axios.get(`${BASE_URL}/banks/`),
         axios.get(`${BASE_URL}/user-preferences/`),
@@ -672,6 +754,206 @@ export const useStore = create((set, get) => ({
         set({ privacyMode: prev.privacyMode });
       if ("page_size" in payload) set({ pageSize: prev.pageSize });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  // ── Admin dashboard - the backend also enforces admin-only on both of
+  // these (403s a non-admin), this is just so the UI itself is only ever
+  // shown/usable for admins. ──
+  setAdminDashboardOpen: (v) => set({ isAdminDashboardOpen: v }),
+
+  async fetchAdminUsers() {
+    set({ adminUsersLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/users`);
+      set({ adminUsers: r.data?.users || [] });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ adminUsersLoading: false });
+    }
+  },
+
+  async setUserChatbotAccess(userId, enabled) {
+    const prev = get().adminUsers;
+    set({
+      adminUsers: prev.map((u) =>
+        u.id === userId ? { ...u, chatbot_enabled: enabled } : u,
+      ),
+    });
+    try {
+      await axios.patch(`${BASE_URL}/admin/users/${userId}/chatbot`, {
+        chatbot_enabled: enabled,
+      });
+    } catch (err) {
+      set({ adminUsers: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  async setUserIsAdmin(userId, isAdminFlag) {
+    const prev = get().adminUsers;
+    set({
+      adminUsers: prev.map((u) =>
+        u.id === userId ? { ...u, is_admin: isAdminFlag } : u,
+      ),
+    });
+    try {
+      await axios.patch(`${BASE_URL}/admin/users/${userId}/admin`, {
+        is_admin: isAdminFlag,
+      });
+    } catch (err) {
+      set({ adminUsers: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  async setUserDisabled(userId, isDisabled) {
+    const prev = get().adminUsers;
+    set({
+      adminUsers: prev.map((u) =>
+        u.id === userId ? { ...u, is_disabled: isDisabled } : u,
+      ),
+    });
+    try {
+      await axios.patch(`${BASE_URL}/admin/users/${userId}/disabled`, {
+        is_disabled: isDisabled,
+      });
+    } catch (err) {
+      set({ adminUsers: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  // ── AI provider config - admin-editable, takes effect on the backend's
+  // very next chat turn (see TraceMyMoneyAPI/app/core/llm.py). ──
+  aiConfig: null,
+  aiConfigLoading: false,
+  aiConfigSaving: false,
+
+  async fetchAiConfig() {
+    set({ aiConfigLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/ai-config`);
+      set({ aiConfig: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ aiConfigLoading: false });
+    }
+  },
+
+  async saveAiConfig(config) {
+    set({ aiConfigSaving: true });
+    try {
+      const r = await axios.put(`${BASE_URL}/admin/ai-config`, config);
+      set({ aiConfig: r.data });
+      get().pushAlert("AI provider config saved.");
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    } finally {
+      set({ aiConfigSaving: false });
+    }
+  },
+
+  // ── Per-provider API keys - admin sets these from the dashboard instead
+  // of needing .env access. The server only ever returns a masked status
+  // (never the real key), so this never holds a raw secret client-side. ──
+  providerKeys: null,
+  providerKeysLoading: false,
+  providerKeysSaving: {},
+
+  async fetchProviderKeys() {
+    set({ providerKeysLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/provider-keys`);
+      set({ providerKeys: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ providerKeysLoading: false });
+    }
+  },
+
+  async saveProviderKey(provider, apiKey) {
+    set((s) => ({ providerKeysSaving: { ...s.providerKeysSaving, [provider]: true } }));
+    try {
+      const r = await axios.put(`${BASE_URL}/admin/provider-keys`, {
+        provider,
+        api_key: apiKey,
+      });
+      set((s) => ({ providerKeys: { ...s.providerKeys, [provider]: r.data } }));
+      get().pushAlert(apiKey ? `${provider} API key saved.` : `${provider} API key cleared.`);
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    } finally {
+      set((s) => ({ providerKeysSaving: { ...s.providerKeysSaving, [provider]: false } }));
+    }
+  },
+
+  // ── Feature flags - runtime toggles, no redeploy needed. ──
+  featureFlags: null,
+  featureFlagsLoading: false,
+
+  async fetchFeatureFlags() {
+    set({ featureFlagsLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/feature-flags`);
+      set({ featureFlags: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ featureFlagsLoading: false });
+    }
+  },
+
+  // Any logged-in user (not just admins) can read flags via this
+  // non-admin endpoint - used by e.g. ChatAssistantDialog to decide
+  // whether to show the voice-input mic button. Silent on failure (no
+  // alert) since this is a minor UI toggle, not a user-initiated action.
+  async fetchPublicFeatureFlags() {
+    if (get().featureFlags) return;
+    try {
+      const r = await axios.get(`${BASE_URL}/feature-flags`);
+      set({ featureFlags: r.data });
+    } catch {
+      // Leave featureFlags null - callers treat null the same as "flag on"
+      // (today's default behavior), so a failed fetch just means no gating.
+    }
+  },
+
+  async setFeatureFlag(key, value) {
+    const prev = get().featureFlags;
+    const next = { ...prev, [key]: value };
+    set({ featureFlags: next });
+    try {
+      const r = await axios.put(`${BASE_URL}/admin/feature-flags`, next);
+      set({ featureFlags: r.data });
+    } catch (err) {
+      set({ featureFlags: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  // ── Usage/quota visibility - surfaces the last chat-LLM failure (e.g. a
+  // Groq rate limit, with used/limit/retry parsed out) without digging
+  // through server logs. ──
+  llmStatus: null,
+  llmStatusLoading: false,
+
+  async fetchLlmStatus() {
+    set({ llmStatusLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/llm-status`);
+      set({ llmStatus: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ llmStatusLoading: false });
     }
   },
 

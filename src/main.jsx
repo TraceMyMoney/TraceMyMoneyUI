@@ -9,6 +9,8 @@ async function bootstrap() {
   if (parsed) {
     const store = useStore.getState()
     store.setUserName(parsed.user_name)
+    store.setIsAdmin(parsed.is_admin === true)
+    store.setChatbotAccess(parsed.chatbot_enabled === true)
     store.setLoggedInStatus(true)
   }
 

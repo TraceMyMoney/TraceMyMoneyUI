@@ -1,12 +1,14 @@
 import React from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import { Eye, EyeOff, MessageCircle, LogOut } from "lucide-react";
+import { Eye, EyeOff, MessageCircle, ShieldCheck, LogOut } from "lucide-react";
 
-export default function Topbar({ onMenuClick, onOpenChat }) {
+export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin }) {
   const {
     userName,
     isDarkMode,
     privacyMode,
+    chatbotEnabled,
+    isAdmin,
     updateUserPreferences,
     logoutUser,
   } = useStore();
@@ -36,16 +38,19 @@ export default function Topbar({ onMenuClick, onOpenChat }) {
         </div>
 
         <div className="topbar-controls">
-          {/* Chat — always visible including mobile */}
-          <button
-            type="button"
-            className="icon-btn topbar-chat-btn"
-            onClick={() => onOpenChat?.()}
-            title="Chat assistant"
-            aria-label="Open chat assistant"
-          >
-            <MessageCircle size={18} />
-          </button>
+          {/* Chat — always visible including mobile, but only when an
+              admin has turned the AI chatbot on app-wide. */}
+          {chatbotEnabled && (
+            <button
+              type="button"
+              className="icon-btn topbar-chat-btn"
+              onClick={() => onOpenChat?.()}
+              title="Chat assistant"
+              aria-label="Open chat assistant"
+            >
+              <MessageCircle size={18} />
+            </button>
+          )}
 
           {/* Dark mode — hidden on mobile, lives in sidebar */}
           <button
@@ -66,6 +71,19 @@ export default function Topbar({ onMenuClick, onOpenChat }) {
           >
             {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
+
+          {/* Admin dashboard — admin-only, lists every user and lets the
+              admin grant/revoke their AI chatbot access individually.
+              Hidden on mobile, lives in sidebar, same as the rest. */}
+          {isAdmin && (
+            <button
+              className="icon-btn topbar-desktop-only"
+              onClick={() => onOpenAdmin?.()}
+              title="Admin dashboard"
+            >
+              <ShieldCheck size={18} />
+            </button>
+          )}
 
           {/* User chip — hidden on small mobile */}
           <div className="topbar-user-chip">

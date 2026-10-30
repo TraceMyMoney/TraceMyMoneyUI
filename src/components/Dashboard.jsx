@@ -10,6 +10,7 @@ import CreateBankDialog from "./CreateBankDialog.jsx";
 import CreateTagDialog from "./CreateTagDialog.jsx";
 import ApplyTagsDialog from "./ApplyTagsDialog.jsx";
 import ChatAssistantDialog from "./ChatAssistantDialog.jsx";
+import AdminDashboard from "./AdminDashboard.jsx";
 
 function isTypingInField(el) {
   if (!el || !el.tagName) return false;
@@ -20,7 +21,12 @@ function isTypingInField(el) {
 }
 
 export default function Dashboard() {
-  const { setApplyEntryTagVisible, setApplyTagEntry } = useStore();
+  const {
+    setApplyEntryTagVisible,
+    setApplyTagEntry,
+    chatbotEnabled,
+    setAdminDashboardOpen,
+  } = useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -36,6 +42,7 @@ export default function Dashboard() {
   const closeChat = useCallback(() => setChatOpen(false), []);
 
   useEffect(() => {
+    if (!chatbotEnabled) return;
     let lastSpaceAt = 0;
     const DOUBLE_MS = 480;
     const onKeyDown = (e) => {
@@ -55,13 +62,14 @@ export default function Dashboard() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [chatbotEnabled]);
 
   return (
     <div className="app-shell">
       <Topbar
         onMenuClick={() => setSidebarOpen((v) => !v)}
         onOpenChat={openChat}
+        onOpenAdmin={() => setAdminDashboardOpen(true)}
       />
 
       <div className="body-layout">
@@ -70,6 +78,7 @@ export default function Dashboard() {
           onClose={() => setSidebarOpen(false)}
           activeTagFilter={tagFilter}
           onTagFilter={setTagFilter}
+          onOpenAdmin={() => setAdminDashboardOpen(true)}
         />
 
         <main className="main-content">
@@ -140,9 +149,13 @@ export default function Dashboard() {
         onClose={() => setTagDialogOpen(false)}
       />
       <ApplyTagsDialog />
-      <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
-
-      <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
+      <AdminDashboard />
+      {chatbotEnabled && (
+        <>
+          <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
+          <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
+        </>
+      )}
     </div>
   );
 }

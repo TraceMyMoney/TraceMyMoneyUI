@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import { Eye, EyeOff, LogOut, Sun, Moon } from "lucide-react";
+import { Eye, EyeOff, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 
 const COLORS = [
   "var(--acid)",
@@ -15,11 +15,13 @@ export default function Sidebar({
   onClose,
   activeTagFilter,
   onTagFilter,
+  onOpenAdmin,
 }) {
   const {
     banksList,
     privacyMode,
     isDarkMode,
+    isAdmin,
     currentTotalOfTopupExpenses,
     currentTotalOfExpenses,
     currentTotalExpenses,
@@ -325,6 +327,16 @@ export default function Sidebar({
             {privacyMode ? <EyeOff size={15} /> : <Eye size={15} />}
             <span>{privacyMode ? "Show Amounts" : "Hide Amounts"}</span>
           </button>
+          {isAdmin && (
+            <button
+              className="sidebar-ctrl-btn"
+              onClick={() => onOpenAdmin?.()}
+              title="Admin dashboard"
+            >
+              <ShieldCheck size={15} />
+              <span>Admin Dashboard</span>
+            </button>
+          )}
           <button
             className="sidebar-ctrl-btn sidebar-ctrl-btn--danger"
             onClick={logoutUser}

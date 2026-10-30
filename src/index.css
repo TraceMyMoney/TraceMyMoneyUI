@@ -2077,6 +2077,27 @@ body::after {
     color: var(--acid);
 }
 
+.d-tag-suggestion-chip {
+    margin-top: 8px;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--purple-dim);
+    border: 1px solid rgba(155, 127, 255, 0.3);
+    color: var(--purple);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.d-tag-suggestion-chip:hover {
+    background: rgba(155, 127, 255, 0.18);
+    border-color: rgba(155, 127, 255, 0.5);
+}
+
 .d-entry-tags-field {
     margin-top: 8px;
     display: flex;
@@ -2330,6 +2351,839 @@ body::after {
 }
 .dialog-panel.wide {
     max-width: 460px;
+}
+.dialog-panel.admin-wide {
+    max-width: 760px;
+    height: 640px;
+    max-height: 90vh;
+}
+
+.admin-dashboard-body {
+    padding: 16px 24px 24px;
+    gap: 0;
+}
+.admin-search-wrap {
+    height: 44px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+    /* Same low-contrast issue as the AI config fields - .d-input-wrap's
+       default --ink-3/--line-mid barely registers against this page's
+       --ink-2 panels, especially in light mode. */
+    background: var(--ink);
+    border-color: var(--line-str);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+    border-radius: var(--r-md);
+}
+.admin-search-wrap:focus-within {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 3px var(--acid-dim);
+}
+.admin-search-clear {
+    width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--faint);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+.admin-search-clear:hover {
+    color: var(--text);
+}
+.admin-dashboard-empty {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px 0;
+    text-align: center;
+}
+
+.admin-user-table {
+    display: flex;
+    flex-direction: column;
+}
+.admin-user-row {
+    display: grid;
+    grid-template-columns: 1fr 110px 90px 70px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px;
+    margin: 0 -10px;
+    border-radius: var(--r-sm);
+    border-bottom: 1px solid var(--line);
+    transition: background 0.15s;
+}
+.admin-user-row:hover {
+    background: var(--ink-4);
+}
+.admin-user-row--head {
+    font-family: var(--f-head);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 12px;
+    padding-top: 0;
+}
+.admin-user-row--head:hover {
+    background: transparent;
+}
+.admin-user-row:last-child {
+    border-bottom: none;
+}
+.admin-user-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.admin-user-av {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--f-head);
+    font-weight: 700;
+    font-size: 13px;
+    background: var(--acid-dim);
+    color: var(--acid);
+    border: 1px solid var(--acid-mid);
+}
+.admin-user-name {
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.admin-user-email {
+    font-size: 11px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.admin-user-joined {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--muted);
+}
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--ink-5);
+    border: 1px solid var(--line-mid);
+    color: var(--muted);
+    white-space: nowrap;
+}
+.admin-badge--admin {
+    background: var(--acid-dim);
+    border-color: var(--acid-mid);
+    color: var(--acid);
+}
+
+.admin-toggle {
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-4);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.admin-toggle-knob {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--faint);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s, background 0.15s;
+}
+.admin-toggle.on {
+    background: var(--acid-dim);
+    border-color: var(--acid-mid);
+}
+.admin-toggle.on .admin-toggle-knob {
+    transform: translateX(18px);
+    background: var(--acid);
+}
+
+.admin-user-table--wide .admin-user-row {
+    grid-template-columns: 1fr 100px 70px 90px 70px;
+}
+.admin-toggle--danger.on {
+    background: color-mix(in srgb, var(--red) 22%, transparent);
+    border-color: var(--red);
+}
+.admin-toggle--danger.on .admin-toggle-knob {
+    background: var(--red);
+}
+
+@media (max-width: 640px) {
+    .admin-user-row,
+    .admin-user-table--wide .admin-user-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+    }
+    .admin-user-row--head {
+        display: none;
+    }
+    .admin-user-identity {
+        flex: 1 1 100%;
+    }
+    .admin-user-joined,
+    .admin-badge {
+        order: 1;
+    }
+    .admin-toggle {
+        order: 2;
+    }
+}
+
+/* ── Admin dashboard: separate full-screen page (not a modal) ───────── */
+.admin-page {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: var(--ink);
+    /* Soft ambient color blobs behind the glass panels - without
+       something to blur, a backdrop-filter has no visible effect at
+       all; this is what actually makes the glassmorphism read. */
+    background-image: radial-gradient(
+            640px circle at 12% -10%,
+            color-mix(in srgb, var(--acid) 10%, transparent),
+            transparent 60%
+        ),
+        radial-gradient(
+            560px circle at 100% 20%,
+            color-mix(in srgb, var(--purple) 12%, transparent),
+            transparent 55%
+        );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeUp 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Everything - header, tabs, body - lives in one centered column, instead
+   of a full-width header sitting above a separately-centered (and
+   narrower) body, which is what made the page look lopsided/left-stuck
+   on wide screens. */
+.admin-page-inner {
+    width: 100%;
+    max-width: 900px;
+    height: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+}
+.admin-page-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    /* Translucent + blurred, so the ambient gradient on .admin-page
+       shows through softly instead of being fully blocked - the glass
+       effect needs to be visible from the very top of the page, not
+       just inside the panels further down. */
+    background: color-mix(in srgb, var(--ink) 72%, transparent);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+.admin-page-header > div:nth-child(2) {
+    flex: 1;
+    min-width: 0;
+}
+.admin-page-close {
+    position: static;
+}
+.admin-tabs {
+    display: flex;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--ink-2) 65%, transparent);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+.admin-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.admin-tab-btn:hover {
+    color: var(--text);
+    background: var(--ink-3);
+}
+.admin-tab-btn.active {
+    /* A solid fill (same acid-bg/ink-text combo as the primary buttons),
+       not just a faint tint - acid-dim's ~7% opacity was nearly
+       invisible against the already-pale canvas in light mode, so the
+       active tab didn't read as "selected" at a glance. */
+    color: var(--ink);
+    background: var(--acid);
+    border-color: var(--acid);
+    box-shadow: 0 2px 8px var(--acid-glow);
+}
+.admin-tab-btn.active:hover {
+    color: var(--ink);
+    background: var(--acid);
+}
+.admin-page-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Translucent canvas tint, not a solid fill - lets the ambient
+       gradient on .admin-page show through faintly across the whole
+       scroll area, with the glass panels sitting more opaque on top for
+       legibility. */
+    background: color-mix(in srgb, var(--ink-2) 55%, transparent);
+}
+.admin-page-content .admin-dashboard-body {
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.admin-tab-sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 16px;
+    line-height: 1.5;
+    max-width: 560px;
+    text-align: left;
+}
+.admin-tab-sub--with-action {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+}
+/* The Users tab's intro line sits above a full-width table, not a narrow
+   centered form - keep it left-aligned and full-width there instead. */
+.admin-tab-sub--wide {
+    max-width: none;
+    text-align: left;
+    margin: 0;
+}
+.admin-tab-sub--tight {
+    margin: 0;
+}
+
+/* Every tab's content sits in one or more of these elevated cards,
+   instead of bare text/inputs floating directly on the page background -
+   that flat, borderless look (no depth, no grouping) was the core of the
+   "looks like a 90s website" complaint. */
+.admin-panel {
+    /* Glass card: translucent --ink-3 (the elevation stack's "one above
+       canvas" step - see .admin-page-content) over the page's blurred
+       ambient gradient, not a flat fill. backdrop-filter is what
+       actually blurs whatever's behind the card into soft color; the
+       translucent background on top of that is what keeps panel text
+       legible against it. */
+    position: relative;
+    background: color-mix(in srgb, var(--ink-3) 68%, transparent);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid color-mix(in srgb, var(--line-str) 70%, transparent);
+    border-radius: 20px;
+    padding: 30px 32px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06), 0 16px 40px -12px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+body.light .admin-panel {
+    box-shadow: 0 1px 1px rgba(20, 24, 40, 0.03), 0 16px 40px -12px rgba(20, 24, 40, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+/* A faint 1px highlight along the top edge - the classic glass-card
+   "catching light" cue that sells the material, subtle enough not to
+   look like a stray border. */
+.admin-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--text) 14%, transparent),
+        transparent 40%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+.admin-panel-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.admin-panel-row:last-child {
+    margin-bottom: 0;
+}
+.admin-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--f-head);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--text);
+}
+/* Same colored-chip treatment as .dialog-icon.acid (the chat/admin
+   dialog headers elsewhere) - a flat icon reading as plain decoration,
+   a chip reads as a deliberate section marker. */
+.admin-panel-title svg {
+    color: var(--acid);
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    border-radius: var(--r-sm);
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+.admin-panel-desc {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 560px;
+    margin: 4px 0 20px;
+}
+.admin-panel-desc--tight {
+    margin-bottom: 0;
+}
+
+.admin-ai-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 460px;
+    margin: 0;
+}
+.admin-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+/* .d-input-field has no border/background of its own - normally it sits
+   inside a .d-input-wrap that supplies both. The admin form uses bare
+   inputs/selects (no wrap div, so an icon can't be slotted in), so give
+   them that same boxed look directly instead. */
+.admin-form-field > .d-input-field,
+.admin-key-row-input > .d-input-field {
+    /* The global .d-input-field rule sets `flex: 1 1 0%` (for its usual
+       home inside a row-direction .d-input-wrap, where that only affects
+       width). .admin-form-field is a COLUMN flex container though, and
+       in a column flex context flex-basis (the "0%" in that shorthand)
+       overrides the plain `height` property below for sizing purposes -
+       per spec, flex-basis wins over height/width when both apply. That
+       silently capped every field in this form to a tiny near-zero
+       height no matter what height value was set (even via an inline
+       style), which is what actually caused the squashed-pill look.
+       `flex: none` restores `height` as the authority. */
+    flex: none;
+    height: 46px;
+    /* Solid, not translucent - the panel itself is already glass
+       (translucent + blurred), and layering a semi-transparent field on
+       top of a semi-transparent panel compounds into washed-out, barely-
+       there contrast. A field needs to read clearly on first glance, so
+       it stays fully opaque even though its container doesn't. */
+    background: var(--ink);
+    border: 1.5px solid var(--line-str);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-form-field > .d-input-field::placeholder {
+    color: var(--muted);
+}
+/* Hide the native up/down spinner on number inputs - it clashes with the
+   DM Mono numeric styling used everywhere else in the app. */
+.admin-form-field > input[type="number"]::-webkit-outer-spin-button,
+.admin-form-field > input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.admin-form-field > input[type="number"] {
+    /* Firefox-only - -moz-appearance: textfield is the standard, narrowly-
+       scoped way to hide its spinner. The unprefixed `appearance:
+       textfield` that used to be here as well is what actually broke
+       these fields: in this Chromium build it forces the number input
+       into a native-control rendering mode that ignores author-set
+       height entirely (confirmed - even an inline `el.style.height`
+       override had zero effect), which is why Temperature/Max Tokens/
+       Timeout/Max Retries kept rendering as a squashed ~19px pill no
+       matter what the surrounding CSS said. Removing it - the webkit
+       pseudo-elements above are sufficient to hide Chromium's spinner on
+       their own, no appearance change needed there at all. */
+    -moz-appearance: textfield;
+}
+.admin-form-field > .d-input-field:focus,
+.admin-key-row-input > .d-input-field:focus {
+    outline: none;
+    background: var(--ink);
+    border-color: var(--acid);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 4px var(--acid-dim);
+}
+.admin-form-field > span {
+    font-family: var(--f-head);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.admin-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.admin-select-wrap {
+    position: relative;
+}
+.admin-select-wrap .admin-select {
+    width: 100%;
+    cursor: pointer;
+    /* Lives inside .admin-select-wrap (for the custom chevron), which
+       breaks the ".admin-form-field > .d-input-field" direct-child rule
+       that normally supplies the boxed look - so this needs its own
+       explicit border/background instead of inheriting that rule. */
+    height: 46px;
+    /* Solid, not translucent - same reasoning as the text/number inputs
+       above (see that rule's comment): a field needs to read clearly on
+       its own, even sitting inside an already-translucent glass panel. */
+    background: var(--ink);
+    border: 1.5px solid var(--line-str);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: var(--f-mono);
+    font-weight: 500;
+    font-size: 13px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    /* Hides the native arrow so our own ChevronDown (below) is the only
+       one shown - two overlapping arrows is exactly the kind of rough
+       edge that made this page look dated. */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 0 40px 0 16px;
+    /* Without this, the native dropdown popup (options list) renders in
+       the OS/browser's own light theme regardless of our dark colors on
+       the closed <select> itself - this is what actually themes the open
+       popup, not background/color alone. Flipped for body.light below. */
+    color-scheme: dark;
+}
+.admin-select-wrap .admin-select:focus {
+    outline: none;
+    background: var(--ink);
+    border-color: var(--acid);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 4px var(--acid-dim);
+}
+body.light .admin-select-wrap .admin-select {
+    color-scheme: light;
+}
+.admin-select-wrap .admin-select option {
+    background: var(--ink-2);
+    color: var(--text);
+}
+.admin-select-chevron {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--faint);
+    pointer-events: none;
+}
+.admin-ai-save {
+    /* .d-btn sets flex:1 (flex-basis:0%), which in this column-flex form
+       overrides the explicit height below - same root cause as the
+       .admin-form-field inputs earlier. */
+    flex: none;
+    align-self: flex-start;
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    height: 50px;
+    padding: 0 36px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--acid), color-mix(in srgb, var(--acid) 70%, var(--green)));
+    box-shadow: 0 8px 20px -6px var(--acid-glow);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.admin-ai-save:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -6px var(--acid-glow);
+}
+.admin-ai-save:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+}
+
+.admin-keys-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+}
+.admin-keys-list--cards .admin-key-row {
+    /* One level above .admin-panel's own --ink-3, so these nested cards
+       separate from the panel they sit inside instead of disappearing
+       into it. */
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 16px;
+    padding: 18px 20px;
+    transition: border-color 0.18s, background 0.18s, transform 0.18s;
+}
+.admin-keys-list--cards .admin-key-row:hover {
+    border-color: var(--acid-mid);
+    transform: translateY(-1px);
+}
+.admin-key-row {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.admin-key-row-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.admin-key-provider {
+    font-size: 13px;
+    font-weight: 600;
+}
+.admin-key-row-input {
+    display: flex;
+    gap: 10px;
+}
+.admin-key-row-input .d-input-field {
+    flex: 1;
+    min-width: 0;
+    border-radius: var(--r-md);
+}
+.admin-key-save {
+    /* .d-btn sets flex:1 by default, which is what made this button
+       stretch to fill most of the row instead of just fitting its
+       "SAVE" label - override the whole shorthand, not just one part. */
+    flex: 0 0 auto;
+    padding: 0 24px;
+    border-radius: 999px;
+    box-shadow: 0 6px 16px -6px var(--acid-glow);
+}
+.admin-key-clear {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--line-mid) 80%, transparent);
+    border-radius: 999px;
+    color: var(--faint);
+    cursor: pointer;
+    transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+.admin-key-clear:hover:not(:disabled) {
+    color: var(--red);
+    border-color: var(--red);
+}
+
+.admin-badge svg {
+    margin-right: 2px;
+}
+.admin-badge--neutral {
+    background: var(--ink-5);
+    border-color: var(--line-mid);
+    color: var(--muted);
+}
+.admin-badge--warn {
+    background: var(--red-dim);
+    border-color: var(--red);
+    color: var(--red);
+}
+
+.admin-flag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+}
+.admin-flag-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 16px;
+    padding: 18px 20px;
+    transition: border-color 0.18s, transform 0.18s;
+}
+.admin-flag-row:hover {
+    border-color: var(--acid-mid);
+    transform: translateY(-1px);
+}
+.admin-flag-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+.admin-flag-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    max-width: 440px;
+}
+
+.admin-refresh-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-mid);
+    background: var(--ink-3);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.admin-refresh-btn:hover:not(:disabled) {
+    border-color: var(--acid-mid);
+}
+.admin-refresh-btn .spin {
+    animation: admin-spin 0.9s linear infinite;
+}
+@keyframes admin-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.admin-usage-card {
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    padding: 20px;
+    max-width: 520px;
+    margin: 0;
+}
+.admin-usage-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+}
+.admin-usage-row:last-of-type {
+    border-bottom: none;
+}
+.admin-usage-key {
+    color: var(--muted);
+}
+.admin-usage-val {
+    font-family: var(--f-mono);
+    color: var(--red);
+}
+.admin-usage-message {
+    margin-top: 14px;
+    font-size: 11px;
+    font-family: var(--f-mono);
+    color: var(--faint);
+    background: var(--ink-5);
+    border-radius: var(--r-sm);
+    padding: 10px;
+    word-break: break-word;
+    line-height: 1.5;
+}
+.admin-dashboard-empty--ok {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    text-align: left;
+    color: var(--green);
+    padding: 8px 0;
+}
+
+@media (max-width: 640px) {
+    .admin-tabs {
+        padding: 10px 16px;
+    }
+    .admin-page-header {
+        padding: 16px 18px;
+    }
+    .admin-page-content .admin-dashboard-body {
+        padding: 18px 16px 36px;
+        gap: 16px;
+    }
+    .admin-panel {
+        padding: 18px;
+    }
+    .admin-form-row {
+        grid-template-columns: 1fr;
+    }
+    .admin-panel-row {
+        flex-direction: column;
+    }
 }
 
 .dialog-header {
@@ -2806,6 +3660,24 @@ body::after {
     border: 1px solid var(--acid-mid);
     color: var(--text);
 }
+.chat-risk-badge {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    background: rgba(255, 59, 92, 0.1);
+    border: 1px solid rgba(255, 59, 92, 0.3);
+    color: var(--red);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.chat-risk-badge svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
 .chat-confirm-row {
     display: flex;
     gap: 8px;
@@ -2992,6 +3864,50 @@ body::after {
     color: var(--faint);
     opacity: 1;
     cursor: not-allowed;
+}
+.chat-dialog-mic {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-mid);
+    cursor: pointer;
+    background: var(--ink-3);
+    color: var(--text);
+    transition:
+        opacity 0.15s,
+        box-shadow 0.18s,
+        scale 0.1s,
+        background 0.15s,
+        color 0.15s;
+}
+.chat-dialog-mic:hover:not(:disabled) {
+    border-color: var(--acid-mid);
+}
+.chat-dialog-mic:active:not(:disabled) {
+    scale: 0.92;
+}
+.chat-dialog-mic:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.chat-dialog-mic--active {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--ink);
+    animation: chat-mic-pulse 1.4s ease-in-out infinite;
+}
+@keyframes chat-mic-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 45%, transparent);
+    }
+    50% {
+        box-shadow: 0 0 0 7px color-mix(in srgb, var(--red) 0%, transparent);
+    }
 }
 
 .chat-dialog-header .dialog-close {
@@ -3915,7 +4831,8 @@ body::after {
         padding: 12px 14px;
         min-height: 48px;
     }
-    .chat-dialog-send {
+    .chat-dialog-send,
+    .chat-dialog-mic {
         width: 48px;
         height: 48px;
     }

@@ -11,6 +11,7 @@ import CreateTagDialog from "./CreateTagDialog.jsx";
 import ApplyTagsDialog from "./ApplyTagsDialog.jsx";
 import ChatAssistantDialog from "./ChatAssistantDialog.jsx";
 import AdminDashboard from "./AdminDashboard.jsx";
+import AnalyticsDashboard from "./AnalyticsDashboard.jsx";
 
 function isTypingInField(el) {
   if (!el || !el.tagName) return false;
@@ -26,6 +27,7 @@ export default function Dashboard() {
     setApplyTagEntry,
     chatbotEnabled,
     setAdminDashboardOpen,
+    analyticsOpen,
   } = useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -84,24 +86,15 @@ export default function Dashboard() {
         <main className="main-content">
           {/* Command Bar */}
           <div className="command-bar">
-            <div
-              className="cmd-search"
-              onClick={() => setSearchOpen((v) => !v)}
-              style={{ cursor: "pointer" }}
-            >
-              <span
-                style={{ color: "var(--faint)", fontSize: 16, flexShrink: 0 }}
-              >
-                ⌕
-              </span>
-              <span
-                className="cmd-input-area"
-                style={{ color: "var(--faint)" }}
-              >
-                Search / filter expenses...
-              </span>
-            </div>
             <div className="cmd-actions">
+              <button
+                type="button"
+                className="add-expense-btn"
+                onClick={() => setSearchOpen((v) => !v)}
+              >
+                <span>⌕</span>
+                <span className="btn-text">Search / filter</span>
+              </button>
               <button
                 onClick={() => setTagDialogOpen(true)}
                 className="add-expense-btn"
@@ -150,10 +143,13 @@ export default function Dashboard() {
       />
       <ApplyTagsDialog />
       <AdminDashboard />
+      <AnalyticsDashboard />
       {chatbotEnabled && (
         <>
           <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
-          <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
+          {!analyticsOpen && (
+            <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
+          )}
         </>
       )}
     </div>

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   SlidersHorizontal,
   Save,
+  BarChart3,
 } from "lucide-react";
 
 function formatDate(iso) {
@@ -517,6 +518,113 @@ function FeatureFlagsTab() {
   );
 }
 
+function formatTokenTime(iso) {
+  try {
+    return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
+function TokenMetricsPanel() {
+  const { llmMetrics, llmMetricsLoading, fetchLlmMetrics } = useStore();
+
+  useEffect(() => {
+    fetchLlmMetrics();
+  }, []);
+
+  const today = llmMetrics?.today;
+  const lifetime = llmMetrics?.lifetime;
+  const recent = llmMetrics?.recent || [];
+
+  return (
+    <div className="admin-panel">
+      <div className="admin-panel-row">
+        <div>
+          <div className="admin-panel-title">
+            <BarChart3 size={15} />
+            <span>Token Usage</span>
+          </div>
+          <div className="admin-panel-desc admin-panel-desc--tight">
+            How many tokens chat requests are actually sending to the LLM - process-local,
+            resets on restart, not a billing system of record.
+          </div>
+        </div>
+        <button
+          type="button"
+          className="admin-refresh-btn"
+          onClick={fetchLlmMetrics}
+          disabled={llmMetricsLoading}
+          title="Refresh"
+        >
+          <RefreshCw size={14} className={llmMetricsLoading ? "spin" : ""} />
+        </button>
+      </div>
+
+      {llmMetricsLoading && !llmMetrics ? (
+        <div className="admin-dashboard-empty">Loading…</div>
+      ) : (
+        <>
+          <div className="admin-stat-grid">
+            <div className="admin-stat-tile">
+              <div className="admin-stat-label">Requests Today</div>
+              <div className="admin-stat-value">{today?.requests ?? 0}</div>
+            </div>
+            <div className="admin-stat-tile">
+              <div className="admin-stat-label">Tokens Today</div>
+              <div className="admin-stat-value">{(today?.total_tokens ?? 0).toLocaleString()}</div>
+            </div>
+            <div className="admin-stat-tile">
+              <div className="admin-stat-label">Avg Tokens / Req (today)</div>
+              <div className="admin-stat-value">
+                {today?.requests ? Math.round(today.total_tokens / today.requests).toLocaleString() : 0}
+              </div>
+            </div>
+            <div className="admin-stat-tile">
+              <div className="admin-stat-label">Lifetime Requests</div>
+              <div className="admin-stat-value">{lifetime?.requests ?? 0}</div>
+            </div>
+            <div className="admin-stat-tile">
+              <div className="admin-stat-label">Lifetime Tokens</div>
+              <div className="admin-stat-value">{(lifetime?.total_tokens ?? 0).toLocaleString()}</div>
+            </div>
+          </div>
+
+          {recent.length === 0 ? (
+            <div className="admin-dashboard-empty">No chat requests recorded yet this session.</div>
+          ) : (
+            <div className="admin-token-table">
+              <div className="admin-token-row admin-token-row--head">
+                <span>Time</span>
+                <span>Provider / Model</span>
+                <span className="admin-token-category">Category</span>
+                <span>In</span>
+                <span>Out</span>
+                <span>Total</span>
+              </div>
+              {recent.map((e, i) => (
+                <div className="admin-token-row" key={i}>
+                  <span className="admin-token-time">{formatTokenTime(e.at)}</span>
+                  <span className="admin-token-model" title={e.model || ""}>
+                    {e.provider}
+                    {e.model ? ` · ${e.model}` : ""}
+                  </span>
+                  <span className="admin-token-category">{e.category || "—"}</span>
+                  <span className="admin-token-num">{e.input_tokens.toLocaleString()}</span>
+                  <span className="admin-token-num">{e.output_tokens.toLocaleString()}</span>
+                  <span className="admin-token-num admin-token-num--total">
+                    {e.total_tokens.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function UsageTab() {
   const { llmStatus, llmStatusLoading, fetchLlmStatus } = useStore();
 
@@ -587,6 +695,8 @@ function UsageTab() {
           </div>
         )}
       </div>
+
+      <TokenMetricsPanel />
     </div>
   );
 }

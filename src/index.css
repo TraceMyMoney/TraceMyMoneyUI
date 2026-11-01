@@ -264,13 +264,83 @@ body::after {
     /* hidden on mobile via media query */
 }
 
+.topbar-user-menu {
+    position: relative;
+}
 .topbar-user-chip {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 3px 12px 3px 4px;
+    padding: 3px 10px 3px 4px;
     border: 1px solid var(--line);
     border-radius: 100px;
+    /* Now a <button> (was a bare <div>) so it's keyboard/click
+       accessible as the dropdown trigger - reset the UA button defaults
+       that would otherwise bleed through. */
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.topbar-user-chip:hover,
+.topbar-user-chip.is-open {
+    border-color: var(--acid-mid);
+    background: var(--acid-dim);
+}
+.topbar-user-chevron {
+    color: var(--faint);
+    transition: transform 0.15s;
+}
+.topbar-user-chip.is-open .topbar-user-chevron {
+    transform: rotate(180deg);
+    color: var(--acid);
+}
+
+.topbar-user-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 200px;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-md);
+    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 50;
+    animation: fadeUp 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.topbar-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: var(--r-sm);
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--f-body);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.topbar-dropdown-item:hover {
+    background: var(--acid-dim);
+    color: var(--acid);
+}
+.topbar-dropdown-item--danger:hover {
+    background: rgba(255, 59, 92, 0.1);
+    color: var(--red);
+}
+.topbar-dropdown-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 4px 2px;
 }
 
 .topbar-user-av {
@@ -699,6 +769,12 @@ body::after {
 .command-bar {
     display: flex;
     align-items: center;
+    /* .cmd-actions is the only child now that search lives inside it as
+       a button too (previously .cmd-search's flex:1 pushed .cmd-actions
+       to the end on its own) - push it to the end explicitly so the
+       whole button row stays right-aligned instead of hugging the left
+       edge of a now-empty bar. */
+    justify-content: flex-end;
     background: var(--ink-2);
     border-bottom: 1px solid var(--line);
     padding: 0 20px;
@@ -809,6 +885,37 @@ body::after {
 .add-expense-btn:hover {
     box-shadow: 0 0 22px var(--acid-glow);
     transform: translateY(-1px);
+}
+
+/* Was a wide bar spanning the left side of the command bar - now a
+   compact button living alongside +Tag/+Add Expense instead, same
+   height/shape as those but outlined rather than filled, so it reads as
+   a secondary action next to the two primary green CTAs. */
+.cmd-search-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line-mid);
+    cursor: pointer;
+    font-family: var(--f-head);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+.cmd-search-btn:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
+}
+.cmd-search-btn-icon {
+    font-size: 15px;
+    flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3164,6 +3271,284 @@ body.light .admin-select-wrap .admin-select {
     padding: 8px 0;
 }
 
+.admin-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.admin-stat-tile {
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.admin-stat-label {
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+.admin-stat-value {
+    font-family: var(--f-mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--acid);
+}
+
+.analytics-page-inner {
+    /* Analytics should use the full viewport width, not the narrow
+       ~900px reading column the Admin Dashboard tabs use. */
+    max-width: none;
+    border-left: none;
+    border-right: none;
+}
+.analytics-mobile-blocked {
+    display: none;
+}
+/* Analytics isn't reachable from mobile's own controls (the trigger lives
+   in the desktop-only topbar dropdown), but someone opening it on desktop
+   and then shrinking/rotating the window would otherwise hit the full
+   desktop layout squeezed into a phone width. Below this breakpoint, swap
+   the whole page body for a plain "use a bigger screen" notice instead. */
+@media (max-width: 600px) {
+    .analytics-page-body {
+        display: none;
+    }
+    .analytics-mobile-blocked {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 60px 28px;
+        color: var(--muted);
+    }
+    .analytics-mobile-blocked-title {
+        font-family: var(--f-head);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .analytics-mobile-blocked-sub {
+        font-family: var(--f-body);
+        font-size: 13px;
+        max-width: 280px;
+        line-height: 1.5;
+    }
+}
+.analytics-page-body {
+    padding: 24px 40px 48px;
+}
+.analytics-filters-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 8px;
+}
+.analytics-filters {
+    /* Flex, not grid: the Reset button only renders once a filter is
+       active, and a grid's reserved track for it (even "auto") still ate
+       space on the row's right edge when empty, leaving Date Range short
+       of the container's right edge. Flex items with flex:1 always fill
+       the full row width whether or not Reset is mounted. */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-mid);
+}
+.analytics-filters > .search-field-group {
+    flex: 1 1 160px;
+    min-width: 160px;
+}
+.analytics-filter-reset {
+    flex: 0 0 auto;
+    height: 36px;
+    white-space: nowrap;
+}
+/* Match .tag-search-input's exact box model so all four filter controls
+   sit on the same baseline in the grid row - react-datepicker's own
+   input defaults to a different font-size/padding than TagSearchSelect's,
+   which threw the row out of alignment. */
+.analytics-date-wrapper {
+    display: block;
+    width: 100%;
+}
+.analytics-date-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--ink-3);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--f-body);
+}
+.analytics-date-input::placeholder {
+    color: var(--faint);
+}
+.analytics-date-input:focus {
+    outline: none;
+    border-color: var(--acid-mid);
+    box-shadow: 0 0 0 1px var(--acid-mid);
+}
+@media (max-width: 900px) {
+    .analytics-filters > .search-field-group {
+        flex: 1 1 45%;
+    }
+    .analytics-filter-reset {
+        flex: 1 1 100%;
+    }
+}
+
+.analytics-grid {
+    display: grid;
+    /* Exactly 2 cards (bank, tag) always sit here - auto-fit left empty
+       trailing tracks un-collapsed on wide monitors (blank space on the
+       right instead of the 2 cards filling the row). A fixed 2-up always
+       fills the full row width with no gap, however wide the page is. */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+.analytics-grid > .analytics-card:first-child {
+    grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.analytics-card {
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 14px;
+    padding: 16px;
+}
+.analytics-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: var(--acid);
+}
+.analytics-card-title {
+    font-family: var(--f-head);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.01em;
+}
+.analytics-card-sub {
+    font-family: var(--f-body);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+.analytics-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-family: var(--f-body);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    padding: 20px;
+}
+
+.admin-token-table {
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 14px;
+}
+.admin-token-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 90px 60px 60px 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+}
+.admin-token-row:last-child {
+    border-bottom: none;
+}
+.admin-token-row--head {
+    position: sticky;
+    top: 0;
+    background: var(--ink-3);
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    z-index: 1;
+}
+/* The In/Out/Total data cells are right-aligned (.admin-token-num) -
+   without this, their header labels sat left-aligned in the same grid
+   column, so the numbers underneath didn't line up under their labels
+   at all. */
+.admin-token-row--head span:nth-child(4),
+.admin-token-row--head span:nth-child(5),
+.admin-token-row--head span:nth-child(6) {
+    text-align: right;
+}
+.admin-token-time {
+    font-family: var(--f-mono);
+    color: var(--muted);
+}
+.admin-token-model {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text);
+}
+.admin-token-category {
+    color: var(--purple);
+    font-family: var(--f-mono);
+    font-size: 11px;
+}
+.admin-token-row--head .admin-token-category {
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+.admin-token-num {
+    font-family: var(--f-mono);
+    text-align: right;
+    color: var(--muted);
+}
+.admin-token-num--total {
+    color: var(--acid);
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .admin-token-row {
+        grid-template-columns: 56px 1fr 50px 50px 50px;
+    }
+    .admin-token-category {
+        display: none;
+    }
+}
+
 @media (max-width: 640px) {
     .admin-tabs {
         padding: 10px 16px;
@@ -3660,6 +4045,33 @@ body.light .admin-select-wrap .admin-select {
     border: 1px solid var(--acid-mid);
     color: var(--text);
 }
+.chat-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--acid);
+    font-family: var(--f-mono);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-download-btn:hover {
+    background: var(--acid-mid);
+}
+.chat-download-btn svg {
+    flex-shrink: 0;
+}
+
 .chat-risk-badge {
     display: flex;
     align-items: flex-start;
@@ -3864,6 +4276,13 @@ body.light .admin-select-wrap .admin-select {
     color: var(--faint);
     opacity: 1;
     cursor: not-allowed;
+}
+.chat-dialog-send--stop {
+    background: var(--red);
+    color: var(--ink);
+}
+.chat-dialog-send--stop:hover {
+    box-shadow: 0 0 16px rgba(255, 59, 92, 0.35);
 }
 .chat-dialog-mic {
     flex-shrink: 0;
@@ -4169,6 +4588,25 @@ body.light .admin-select-wrap .admin-select {
 .auth-top {
     padding: 28px 32px 24px;
     border-bottom: 1px solid var(--line);
+}
+.auth-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 18px;
+    transition: color 0.15s;
+}
+.auth-back:hover {
+    color: var(--text);
 }
 .auth-logo-row {
     display: flex;
@@ -4583,6 +5021,32 @@ body.light .admin-select-wrap .admin-select {
 .react-datepicker-popper {
     z-index: 9999 !important;
 }
+.analytics-date-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px;
+    border-top: 1px solid var(--line-mid);
+    background: var(--ink-3);
+    border-radius: 0 0 var(--r-md) var(--r-md);
+}
+.analytics-date-preset-btn {
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-4);
+    color: var(--muted);
+    font-family: var(--f-body);
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+.analytics-date-preset-btn:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
+}
 .react-datepicker__triangle {
     display: none !important;
 }
@@ -4686,10 +5150,12 @@ body.light .admin-select-wrap .admin-select {
     .filter-chip {
         padding: 5px 10px;
     }
-    .add-expense-btn span.btn-text {
+    .add-expense-btn span.btn-text,
+    .cmd-search-btn span.btn-text {
         display: none;
     }
-    .add-expense-btn {
+    .add-expense-btn,
+    .cmd-search-btn {
         padding: 7px 12px;
     }
 
@@ -5020,4 +5486,523 @@ body.light .admin-select-wrap .admin-select {
     display: flex;
     width: 100%;
     justify-content: space-between !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LANDING PAGE
+═══════════════════════════════════════════════════════ */
+.landing-page {
+    /* body/html/#root are pinned to a fixed height with overflow:hidden
+       (see "html"/"body" above) - that's by design for the dashboard's
+       own internally-scrolled layout, but it silently killed normal page
+       scroll here too, since there was no scroll container of its own.
+       This becomes that container: fills the fixed-height shell and
+       scrolls internally. */
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: var(--ink);
+    background-image: radial-gradient(
+            700px circle at 85% -10%,
+            color-mix(in srgb, var(--acid) 8%, transparent),
+            transparent 60%
+        ),
+        radial-gradient(
+            600px circle at -5% 30%,
+            color-mix(in srgb, var(--purple) 10%, transparent),
+            transparent 55%
+        );
+    color: var(--text);
+}
+
+.landing-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 48px;
+    background: color-mix(in srgb, var(--ink) 80%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+    border-bottom: 1px solid var(--line);
+}
+.landing-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.landing-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.landing-theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: var(--ink-3);
+    border: 1px solid var(--line-mid);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, transform 0.15s;
+}
+.landing-theme-toggle:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    transform: rotate(14deg);
+}
+.landing-nav-signin {
+    background: transparent;
+    border: 1px solid var(--line-mid);
+    border-radius: 999px;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    padding: 9px 18px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.landing-nav-signin:hover {
+    color: var(--text);
+    border-color: var(--line-str);
+}
+.landing-nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--acid);
+    color: var(--ink);
+    border: none;
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: box-shadow 0.18s, transform 0.15s;
+}
+.landing-nav-cta:hover {
+    box-shadow: 0 0 20px var(--acid-glow);
+    transform: translateY(-1px);
+}
+
+.landing-hero {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 72px 48px 96px;
+}
+.landing-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--acid);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: var(--f-head);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+}
+.landing-hero-title {
+    font-family: var(--f-head);
+    font-size: 56px;
+    line-height: 1.04;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    margin-bottom: 22px;
+}
+.landing-hero-title span {
+    color: var(--acid);
+}
+.landing-hero-sub {
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 480px;
+    margin-bottom: 32px;
+}
+.landing-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.landing-hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: linear-gradient(135deg, var(--acid), color-mix(in srgb, var(--acid) 70%, var(--green)));
+    color: var(--ink);
+    border: none;
+    border-radius: 999px;
+    padding: 15px 28px;
+    font-family: var(--f-head);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 10px 28px -8px var(--acid-glow);
+    transition: box-shadow 0.18s, transform 0.15s;
+}
+.landing-hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px -6px var(--acid-glow);
+}
+.landing-hero-secondary {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s;
+}
+.landing-hero-secondary:hover {
+    color: var(--text);
+}
+.landing-hero-trust {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--faint);
+}
+.landing-hero-trust svg {
+    color: var(--green);
+    margin-right: 2px;
+}
+.landing-hero-trust svg:not(:first-child) {
+    margin-left: 14px;
+}
+
+.landing-hero-visual {
+    display: flex;
+    justify-content: center;
+}
+.landing-demo-chat {
+    width: 100%;
+    max-width: 380px;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    animation: landingFloat 6s ease-in-out infinite;
+}
+@keyframes landingFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+.landing-demo-chat-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+}
+.landing-demo-chat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: landingPulse 1.6s ease-in-out infinite;
+}
+@keyframes landingPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+.landing-demo-chat-body {
+    padding: 20px 16px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.landing-demo-bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    animation: landingBubbleIn 0.3s ease both;
+}
+@keyframes landingBubbleIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.landing-demo-bubble--user {
+    align-self: flex-end;
+    background: var(--green);
+    color: var(--ink);
+    border-bottom-right-radius: 4px;
+    font-family: var(--f-mono);
+}
+.landing-demo-bubble--ai {
+    align-self: flex-start;
+    background: var(--ink-3);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+}
+.landing-demo-bubble--typing {
+    display: flex;
+    gap: 4px;
+    padding: 14px;
+}
+.landing-demo-bubble--typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--faint);
+    animation: landingTypingDot 1s ease-in-out infinite;
+}
+.landing-demo-bubble--typing span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.landing-demo-bubble--typing span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+@keyframes landingTypingDot {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
+.landing-section-head {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 48px;
+}
+.landing-eyebrow {
+    display: inline-block;
+    font-family: var(--f-head);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--acid);
+    margin-bottom: 10px;
+}
+.landing-section-head h2 {
+    font-family: var(--f-head);
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.landing-features {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 48px 96px;
+}
+.landing-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+.landing-feature-card {
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-lg);
+    padding: 26px;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.landing-feature-card.is-hovered {
+    transform: translateY(-4px);
+    border-color: var(--acid-mid);
+    box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.5);
+}
+.landing-feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+.landing-feature-icon--acid {
+    background: var(--acid-dim);
+    color: var(--acid);
+    border: 1px solid var(--acid-mid);
+}
+.landing-feature-icon--purple {
+    background: var(--purple-dim);
+    color: var(--purple);
+    border: 1px solid rgba(155, 127, 255, 0.3);
+}
+.landing-feature-icon--green {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(0, 240, 160, 0.3);
+}
+.landing-feature-card h3 {
+    font-family: var(--f-head);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.landing-feature-card p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.landing-steps {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 48px 96px;
+}
+.landing-steps-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 32px;
+}
+.landing-step {
+    position: relative;
+}
+.landing-step-num {
+    font-family: var(--f-mono);
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--ghost);
+    margin-bottom: 8px;
+}
+.landing-step h3 {
+    font-family: var(--f-head);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.landing-step p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.landing-cta {
+    max-width: 680px;
+    margin: 0 auto 96px;
+    padding: 56px 40px;
+    text-align: center;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: 24px;
+}
+.landing-cta-icon {
+    color: var(--acid);
+    margin-bottom: 18px;
+}
+.landing-cta h2 {
+    font-family: var(--f-head);
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+.landing-cta p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+
+.landing-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 40px 24px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+}
+.landing-footer span {
+    font-size: 12px;
+    color: var(--faint);
+}
+
+@media (max-width: 860px) {
+    .landing-nav {
+        padding: 14px 20px;
+    }
+    .landing-hero {
+        grid-template-columns: 1fr;
+        padding: 40px 24px 56px;
+        text-align: center;
+    }
+    .landing-hero-sub {
+        max-width: none;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .landing-hero-actions {
+        justify-content: center;
+    }
+    .landing-hero-trust {
+        justify-content: center;
+    }
+    .landing-hero-title {
+        font-size: 38px;
+    }
+    .landing-features,
+    .landing-steps {
+        padding: 32px 20px 64px;
+    }
+    .landing-cta {
+        margin-left: 20px;
+        margin-right: 20px;
+        padding: 40px 24px;
+    }
+    .landing-nav-signin {
+        display: none;
+    }
 }

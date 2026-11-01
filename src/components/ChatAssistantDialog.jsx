@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Fragment } from "react";
 import axios from "axios";
-import { Send, Copy, Check, X, AlertTriangle, Mic } from "lucide-react";
+import { Send, Copy, Check, X, AlertTriangle, Mic, Download, Square } from "lucide-react";
 import { useStore } from "../store/useStore.js";
 
 // Web Speech API - only Chrome/Edge/Safari ship this, and only under the
@@ -138,28 +138,62 @@ function renderMarkdown(text) {
   return elements;
 }
 
-/** Both resolve to {answer, pendingConfirmation, risk} - the agent backend
- * may pause a write action (add/delete expense, create tag) for the
- * user's explicit approval instead of answering immediately; see
- * app/services/agent/ on the backend. `risk` is Jev's (TypeSafe AI)
- * advisory read on how unusual/risky a pending proposal looks - null
- * whenever that's unconfigured or unsure, never required. */
-async function postChatQuestion(threadId, question) {
-  const r = await axios.post(CHAT_URL, { thread_id: threadId, question });
+/** Both resolve to {answer, pendingConfirmation, risk, download} - the
+ * agent backend may pause a write action (add/delete expense, create
+ * tag) for the user's explicit approval instead of answering
+ * immediately; see app/services/agent/ on the backend. `risk` is Jev's
+ * (TypeSafe AI) advisory read on how unusual/risky a pending proposal
+ * looks - null whenever that's unconfigured or unsure, never required.
+ * `download` is set only when this turn called export_expenses - a
+ * base64-encoded file (see ChatDownload in app/schemas/chat.py) small
+ * enough to travel inline in this same response rather than needing a
+ * separate download endpoint. */
+async function postChatQuestion(threadId, question, signal) {
+  const r = await axios.post(CHAT_URL, { thread_id: threadId, question }, { signal });
   return {
     answer: extractChatReply(r.data),
     pendingConfirmation: !!r.data?.pending_confirmation,
     risk: r.data?.risk ?? null,
+    download: r.data?.download ?? null,
   };
 }
 
-async function postChatConfirm(threadId, approve) {
-  const r = await axios.post(CHAT_URL, { thread_id: threadId, confirm: approve });
+async function postChatConfirm(threadId, approve, signal) {
+  const r = await axios.post(CHAT_URL, { thread_id: threadId, confirm: approve }, { signal });
   return {
     answer: extractChatReply(r.data),
     pendingConfirmation: !!r.data?.pending_confirmation,
     risk: r.data?.risk ?? null,
+    download: r.data?.download ?? null,
   };
+}
+
+/** True for the error axios throws when a request is aborted via
+ * AbortController (see stopGenerating below) - distinct from a real
+ * network/server failure, so the catch blocks can skip showing an error
+ * bubble for a cancellation the user asked for themselves. */
+const isAbortError = (err) =>
+  axios.isCancel(err) || err?.code === "ERR_CANCELED" || err?.name === "CanceledError";
+
+/** Decodes a base64 ChatDownload payload and triggers a normal browser
+ * file-save - no server round-trip, the bytes are already here. */
+function triggerDownload({ filename, mime_type, content_b64 }) {
+  try {
+    const byteChars = atob(content_b64);
+    const bytes = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([bytes], { type: mime_type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch {
+    pushChatAlert("Couldn't prepare that file for download.");
+  }
 }
 
 const isMobileViewport = () =>
@@ -230,6 +264,10 @@ export default function ChatAssistantDialog({ open, onClose }) {
   // fresh one each time the dialog is opened, so reopening starts a clean
   // conversation rather than resuming wherever a previous one left off.
   const threadIdRef = useRef(null);
+  // The in-flight chat request's AbortController, if any - set right
+  // before each postChatQuestion/postChatConfirm call, cleared once it
+  // settles. stopGenerating() below aborts whatever's currently in it.
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (!sending) {
@@ -578,7 +616,7 @@ export default function ChatAssistantDialog({ open, onClose }) {
     return () => clearTimeout(id);
   }, [sending, hasPendingConfirmation]);
 
-  const addAssistantMessage = (answer, pendingConfirmation, risk = null) => {
+  const addAssistantMessage = (answer, pendingConfirmation, risk = null, download = null) => {
     setMessages((m) => [
       ...m,
       {
@@ -589,8 +627,17 @@ export default function ChatAssistantDialog({ open, onClose }) {
         isError: !pendingConfirmation && isErrorReply(answer),
         pendingConfirmation,
         risk,
+        download,
       },
     ]);
+    // Browsers only allow a file-save prompt to fire from a real user
+    // gesture's call stack in some cases, but a direct synchronous call
+    // like this (still inside the same async handler chain triggered by
+    // the user's Enter/click) is the standard pattern chat UIs use and
+    // works across current browsers - no separate "click to download"
+    // step needed for the common case. The button rendered below is the
+    // fallback for anyone whose browser blocks it.
+    if (download) triggerDownload(download);
   };
 
   const reportChatError = (err) => {
@@ -616,12 +663,15 @@ export default function ChatAssistantDialog({ open, onClose }) {
       { id: nextMessageId(), role: "user", text: q, ts: Date.now() },
     ]);
     setSending(true);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
-      const { answer, pendingConfirmation, risk } = await postChatQuestion(
+      const { answer, pendingConfirmation, risk, download } = await postChatQuestion(
         threadIdRef.current,
         q,
+        controller.signal,
       );
-      addAssistantMessage(answer, pendingConfirmation, risk);
+      addAssistantMessage(answer, pendingConfirmation, risk, download);
       setSending(false);
       // Most tools pause for a separate confirm step, but a few (display
       // preferences - dark mode, privacy mode, page size, bank order)
@@ -639,9 +689,21 @@ export default function ChatAssistantDialog({ open, onClose }) {
         }
       }
     } catch (err) {
-      reportChatError(err);
       setSending(false);
+      if (isAbortError(err)) return; // user clicked Stop - nothing to report
+      reportChatError(err);
+    } finally {
+      abortControllerRef.current = null;
     }
+  };
+
+  /** Cancels whatever chat request is currently in flight - the backend
+   * keeps running it to completion regardless (there's no streaming
+   * connection to actually interrupt mid-generation), but the UI stops
+   * waiting on it immediately, which is what "Stop" means to the user
+   * here. */
+  const stopGenerating = () => {
+    abortControllerRef.current?.abort();
   };
 
   /** approve=true/false in response to a message with pendingConfirmation. */
@@ -657,12 +719,15 @@ export default function ChatAssistantDialog({ open, onClose }) {
       ),
     );
     setSending(true);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
-      const { answer, pendingConfirmation, risk } = await postChatConfirm(
+      const { answer, pendingConfirmation, risk, download } = await postChatConfirm(
         threadIdRef.current,
         approve,
+        controller.signal,
       );
-      addAssistantMessage(answer, pendingConfirmation, risk);
+      addAssistantMessage(answer, pendingConfirmation, risk, download);
       setSending(false);
       // The approved action just wrote to the DB (expense/transfer/tag) -
       // pull fresh banks/expenses/tags so the dashboard updates live
@@ -678,8 +743,11 @@ export default function ChatAssistantDialog({ open, onClose }) {
         }
       }
     } catch (err) {
-      reportChatError(err);
       setSending(false);
+      if (isAbortError(err)) return;
+      reportChatError(err);
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
@@ -754,6 +822,15 @@ export default function ChatAssistantDialog({ open, onClose }) {
                       <div className="chat-bubble-text">
                         {m.role === "assistant" ? renderMarkdown(m.text) : m.text}
                       </div>
+                      {m.download && (
+                        <button
+                          type="button"
+                          className="chat-download-btn"
+                          onClick={() => triggerDownload(m.download)}
+                        >
+                          <Download size={13} /> {m.download.filename}
+                        </button>
+                      )}
                       {m.pendingConfirmation && m.risk?.flagged && (
                         <div className="chat-risk-badge">
                           <AlertTriangle size={13} />
@@ -867,15 +944,27 @@ export default function ChatAssistantDialog({ open, onClose }) {
               <Mic size={17} strokeWidth={2.25} />
             </button>
           )}
-          <button
-            type="button"
-            className="chat-dialog-send"
-            onClick={sendUserMessage}
-            disabled={sending || hasPendingConfirmation || !input.trim()}
-            aria-label="Send message"
-          >
-            <Send size={17} strokeWidth={2.25} />
-          </button>
+          {sending ? (
+            <button
+              type="button"
+              className="chat-dialog-send chat-dialog-send--stop"
+              onClick={stopGenerating}
+              aria-label="Stop generating"
+              title="Stop generating"
+            >
+              <Square size={15} strokeWidth={2.25} fill="currentColor" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="chat-dialog-send"
+              onClick={sendUserMessage}
+              disabled={hasPendingConfirmation || !input.trim()}
+              aria-label="Send message"
+            >
+              <Send size={17} strokeWidth={2.25} />
+            </button>
+          )}
         </div>
       </div>
     </div>

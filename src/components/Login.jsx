@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useStore } from '../store/useStore.js'
 
 export default function Login() {
-  const { loginUser, setLoginPageStatus } = useStore()
+  const { loginUser, setLoginPageStatus, setShowLanding } = useStore()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -15,6 +15,9 @@ export default function Login() {
       <div className="auth-panel">
         <div className="auth-scanlines" />
         <div className="auth-top">
+          <button type="button" className="auth-back" onClick={() => setShowLanding(true)}>
+            <ArrowLeft size={14} /> Back
+          </button>
           <div className="auth-logo-row">
             <div className="auth-logo-hex">₹</div>
             <div className="auth-logo-name">Stalk<span>My</span>Money</div>

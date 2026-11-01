@@ -214,6 +214,10 @@ export const useStore = create((set, get) => ({
   isAdminDashboardOpen: false,
   isDarkMode: true,
   privacyMode: false,
+  // Shown to every signed-out visitor before Login/Register (see
+  // LandingPage.jsx) - lives here, not as local App.jsx state, so Login/
+  // Register can flip it back on (a "back" button) without prop drilling.
+  showLanding: true,
   showLoginPage: true,
   showLoader: false,
   showAlert: false,
@@ -259,6 +263,7 @@ export const useStore = create((set, get) => ({
   setIsAdmin: (v) => set({ isAdmin: v }),
   setChatbotAccess: (v) => set({ chatbotEnabled: v }),
   setLoginPageStatus: (v) => set({ showLoginPage: v }),
+  setShowLanding: (v) => set({ showLanding: v }),
   setShowAlert: (v) => set({ showAlert: v }),
   setAlertMessages: (v) => set({ alertMessages: v }),
   setShowLoader: (v) => set({ showLoader: v }),
@@ -954,6 +959,54 @@ export const useStore = create((set, get) => ({
       get().pushAlert(handleError(err));
     } finally {
       set({ llmStatusLoading: false });
+    }
+  },
+
+  // ── Token usage metrics - how many tokens chat requests are actually
+  // sending to the LLM, per request and totals (see admin/llm-metrics -
+  // process-local, resets on restart, an operational view not a billing
+  // system of record). ──
+  llmMetrics: null,
+  llmMetricsLoading: false,
+
+  async fetchLlmMetrics() {
+    set({ llmMetricsLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/llm-metrics`);
+      set({ llmMetrics: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ llmMetricsLoading: false });
+    }
+  },
+
+  // ── Analytics - spend aggregated by bank / tag / day, for the charts
+  // view. Available to every signed-in user (not admin-gated). ──
+  analyticsOpen: false,
+  analyticsData: null,
+  analyticsLoading: false,
+  setAnalyticsOpen: (v) => set({ analyticsOpen: v }),
+
+  async fetchAnalytics(filters = {}) {
+    set({ analyticsLoading: true });
+    try {
+      const params = new URLSearchParams();
+      (filters.bankIds || []).forEach((id) => params.append("bank_id", id));
+      (filters.tagIds || []).forEach((id) => params.append("tag_id", id));
+      (filters.excludeTagIds || []).forEach((id) => params.append("exclude_tag_id", id));
+      if (filters.startDate) params.append("start_date", filters.startDate);
+      if (filters.endDate) params.append("end_date", filters.endDate);
+      if (filters.keyword) params.append("keyword", filters.keyword);
+      const qs = params.toString();
+      const r = await axios.get(
+        `${BASE_URL}/expenses/analytics/overview${qs ? `?${qs}` : ""}`,
+      );
+      set({ analyticsData: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ analyticsLoading: false });
     }
   },
 

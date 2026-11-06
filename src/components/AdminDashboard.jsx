@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "../store/useStore.js";
 import {
   ShieldCheck,
@@ -12,9 +12,14 @@ import {
   KeyRound,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   SlidersHorizontal,
   Save,
   BarChart3,
+  Eye,
+  EyeOff,
+  ArrowRight,
 } from "lucide-react";
 
 function formatDate(iso) {
@@ -30,10 +35,16 @@ function formatDate(iso) {
 }
 
 const PROVIDERS = [
-  { value: "groq", label: "Groq (ChatGroq)" },
-  { value: "openai", label: "OpenAI (ChatOpenAI)" },
-  { value: "anthropic", label: "Anthropic (ChatAnthropic)" },
-  { value: "openrouter", label: "OpenRouter" },
+  { value: "groq", label: "Groq (ChatGroq)", short: "Groq", tech: "ChatGroq", color: "acid" },
+  { value: "openai", label: "OpenAI (ChatOpenAI)", short: "OpenAI", tech: "ChatOpenAI", color: "green" },
+  {
+    value: "anthropic",
+    label: "Anthropic (ChatAnthropic)",
+    short: "Anthropic",
+    tech: "ChatAnthropic",
+    color: "purple",
+  },
+  { value: "openrouter", label: "OpenRouter", short: "OpenRouter", tech: "proxy", color: "blue" },
 ];
 
 // Curated, not exhaustive - each provider (especially OpenRouter, a proxy
@@ -71,43 +82,140 @@ const TABS = [
   { id: "usage", label: "Usage", icon: Activity },
 ];
 
+const ADMIN_USERS_PAGE_SIZES = [5, 10, 15, 20, 50];
+
+function UsersPagination() {
+  const { adminUsersTotal, adminUsersPage, adminUsersPageSize, setAdminUsersPage } = useStore();
+  const totalPages = Math.max(1, Math.ceil(adminUsersTotal / adminUsersPageSize));
+  if (!adminUsersTotal || totalPages <= 1) return null;
+
+  const getRange = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [1];
+    if (adminUsersPage > 3) pages.push("...");
+    for (let i = Math.max(2, adminUsersPage - 1); i <= Math.min(totalPages - 1, adminUsersPage + 1); i++)
+      pages.push(i);
+    if (adminUsersPage < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
+
+  const start = (adminUsersPage - 1) * adminUsersPageSize + 1;
+  const end = Math.min(adminUsersPage * adminUsersPageSize, adminUsersTotal);
+
+  return (
+    <div className="admin-pagination">
+      <div className="admin-pagination-info">
+        {start}–{end} of {adminUsersTotal} · page {adminUsersPage}/{totalPages}
+      </div>
+      <div className="admin-pagination-btns">
+        <button
+          type="button"
+          className="admin-pg-btn admin-pg-btn--nav"
+          disabled={adminUsersPage <= 1}
+          onClick={() => setAdminUsersPage(adminUsersPage - 1)}
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        {getRange().map((p, i) =>
+          p === "..." ? (
+            <span key={`d${i}`} className="admin-pg-ellipsis">
+              ···
+            </span>
+          ) : (
+            <button
+              type="button"
+              key={p}
+              className={`admin-pg-btn${p === adminUsersPage ? " active" : ""}`}
+              onClick={() => setAdminUsersPage(p)}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          className="admin-pg-btn admin-pg-btn--nav"
+          disabled={adminUsersPage >= totalPages}
+          onClick={() => setAdminUsersPage(adminUsersPage + 1)}
+          aria-label="Next page"
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function UsersTab() {
   const {
     adminUsers,
     adminUsersLoading,
+    adminUsersTotal,
+    adminUsersPageSize,
     fetchAdminUsers,
+    setAdminUsersSearch,
+    setAdminUsersPageSize,
     setUserChatbotAccess,
     setUserIsAdmin,
     setUserDisabled,
   } = useStore();
   const [query, setQuery] = useState("");
+  const skipNextDebounce = useRef(true);
 
   useEffect(() => {
     fetchAdminUsers();
   }, []);
 
+  // Debounced server-side search - the list is paginated now, so filtering
+  // the already-loaded array client-side (the old approach) would only
+  // ever search the current page, not the whole user base.
+  useEffect(() => {
+    if (skipNextDebounce.current) {
+      skipNextDebounce.current = false;
+      return;
+    }
+    const id = setTimeout(() => setAdminUsersSearch(query), 400);
+    return () => clearTimeout(id);
+  }, [query]);
+
   const enabledCount = adminUsers.filter((u) => u.chatbot_enabled).length;
-  const q = query.trim().toLowerCase();
-  const visibleUsers = q
-    ? adminUsers.filter(
-        (u) =>
-          u.username.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q),
-      )
-    : adminUsers;
 
   return (
     <div className="admin-dashboard-body">
       <div className="admin-panel">
         <div className="admin-panel-row">
           <div className="admin-tab-sub admin-tab-sub--wide admin-tab-sub--tight">
-            {q
-              ? `${visibleUsers.length} of ${adminUsers.length} users`
-              : `${adminUsers.length} user${adminUsers.length === 1 ? "" : "s"}`}{" "}
-            · {enabledCount} with AI chatbot access
+            {adminUsersTotal} user{adminUsersTotal === 1 ? "" : "s"} · {enabledCount} on this
+            page with AI chatbot access
           </div>
 
-          {!adminUsersLoading && adminUsers.length > 0 && (
+          <div className="admin-users-controls">
+            <label className="admin-page-size-wrap">
+              <span className="admin-page-size-label">Rows</span>
+              <span className="admin-page-size-value">{adminUsersPageSize}</span>
+              <ChevronDown size={14} className="admin-page-size-chevron" />
+              {/* Invisible but covers the whole pill (position:absolute;
+                  inset:0) - the <select>'s own native hit-area is only as
+                  wide as its rendered text, so without this most of the
+                  visible pill wasn't actually clickable: clicking the
+                  *label* around it only focuses a <select>, it doesn't
+                  open the dropdown, in every major browser. */}
+              <select
+                className="admin-page-size-select"
+                value={adminUsersPageSize}
+                onChange={(e) => setAdminUsersPageSize(Number(e.target.value))}
+                aria-label="Rows per page"
+              >
+                {ADMIN_USERS_PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <div className="d-input-wrap admin-search-wrap">
               <div className="d-input-icon">
                 <Search size={15} />
@@ -130,15 +238,15 @@ function UsersTab() {
                 </button>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {adminUsersLoading ? (
           <div className="admin-dashboard-empty">Loading users…</div>
         ) : adminUsers.length === 0 ? (
-          <div className="admin-dashboard-empty">No users found.</div>
-        ) : visibleUsers.length === 0 ? (
-          <div className="admin-dashboard-empty">No users match "{query}".</div>
+          <div className="admin-dashboard-empty">
+            {query ? `No users match "${query}".` : "No users found."}
+          </div>
         ) : (
           <div className="admin-user-table admin-user-table--wide">
             <div className="admin-user-row admin-user-row--head">
@@ -148,7 +256,7 @@ function UsersTab() {
               <span>AI Chatbot</span>
               <span>Disabled</span>
             </div>
-            {visibleUsers.map((u) => (
+            {adminUsers.map((u) => (
               <div className="admin-user-row" key={u.id}>
                 <div className="admin-user-identity">
                   <div className="admin-user-av">
@@ -193,15 +301,23 @@ function UsersTab() {
             ))}
           </div>
         )}
+        <UsersPagination />
       </div>
     </div>
   );
 }
 
-function ProviderKeysPanel() {
-  const { providerKeys, providerKeysLoading, providerKeysSaving, fetchProviderKeys, saveProviderKey } =
-    useStore();
+function ProviderKeysPanel({ activeProvider, onSelectProvider }) {
+  const {
+    providerKeys,
+    providerKeysLoading,
+    providerKeysSaving,
+    fetchProviderKeys,
+    saveProviderKey,
+  } = useStore();
   const [drafts, setDrafts] = useState({});
+  const [revealed, setRevealed] = useState({});
+  const [justSaved, setJustSaved] = useState(null);
 
   useEffect(() => {
     fetchProviderKeys();
@@ -214,43 +330,96 @@ function ProviderKeysPanel() {
   const onSave = async (provider) => {
     const value = (drafts[provider] || "").trim();
     const ok = await saveProviderKey(provider, value);
-    if (ok) setDrafts((d) => ({ ...d, [provider]: "" }));
+    if (ok) {
+      setDrafts((d) => ({ ...d, [provider]: "" }));
+      setJustSaved(provider);
+      setTimeout(() => setJustSaved((cur) => (cur === provider ? null : cur)), 1400);
+    }
   };
 
   return (
-    <div className="admin-keys-list admin-keys-list--cards">
+    <div className="admin-keys-list admin-keys-list--flat">
       {PROVIDERS.map((p) => {
         const status = providerKeys?.[p.value];
         const saving = !!providerKeysSaving?.[p.value];
+        const isActive = activeProvider === p.value;
+        const hasDraft = !!(drafts[p.value] || "").trim();
+        const statusKind = status?.configured
+          ? status.source === "database"
+            ? "set"
+            : "env"
+          : "unset";
         return (
-          <div className="admin-key-row" key={p.value}>
-            <div className="admin-key-row-head">
-              <span className="admin-key-provider">{p.label}</span>
-              {status?.configured ? (
-                <span className={`admin-badge admin-badge--${status.source === "database" ? "admin" : "neutral"}`}>
-                  <Check size={11} /> {status.masked}
-                  {status.source === "env" ? " (.env)" : ""}
-                </span>
-              ) : (
-                <span className="admin-badge admin-badge--warn">Not set</span>
-              )}
+          <div
+            className={`admin-key-row admin-key-row--${statusKind}${isActive ? " is-active" : ""}${
+              justSaved === p.value ? " just-saved" : ""
+            }`}
+            key={p.value}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelectProvider?.(p.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectProvider?.(p.value);
+              }
+            }}
+            title={isActive ? undefined : `Switch Model config to ${p.short}`}
+          >
+            <div className={`admin-key-avatar admin-key-avatar--${p.color}`}>
+              {p.short.charAt(0)}
             </div>
-            <div className="admin-key-row-input">
-              <input
-                className="d-input-field"
-                type="password"
-                autoComplete="off"
-                placeholder={status?.configured ? "Enter a new key to replace it…" : "Paste API key…"}
-                value={drafts[p.value] || ""}
-                onChange={(e) => setDrafts((d) => ({ ...d, [p.value]: e.target.value }))}
-              />
+            <div className="admin-key-identity">
+              <span className="admin-key-provider">
+                {p.short}
+                {isActive && <span className="admin-key-active-pill">Active</span>}
+              </span>
+              <span className="admin-key-sub">
+                <span className={`admin-key-dot admin-key-dot--${statusKind}`} />
+                {status?.configured
+                  ? `${status.masked}${status.source === "env" ? " · .env" : ""}`
+                  : "Not configured"}
+              </span>
+            </div>
+            <div className="admin-key-row-input" onClick={(e) => e.stopPropagation()}>
+              <div className="admin-key-input-wrap">
+                <input
+                  className="admin-key-input"
+                  type={revealed[p.value] ? "text" : "password"}
+                  autoComplete="off"
+                  placeholder={status?.configured ? "Replace key…" : "Paste API key…"}
+                  value={drafts[p.value] || ""}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [p.value]: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && hasDraft && !saving) onSave(p.value);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="admin-key-reveal"
+                  onClick={() => setRevealed((r) => ({ ...r, [p.value]: !r[p.value] }))}
+                  tabIndex={-1}
+                  title={revealed[p.value] ? "Hide" : "Show"}
+                >
+                  {revealed[p.value] ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+              </div>
               <button
                 type="button"
-                className="d-btn d-btn-primary admin-key-save"
-                disabled={saving || !(drafts[p.value] || "").trim()}
+                className={`admin-key-save${hasDraft ? " is-armed" : ""}${
+                  justSaved === p.value ? " just-saved" : ""
+                }`}
+                disabled={saving || !hasDraft}
                 onClick={() => onSave(p.value)}
+                title="Save key"
               >
-                {saving ? "…" : "Save"}
+                {saving ? (
+                  <span className="admin-key-save-spinner" />
+                ) : justSaved === p.value ? (
+                  <Check size={14} />
+                ) : (
+                  <ArrowRight size={14} />
+                )}
               </button>
               {status?.source === "database" && (
                 <button
@@ -260,7 +429,7 @@ function ProviderKeysPanel() {
                   onClick={() => saveProviderKey(p.value, "")}
                   title="Clear this key (falls back to .env, if set)"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               )}
             </div>
@@ -325,6 +494,7 @@ function AiProviderTab() {
 
   return (
     <div className="admin-dashboard-body">
+      <div className="admin-ai-columns">
       <div className="admin-panel">
         <div className="admin-panel-title">
           <SlidersHorizontal size={15} />
@@ -389,19 +559,40 @@ function AiProviderTab() {
             </label>
           )}
 
+          <div className="admin-form-divider">Advanced</div>
+
           <div className="admin-form-row">
             <label className="admin-form-field">
-              <span>Temperature</span>
-              <input
-                className="d-input-field"
-                type="number"
-                step="0.1"
-                min="0"
-                max="2"
-                placeholder="default"
-                value={form.temperature ?? ""}
-                onChange={(e) => set("temperature", e.target.value)}
-              />
+              <span>
+                Temperature
+                <span className="admin-field-value">
+                  {form.temperature === "" || form.temperature == null ? "default" : form.temperature}
+                </span>
+              </span>
+              <div className="admin-slider-row">
+                <input
+                  className="admin-slider"
+                  type="range"
+                  step="0.1"
+                  min="0"
+                  max="2"
+                  value={form.temperature === "" || form.temperature == null ? 1 : form.temperature}
+                  onChange={(e) => set("temperature", e.target.value)}
+                  style={{
+                    "--pct": `${(((form.temperature === "" || form.temperature == null ? 1 : form.temperature) / 2) * 100)}%`,
+                  }}
+                />
+                <input
+                  className="d-input-field admin-slider-number"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="2"
+                  placeholder="1.0"
+                  value={form.temperature ?? ""}
+                  onChange={(e) => set("temperature", e.target.value)}
+                />
+              </div>
             </label>
             <label className="admin-form-field">
               <span>Max tokens</span>
@@ -455,7 +646,8 @@ function AiProviderTab() {
           Set directly here, or leave blank to fall back to that provider's .env value (Groq
           already works out of the box this way).
         </div>
-        <ProviderKeysPanel />
+        <ProviderKeysPanel activeProvider={form.provider} onSelectProvider={onProviderChange} />
+      </div>
       </div>
     </div>
   );
@@ -714,7 +906,7 @@ export default function AdminDashboard() {
   const close = () => setAdminDashboardOpen(false);
 
   return (
-    <div className="admin-page" role="dialog" aria-modal="true" aria-labelledby="admin-dashboard-title">
+    <div className="inline-view" aria-labelledby="admin-dashboard-title">
       <div className="admin-page-inner">
         <div className="admin-page-header">
           <div className="dialog-icon acid">

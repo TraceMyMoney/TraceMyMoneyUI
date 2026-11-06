@@ -27,6 +27,7 @@ export default function Dashboard() {
     setApplyTagEntry,
     chatbotEnabled,
     setAdminDashboardOpen,
+    isAdminDashboardOpen,
     analyticsOpen,
   } = useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -84,41 +85,49 @@ export default function Dashboard() {
         />
 
         <main className="main-content">
-          {/* Command Bar */}
-          <div className="command-bar">
-            <div className="cmd-actions">
-              <button
-                type="button"
-                className="add-expense-btn"
-                onClick={() => setSearchOpen((v) => !v)}
-              >
-                <span>⌕</span>
-                <span className="btn-text">Search / filter</span>
-              </button>
-              <button
-                onClick={() => setTagDialogOpen(true)}
-                className="add-expense-btn"
-              >
-                + Tag
-              </button>
-              <button
-                className="add-expense-btn"
-                onClick={() => setDrawerOpen(true)}
-              >
-                <span>＋</span>
-                <span className="btn-text">Add Expense</span>
-              </button>
-            </div>
-          </div>
+          {isAdminDashboardOpen ? (
+            <AdminDashboard />
+          ) : analyticsOpen ? (
+            <AnalyticsDashboard />
+          ) : (
+            <>
+              {/* Command Bar */}
+              <div className="command-bar">
+                <div className="cmd-actions">
+                  <button
+                    type="button"
+                    className="add-expense-btn"
+                    onClick={() => setSearchOpen((v) => !v)}
+                  >
+                    <span>⌕</span>
+                    <span className="btn-text">Search / filter</span>
+                  </button>
+                  <button
+                    onClick={() => setTagDialogOpen(true)}
+                    className="add-expense-btn"
+                  >
+                    + Tag
+                  </button>
+                  <button
+                    className="add-expense-btn"
+                    onClick={() => setDrawerOpen(true)}
+                  >
+                    <span>＋</span>
+                    <span className="btn-text">Add Expense</span>
+                  </button>
+                </div>
+              </div>
 
-          {/* Search Panel */}
-          <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} />
+              {/* Search Panel */}
+              <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-          {/* Expense Table */}
-          <ExpenseTable onEditEntry={handleEditEntry} />
+              {/* Expense Table */}
+              <ExpenseTable onEditEntry={handleEditEntry} />
 
-          {/* Pagination */}
-          <Pagination />
+              {/* Pagination */}
+              <Pagination />
+            </>
+          )}
         </main>
       </div>
 
@@ -142,12 +151,10 @@ export default function Dashboard() {
         onClose={() => setTagDialogOpen(false)}
       />
       <ApplyTagsDialog />
-      <AdminDashboard />
-      <AnalyticsDashboard />
       {chatbotEnabled && (
         <>
           <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
-          {!analyticsOpen && (
+          {!analyticsOpen && !isAdminDashboardOpen && (
             <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
           )}
         </>

@@ -254,7 +254,7 @@ export default function AnalyticsDashboard() {
   if (!analyticsOpen) return null;
 
   return (
-    <div className="admin-page" role="dialog" aria-modal="true" aria-labelledby="analytics-title">
+    <div className="inline-view" aria-labelledby="analytics-title">
       <div className="admin-page-inner analytics-page-inner">
         <div className="admin-page-header">
           <div className="dialog-icon acid">

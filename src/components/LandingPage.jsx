@@ -24,6 +24,7 @@ const DEMO_MESSAGES = [
   { you: "download pdf of top 5 food expenses", reply: "Here's your PDF - sorted, grouped by bank, ready to download." },
   { you: "how much did I spend on travel this month?", reply: "₹4,120 across 6 entries this month." },
   { you: "turn on dark mode", reply: "Dark mode turned on." },
+  { you: "show me my spending analytics", reply: "Opening Analytics - spend by bank, by tag, and over time." },
 ];
 
 const FEATURES = [
@@ -64,6 +65,18 @@ const FEATURES = [
     desc: "A one-tap privacy mode hides every amount on screen, and your data never trains anyone else's model.",
   },
 ];
+
+const ANALYTICS_POINTS = [
+  "Spend over time, by bank, and by tag - three charts, one screen",
+  "Filter by date range, account, tag, or a keyword search",
+  "Quick presets - last 7 days, month to date, year to date, last month",
+];
+
+// A tiny hand-animated mock of the real Analytics view - bars rippling in,
+// a donut slowly turning, a sparkline drawing itself - the same "concrete
+// demo, not aspirational copy" approach as TypingDemo above, just for the
+// chart feature instead of the chat one.
+const ANALYTICS_BARS = [38, 62, 48, 78, 44, 68, 58];
 
 const STEPS = [
   {
@@ -121,6 +134,41 @@ function TypingDemo() {
             <span />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsDemo() {
+  return (
+    <div className="landing-demo-chat landing-demo-analytics">
+      <div className="landing-demo-chat-head">
+        <div className="landing-demo-chat-dot" />
+        <span>Analytics</span>
+      </div>
+      <div className="landing-demo-analytics-body">
+        <svg
+          className="landing-demo-sparkline"
+          viewBox="0 0 200 42"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <polyline points="0,32 18,24 36,28 54,12 72,20 90,8 108,18 126,10 144,22 162,6 180,14 200,4" />
+        </svg>
+        <div className="landing-demo-analytics-row">
+          <div className="landing-demo-bars">
+            {ANALYTICS_BARS.map((h, i) => (
+              <div
+                key={i}
+                className="landing-demo-bar"
+                style={{ "--h": `${h}%`, animationDelay: `${i * 0.18}s` }}
+              />
+            ))}
+          </div>
+          <div className="landing-demo-donut">
+            <div className="landing-demo-donut-hole" />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -218,6 +266,28 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="landing-analytics-spotlight">
+        <div className="landing-analytics-copy">
+          <span className="landing-eyebrow">New - Analytics</span>
+          <h2>Watch your spending patterns surface themselves</h2>
+          <p>
+            Every expense you log already feeds a live dashboard - no extra setup, no exports to
+            a spreadsheet. Open it, pick a range, and see it.
+          </p>
+          <ul className="landing-analytics-points">
+            {ANALYTICS_POINTS.map((point) => (
+              <li key={point}>
+                <Check size={14} />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="landing-analytics-visual">
+          <AnalyticsDemo />
         </div>
       </section>
 

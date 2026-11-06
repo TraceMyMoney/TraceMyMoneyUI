@@ -126,6 +126,7 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
     useStore();
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
+  const yr = (exp.created_at || "").slice(6, 10);
   const [hovEnt, setHovEnt] = useState(null);
 
   return (
@@ -133,9 +134,12 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
       <div className={`expense-row${open ? " open" : ""}`} onClick={onToggle}>
         {open && <div className="expense-row-accent" />}
         {/* Date */}
-        <div>
+        <div className="exp-date-cell">
           <div className={`exp-date-day${open ? " active" : ""}`}>{day}</div>
-          <div className="exp-date-mon">{mon}</div>
+          <div>
+            <div className="exp-date-mon">{mon}</div>
+            <div className="exp-date-yr">{yr}</div>
+          </div>
         </div>
         {/* Meta */}
         <div>
@@ -261,6 +265,7 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
     useStore();
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
+  const yr = (exp.created_at || "").slice(6, 10);
 
   return (
     <div className={`expense-card${open ? " open" : ""}`} onClick={onToggle}>
@@ -268,6 +273,7 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
         <div className="expense-card-date">
           <div className="expense-card-day">{day}</div>
           <div className="expense-card-mon">{mon}</div>
+          <div className="expense-card-yr">{yr}</div>
         </div>
         <div className="expense-card-body">
           <div className="expense-card-bank">

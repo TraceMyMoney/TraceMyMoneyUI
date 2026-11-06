@@ -11,6 +11,7 @@ const BASE_URL =
     ? `http://${window.location.hostname}:5000`
     : "https://api.stalk-my-money.in/");
 const ALL = "all";
+const ALL_PAGE_SIZE = 99999;
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 
@@ -209,8 +210,14 @@ export const useStore = create((set, get) => ({
   // switch.
   chatbotEnabled: false,
   // Admin dashboard state - only ever populated for isAdmin users.
+  // Server-paginated (not loaded all at once) - adminUsers holds just the
+  // current page.
   adminUsers: [],
   adminUsersLoading: false,
+  adminUsersTotal: 0,
+  adminUsersPage: 1,
+  adminUsersPageSize: 5,
+  adminUsersSearch: "",
   isAdminDashboardOpen: false,
   isDarkMode: true,
   privacyMode: false,
@@ -283,8 +290,8 @@ export const useStore = create((set, get) => ({
   setIsDarkMode: (v) => set({ isDarkMode: v }),
   setPrivacyMode: (v) => set({ privacyMode: v }),
 
-  pushAlert(msg) {
-    set((s) => ({ showAlert: true, alertMessages: [...s.alertMessages, msg] }));
+  pushAlert(msg, type = "error") {
+    set((s) => ({ showAlert: true, alertMessages: [...s.alertMessages, { msg, type }] }));
   },
 
   /** Custom replacement for window.confirm() - await it, resolves to
@@ -490,7 +497,7 @@ export const useStore = create((set, get) => ({
     set({ showLoader: true, currentSelectedBankId: bank.bankId });
     try {
       const s = get();
-      const ps = s.pageSize === ALL ? s.currentTotalExpenses * 100 : s.pageSize;
+      const ps = s.pageSize === ALL ? ALL_PAGE_SIZE : s.pageSize;
       const r = await axios.get(`${BASE_URL}/expenses/`, {
         params: {
           per_page: ps,
@@ -519,7 +526,7 @@ export const useStore = create((set, get) => ({
     if (!silent) set({ showLoader: true });
     try {
       const s = get();
-      const ps = s.pageSize === ALL ? s.currentTotalExpenses * 100 : s.pageSize;
+      const ps = s.pageSize === ALL ? ALL_PAGE_SIZE : s.pageSize;
       const data = {
         page_number: s.pageNumber,
         per_page: ps,
@@ -767,16 +774,36 @@ export const useStore = create((set, get) => ({
   // shown/usable for admins. ──
   setAdminDashboardOpen: (v) => set({ isAdminDashboardOpen: v }),
 
-  async fetchAdminUsers() {
-    set({ adminUsersLoading: true });
+  async fetchAdminUsers(overrides = {}) {
+    const page = overrides.page ?? get().adminUsersPage;
+    const pageSize = overrides.pageSize ?? get().adminUsersPageSize;
+    const search = "search" in overrides ? overrides.search : get().adminUsersSearch;
+    set({ adminUsersLoading: true, adminUsersPage: page, adminUsersPageSize: pageSize, adminUsersSearch: search });
     try {
-      const r = await axios.get(`${BASE_URL}/admin/users`);
-      set({ adminUsers: r.data?.users || [] });
+      const params = new URLSearchParams({ page_number: page, per_page: pageSize });
+      if (search.trim()) params.append("search", search.trim());
+      const r = await axios.get(`${BASE_URL}/admin/users?${params.toString()}`);
+      set({
+        adminUsers: r.data?.users || [],
+        adminUsersTotal: r.data?.total || 0,
+      });
     } catch (err) {
       get().pushAlert(handleError(err));
     } finally {
       set({ adminUsersLoading: false });
     }
+  },
+
+  setAdminUsersSearch(search) {
+    get().fetchAdminUsers({ search, page: 1 });
+  },
+
+  setAdminUsersPage(page) {
+    get().fetchAdminUsers({ page });
+  },
+
+  setAdminUsersPageSize(pageSize) {
+    get().fetchAdminUsers({ pageSize, page: 1 });
   },
 
   async setUserChatbotAccess(userId, enabled) {
@@ -890,7 +917,7 @@ export const useStore = create((set, get) => ({
         api_key: apiKey,
       });
       set((s) => ({ providerKeys: { ...s.providerKeys, [provider]: r.data } }));
-      get().pushAlert(apiKey ? `${provider} API key saved.` : `${provider} API key cleared.`);
+      get().pushAlert(apiKey ? `${provider} API key saved.` : `${provider} API key cleared.`, "success");
       return true;
     } catch (err) {
       get().pushAlert(handleError(err));

@@ -6,13 +6,17 @@ export default function AlertToast() {
   const clear = () => { setShowAlert(false); setAlertMessages([]) }
   return (
     <div className="alert-container">
-      {alertMessages.map((msg, i) => (
-        <div key={i} className="alert-toast">
-          <div className="alert-icon">⚠</div>
-          <span className="alert-msg">{msg}</span>
-          <button className="alert-close" onClick={clear}>×</button>
-        </div>
-      ))}
+      {alertMessages.map((item, i) => {
+        const msg = typeof item === 'string' ? item : item.msg
+        const type = typeof item === 'string' ? 'error' : (item.type || 'error')
+        return (
+          <div key={i} className={`alert-toast alert-toast--${type}`}>
+            <div className="alert-icon">{type === 'success' ? '✓' : '⚠'}</div>
+            <span className="alert-msg">{msg}</span>
+            <button className="alert-close" onClick={clear}>×</button>
+          </div>
+        )
+      })}
     </div>
   )
 }

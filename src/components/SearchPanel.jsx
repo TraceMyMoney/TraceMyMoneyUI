@@ -157,15 +157,14 @@ export default function SearchPanel({ open, onClose }) {
               className="page-size-select"
               value={pageSize}
               onChange={(e) => {
-                setPageSize(
-                  e.target.value === "ALL" ? "all" : Number(e.target.value),
-                );
+                const val = e.target.value === "all" ? "all" : Number(e.target.value);
+                setPageSize(val);
                 setPageNumber(1);
                 fetchExpenses();
               }}
             >
               {PAGE_SIZES.map((p) => (
-                <option key={p} value={p}>
+                <option key={p} value={typeof p === "string" ? p.toLowerCase() : p}>
                   {p} per page
                 </option>
               ))}

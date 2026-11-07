@@ -515,12 +515,24 @@ export const useStore = create((set, get) => ({
     try {
       const s = get();
       const ps = s.pageSize === ALL ? ALL_PAGE_SIZE : s.pageSize;
+      // Keep the excluded tags when switching accounts, otherwise their
+      // amounts flow back into the list and the charts.
+      const excluded = s.searchExcludeTags || [];
       const r = await axios.get(`${BASE_URL}/expenses/`, {
-        params: {
-          per_page: ps,
-          page_number: s.pageNumber,
-          bank_id: bank.bankId,
-        },
+        params: excluded.length
+          ? {
+              data: JSON.stringify({
+                bank_id: bank.bankId,
+                per_page: ps,
+                page_number: s.pageNumber,
+                exclude_tags: excluded,
+              }),
+            }
+          : {
+              per_page: ps,
+              page_number: s.pageNumber,
+              bank_id: bank.bankId,
+            },
       });
       const { expenses, topup, nonTopup, total } = get()._parseExpenses(
         r.data || [],

@@ -1,7 +1,9 @@
 import React from 'react'
 import { useStore } from '../store/useStore.js'
+import { usePhoneScreen } from '../useWideScreen.js'
 export default function Pagination() {
   const { currentTotalExpenses, pageNumber, pageSize, setPageNumber, fetchExpenses } = useStore()
+  const phone = usePhoneScreen()
   const ps = pageSize === 'all' ? currentTotalExpenses : Number(pageSize)
   const totalPages = Math.max(1, Math.ceil(currentTotalExpenses / ps))
   const go = p => { setPageNumber(p); fetchExpenses() }
@@ -16,6 +18,20 @@ export default function Pagination() {
   }
   if (!currentTotalExpenses) return null
   const start = ((pageNumber-1)*ps)+1, end = Math.min(pageNumber*ps, currentTotalExpenses)
+  if (phone) {
+    // Compact dock for phones: prev, "Page 1 of 6", next. The Add button
+    // floats on the right of this bar.
+    return (
+      <div className="pagination pagination--phone">
+        <button className="pg-btn" aria-label="Previous page" disabled={pageNumber<=1} onClick={()=>go(pageNumber-1)}>‹</button>
+        <div className="pg-compact">
+          <b>Page {pageNumber} of {totalPages}</b>
+          <span>{start}–{end} of {currentTotalExpenses}</span>
+        </div>
+        <button className="pg-btn" aria-label="Next page" disabled={pageNumber>=totalPages} onClick={()=>go(pageNumber+1)}>›</button>
+      </div>
+    )
+  }
   return (
     <div className="pagination">
       <div className="pagination-info">{start}–{end} of {currentTotalExpenses} · page {pageNumber}/{totalPages}</div>

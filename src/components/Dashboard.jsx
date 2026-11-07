@@ -14,7 +14,9 @@ import AdminDashboard from "./AdminDashboard.jsx";
 import ExpenseInsights from "./ExpenseInsights.jsx";
 import ExcludedTagsDialog from "./ExcludedTagsDialog.jsx";
 import InsightsFilterBar from "./InsightsFilterBar.jsx";
-import useWideScreen, { useTabletScreen } from "../useWideScreen.js";
+import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen.js";
+import MobileTopArea from "./MobileTopArea.jsx";
+import { Plus } from "lucide-react";
 
 function isTypingInField(el) {
   if (!el || !el.tagName) return false;
@@ -36,6 +38,7 @@ export default function Dashboard() {
   } = useStore();
   const wide = useWideScreen();
   const tablet = useTabletScreen();
+  const phone = usePhoneScreen();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -108,6 +111,7 @@ export default function Dashboard() {
           activeTagFilter={tagFilter}
           onTagFilter={setTagFilter}
           onOpenAdmin={() => setAdminDashboardOpen(true)}
+          onOpenExcludedTags={() => setExcludedOpen(true)}
         />
 
         <main className="main-content">
@@ -115,32 +119,41 @@ export default function Dashboard() {
             <AdminDashboard />
           ) : (
             <>
-              {/* Command Bar */}
-              <div className="command-bar">
-                <div className="cmd-actions">
-                  <button
-                    type="button"
-                    className="add-expense-btn"
-                    onClick={() => setSearchOpen((v) => !v)}
-                  >
-                    <span>⌕</span>
-                    <span className="btn-text">Search / filter</span>
-                  </button>
-                  <button
-                    onClick={() => setTagDialogOpen(true)}
-                    className="add-expense-btn"
-                  >
-                    + Tag
-                  </button>
-                  <button
-                    className="add-expense-btn"
-                    onClick={() => setDrawerOpen(true)}
-                  >
-                    <span>＋</span>
-                    <span className="btn-text">Add Expense</span>
-                  </button>
-                </div>
-              </div>
+              {phone ? (
+                <MobileTopArea
+                  onOpenFilter={() => setSearchOpen((v) => !v)}
+                  onOpenTag={() => setTagDialogOpen(true)}
+                />
+              ) : (
+                <>
+                  {/* Command Bar */}
+                  <div className="command-bar">
+                    <div className="cmd-actions">
+                      <button
+                        type="button"
+                        className="add-expense-btn"
+                        onClick={() => setSearchOpen((v) => !v)}
+                      >
+                        <span>⌕</span>
+                        <span className="btn-text">Search / filter</span>
+                      </button>
+                      <button
+                        onClick={() => setTagDialogOpen(true)}
+                        className="add-expense-btn"
+                      >
+                        + Tag
+                      </button>
+                      <button
+                        className="add-expense-btn"
+                        onClick={() => setDrawerOpen(true)}
+                      >
+                        <span>＋</span>
+                        <span className="btn-text">Add Expense</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Search Panel */}
               <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} />
@@ -184,7 +197,8 @@ export default function Dashboard() {
         onClick={() => setDrawerOpen(true)}
         aria-label="Add expense"
       >
-        ＋
+        <Plus size={20} strokeWidth={2.6} aria-hidden="true" />
+        <span>Add</span>
       </button>
 
       {/* Overlays */}

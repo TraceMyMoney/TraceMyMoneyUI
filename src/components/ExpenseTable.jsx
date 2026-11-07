@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useStore, fmtNum, filterValidExpenses } from "../store/useStore.js";
-import { Trash2, Tag } from "lucide-react";
+import { Trash2, Tag, ChevronDown } from "lucide-react";
+import { usePhoneScreen } from "../useWideScreen.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
 
 const MONTHS = [
@@ -382,9 +383,108 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
   );
 }
 
+/* ── Phone day card (≤600px only; tablet and desktop use the rows/cards above) ── */
+const FULL_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function PhoneDayCard({ exp, open, onToggle, onEditEntry }) {
+  const { privacyMode, entryTags, deleteExpense, deleteExpenseEntry, requestConfirm } =
+    useStore();
+  const day = (exp.created_at || "").slice(0, 2);
+  const mon = monthName((exp.created_at || "").slice(3, 5));
+  const money = (n) => (privacyMode ? "••••" : `₹${fmtNum(n)}`);
+  const entries = exp.expenses || [];
+  const tagName = (id) => entryTags.find((t) => t.value === id)?.title;
+  const topup = Math.abs(exp.topup_expense_total || 0);
+
+  return (
+    <div className={`m-card${open ? " open" : ""}`}>
+      <button
+        type="button"
+        className="m-card-head"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="m-date">
+          <b>{day}</b>
+          <i>{mon}</i>
+        </span>
+        <span className="m-main">
+          <span className="m-title">{exp.day}</span>
+          <span className="m-sub">
+            {exp.bank_name} · {entries.length} {entries.length === 1 ? "entry" : "entries"}
+          </span>
+        </span>
+        <span className="m-amts">
+          <span className="m-spent">{money(exp.expense_total)}</span>
+          {topup > 0 && (
+            <span className="m-topup">{privacyMode ? "••••" : `+₹${fmtNum(topup)}`}</span>
+          )}
+          <span className="m-rem">bal {money(exp.remaining_amount_till_now)}</span>
+        </span>
+        <ChevronDown className="m-chev" size={18} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div className="m-body">
+          {entries.map((item) => (
+            <div key={item.ee_id} className="m-entry">
+              <button
+                type="button"
+                className="m-entry-main"
+                onClick={() => onEditEntry({ ...item, expenseId: exp.id })}
+              >
+                <span className="m-entry-desc">{item.description}</span>
+                {item.entry_tags?.length > 0 && (
+                  <span className="m-tags">
+                    {item.entry_tags.map((id) => (
+                      <span key={id} className="m-tag">
+                        {tagName(id) || "tag"}
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </button>
+              <span className={`m-entry-amt ${item.amount < 0 ? "m-pos" : "m-neg"}`}>
+                {item.amount < 0
+                  ? privacyMode ? "••••" : `+₹${fmtNum(Math.abs(item.amount))}`
+                  : money(item.amount)}
+              </span>
+              <button
+                type="button"
+                className="m-entry-del"
+                aria-label="Delete entry"
+                onClick={async () => {
+                  if (await requestConfirm("Delete this entry?"))
+                    deleteExpenseEntry(exp.id, item.ee_id);
+                }}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+          <InlineAddEntries expenseId={exp.id} mini />
+          <button
+            type="button"
+            className="m-day-del"
+            onClick={async () => {
+              if (await requestConfirm("Delete this expense?")) deleteExpense(exp.id);
+            }}
+          >
+            <Trash2 size={14} /> Delete this day
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main component ── */
 export default function ExpenseTable({ onEditEntry }) {
   const { filteredExpensesList, privacyMode } = useStore();
+  const phone = usePhoneScreen();
 
   // Compute totals from only the currently visible page
   const pageTotalSpent = filteredExpensesList.reduce(
@@ -430,7 +530,26 @@ export default function ExpenseTable({ onEditEntry }) {
         <div />
       </div>
 
-      {filteredExpensesList.map((exp) => (
+      {filteredExpensesList.map((exp, idx) => {
+        if (!phone) return null;
+        const mk = (e) => (e.created_at || "").slice(3, 10);
+        const prev = filteredExpensesList[idx - 1];
+        const showMonth = !prev || mk(prev) !== mk(exp);
+        const monthLabel = `${FULL_MONTHS[parseInt((exp.created_at || "").slice(3, 5), 10) - 1] || ""} ${(exp.created_at || "").slice(6, 10)}`;
+        return (
+          <React.Fragment key={exp.id}>
+            {showMonth && <div className="m-month">{monthLabel}</div>}
+            <PhoneDayCard
+              exp={exp}
+              open={openRows.has(exp.id)}
+              onToggle={() => toggle(exp.id)}
+              onEditEntry={onEditEntry}
+            />
+          </React.Fragment>
+        );
+      })}
+
+      {!phone && filteredExpensesList.map((exp) => (
         <React.Fragment key={exp.id}>
           {/* Desktop row */}
           <DesktopRow
@@ -449,8 +568,8 @@ export default function ExpenseTable({ onEditEntry }) {
         </React.Fragment>
       ))}
 
-      {/* ── Totals footer ── */}
-      {filteredExpensesList.length > 0 && (
+      {/* ── Totals footer (phones show these totals in the balance card instead) ── */}
+      {!phone && filteredExpensesList.length > 0 && (
         <>
           {/* Desktop totals row */}
           <div className="expense-totals-row">

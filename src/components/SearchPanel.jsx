@@ -13,6 +13,7 @@ export default function SearchPanel({ open, onClose }) {
     searchSelectedBanks,
     pageSize,
     isAdvancedSearch,
+    defaultExcludedTags,
     setSearchSelectedTags,
     setSearchExcludeTags,
     setSearchSelectedBanks,

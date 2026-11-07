@@ -18,6 +18,11 @@ export function useMedia(query) {
   return match;
 }
 
+// Phones. Everything phone-specific (extra components, restyled cards) is
+// gated on this so tablet and desktop render exactly as before.
+export const PHONE_QUERY = "(max-width: 600px)";
+export const usePhoneScreen = () => useMedia(PHONE_QUERY);
+
 export const useTabletScreen = () => useMedia(TABLET_QUERY);
 export default function useWideScreen() {
   return useMedia(WIDE_QUERY);

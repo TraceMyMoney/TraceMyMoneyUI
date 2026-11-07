@@ -249,6 +249,9 @@ export const useStore = create((set, get) => ({
 
   searchExcludeTags: [], // effective exclusion (starts as the user default)
   defaultExcludedTags: [], // saved in user preferences
+  // Phone quick-search: an empty Accounts filter means "the account selected
+  // on screen" (same rule the desktop analytics view uses).
+  searchScopeToCurrentBank: false,
   searchSelectedTags: [],
   searchSelectedBanks: [],
   searchEntryKeyword: "",
@@ -284,6 +287,7 @@ export const useStore = create((set, get) => ({
   setPageSize: (v) => set({ pageSize: v }),
   setSearchSelectedTags: (v) => set({ searchSelectedTags: v }),
   setSearchExcludeTags: (v) => set({ searchExcludeTags: v }),
+  setSearchScopeToCurrentBank: (v) => set({ searchScopeToCurrentBank: v }),
   setSearchSelectedBanks: (v) => set({ searchSelectedBanks: v }),
   setSearchEntryKeyword: (v) => set({ searchEntryKeyword: v }),
   setSearchSelectedDaterange: (v) => set({ searchSelectedDaterange: v }),
@@ -569,7 +573,10 @@ export const useStore = create((set, get) => ({
           data.search_by_tags = s.searchSelectedTags;
         if (s.searchSelectedBanks?.length)
           data.search_by_bank_ids = s.searchSelectedBanks;
-        else if (s.analyticsOpen && s.currentSelectedBankId)
+        else if (
+          (s.analyticsOpen || s.searchScopeToCurrentBank) &&
+          s.currentSelectedBankId
+        )
           // Workspace filter bar: no account picked means "the account
           // selected in the sidebar", not every account.
           data.search_by_bank_ids = [s.currentSelectedBankId];

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
+import useWideScreen from "../useWideScreen.js";
 import { Eye, EyeOff, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 
 const COLORS = [
@@ -32,7 +33,9 @@ export default function Sidebar({
     logoutUser,
     reorderBanks,
     requestConfirm,
+    setAnalyticsOpen,
   } = useStore();
+  const wide = useWideScreen();
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [dragOverIdx, setDragOverIdx] = useState(null);
@@ -55,6 +58,8 @@ export default function Sidebar({
     }
     setActiveIdx(i);
     fetchFilteredExpensesList(bank);
+    // Desktop: picking an account always brings the analytics panel up.
+    if (wide) setAnalyticsOpen(true);
     onClose?.();
   };
 

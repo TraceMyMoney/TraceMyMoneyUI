@@ -48,6 +48,12 @@ export default function Dashboard() {
     setApplyTagEntry(entry);
     setApplyEntryTagVisible(true);
   };
+  // Desktop: analytics is on by default when the dashboard opens.
+  useEffect(() => {
+    if (wide) setAnalyticsOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Analytics: split view on desktop, popup on tablets, off on phones.
   const showSplit = analyticsOpen && wide;
   const showModal = analyticsOpen && tablet;

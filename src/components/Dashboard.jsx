@@ -11,7 +11,10 @@ import CreateTagDialog from "./CreateTagDialog.jsx";
 import ApplyTagsDialog from "./ApplyTagsDialog.jsx";
 import ChatAssistantDialog from "./ChatAssistantDialog.jsx";
 import AdminDashboard from "./AdminDashboard.jsx";
-import AnalyticsDashboard from "./AnalyticsDashboard.jsx";
+import ExpenseInsights from "./ExpenseInsights.jsx";
+import ExcludedTagsDialog from "./ExcludedTagsDialog.jsx";
+import InsightsFilterBar from "./InsightsFilterBar.jsx";
+import useWideScreen, { useTabletScreen } from "../useWideScreen.js";
 
 function isTypingInField(el) {
   if (!el || !el.tagName) return false;
@@ -29,18 +32,34 @@ export default function Dashboard() {
     setAdminDashboardOpen,
     isAdminDashboardOpen,
     analyticsOpen,
+    setAnalyticsOpen,
   } = useStore();
+  const wide = useWideScreen();
+  const tablet = useTabletScreen();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [excludedOpen, setExcludedOpen] = useState(false);
 
   const handleEditEntry = (entry) => {
     setApplyTagEntry(entry);
     setApplyEntryTagVisible(true);
   };
+  // Analytics: split view on desktop, popup on tablets, off on phones.
+  const showSplit = analyticsOpen && wide;
+  const showModal = analyticsOpen && tablet;
+  useEffect(() => {
+    if (!wide && !tablet && analyticsOpen) setAnalyticsOpen(false);
+  }, [wide, tablet, analyticsOpen, setAnalyticsOpen]);
+  useEffect(() => {
+    if (!showModal) return;
+    const esc = (e) => e.key === "Escape" && setAnalyticsOpen(false);
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [showModal, setAnalyticsOpen]);
   const openChat = useCallback(() => setChatOpen(true), []);
   const closeChat = useCallback(() => setChatOpen(false), []);
 
@@ -73,6 +92,7 @@ export default function Dashboard() {
         onMenuClick={() => setSidebarOpen((v) => !v)}
         onOpenChat={openChat}
         onOpenAdmin={() => setAdminDashboardOpen(true)}
+        onOpenExcludedTags={() => setExcludedOpen(true)}
       />
 
       <div className="body-layout">
@@ -87,8 +107,6 @@ export default function Dashboard() {
         <main className="main-content">
           {isAdminDashboardOpen ? (
             <AdminDashboard />
-          ) : analyticsOpen ? (
-            <AnalyticsDashboard />
           ) : (
             <>
               {/* Command Bar */}
@@ -121,15 +139,38 @@ export default function Dashboard() {
               {/* Search Panel */}
               <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-              {/* Expense Table */}
-              <ExpenseTable onEditEntry={handleEditEntry} />
+              {/* Workspace: expenses on the left; when Analytics is on, a filter
+                  row on top and charts of the visible rows on the right. */}
+              <div className={`workspace${showSplit ? " split" : ""}`}>
+                {showSplit && <InsightsFilterBar />}
+                <div className="workspace-body">
+                  <div className="workspace-left">
+                    <ExpenseTable onEditEntry={handleEditEntry} />
+                  </div>
+                  {showSplit && <ExpenseInsights />}
+                </div>
+              </div>
 
-              {/* Pagination */}
+              {/* Pagination (full width, so it never sits under the chat hint) */}
               <Pagination />
             </>
           )}
         </main>
       </div>
+
+      <ExcludedTagsDialog open={excludedOpen} onClose={() => setExcludedOpen(false)} />
+
+      {showModal && (
+        <div
+          className="insights-modal-backdrop"
+          onMouseDown={(e) => e.target === e.currentTarget && setAnalyticsOpen(false)}
+        >
+          <div className="insights-modal" role="dialog" aria-label="Analytics">
+            <InsightsFilterBar />
+            <ExpenseInsights onClose={() => setAnalyticsOpen(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Mobile floating FAB — bottom right, only on mobile */}
       <button
@@ -154,7 +195,7 @@ export default function Dashboard() {
       {chatbotEnabled && (
         <>
           <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
-          {!analyticsOpen && !isAdminDashboardOpen && (
+          {!isAdminDashboardOpen && (
             <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
           )}
         </>

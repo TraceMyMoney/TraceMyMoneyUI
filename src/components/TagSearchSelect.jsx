@@ -31,6 +31,7 @@ export default function TagSearchSelect({
   onChange,
   placeholder = "Search tags…",
   zIndex = 502,
+  summary = false, // collapse 2+ chips into one "N selected" chip
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -169,19 +170,38 @@ export default function TagSearchSelect({
     <div className="tag-search-select" ref={wrapRef}>
       {selectedMeta.length > 0 && (
         <div className="tag-search-selected">
-          {selectedMeta.map((t) => (
-            <span key={t.value} className="tag-search-chip">
-              <span className="tag-search-chip-text">{t.title}</span>
+          {summary && selectedMeta.length > 1 ? (
+            <span
+              className="tag-search-chip"
+              title={selectedMeta.map((t) => t.title).join(", ")}
+            >
+              <span className="tag-search-chip-text">
+                {selectedMeta.length} selected
+              </span>
               <button
                 type="button"
                 className="tag-search-chip-remove"
-                aria-label={`Remove ${t.title}`}
-                onClick={() => remove(t.value)}
+                aria-label="Clear selection"
+                onClick={() => onChange([])}
               >
                 ×
               </button>
             </span>
-          ))}
+          ) : (
+            selectedMeta.map((t) => (
+              <span key={t.value} className="tag-search-chip">
+                <span className="tag-search-chip-text">{t.title}</span>
+                <button
+                  type="button"
+                  className="tag-search-chip-remove"
+                  aria-label={`Remove ${t.title}`}
+                  onClick={() => remove(t.value)}
+                >
+                  ×
+                </button>
+              </span>
+            ))
+          )}
         </div>
       )}
       <input

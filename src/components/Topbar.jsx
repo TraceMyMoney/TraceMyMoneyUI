@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
+import useWideScreen, { useTabletScreen } from "../useWideScreen.js";
 import {
   Eye,
   EyeOff,
@@ -10,9 +11,10 @@ import {
   Moon,
   ChevronDown,
   BarChart3,
+  Filter,
 } from "lucide-react";
 
-export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin }) {
+export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExcludedTags }) {
   const {
     userName,
     isDarkMode,
@@ -21,13 +23,17 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin }) {
     isAdmin,
     updateUserPreferences,
     logoutUser,
+    analyticsOpen,
     setAnalyticsOpen,
+    pushAlert,
   } = useStore();
   // Dark mode / privacy / admin / logout used to each be their own icon
   // button sitting in a row next to the user chip - cramped and, per
   // feedback, ugly. Consolidated into one dropdown off the chip itself;
   // mobile is untouched (those same controls already live in the
   // sidebar there, this only reorganizes the desktop row).
+  const wide = useWideScreen();
+  const tablet = useTabletScreen();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -133,12 +139,25 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin }) {
                   className="topbar-dropdown-item"
                   role="menuitem"
                   onClick={() => {
-                    setAnalyticsOpen(true);
+                    if (wide || tablet) setAnalyticsOpen(wide ? !analyticsOpen : true);
+                    else pushAlert("Please use a desktop or tablet view to see analytics");
                     setMenuOpen(false);
                   }}
                 >
                   <BarChart3 size={16} />
-                  Analytics
+                  {wide && analyticsOpen ? "Hide analytics" : "Analytics"}
+                </button>
+                <button
+                  type="button"
+                  className="topbar-dropdown-item"
+                  role="menuitem"
+                  onClick={() => {
+                    onOpenExcludedTags?.();
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Filter size={16} />
+                  Default excluded tags
                 </button>
                 {isAdmin && (
                   <button

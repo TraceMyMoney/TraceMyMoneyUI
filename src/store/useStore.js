@@ -11,7 +11,7 @@ const BASE_URL =
     ? `http://${window.location.hostname}:5000`
     : "https://api.stalk-my-money.in/");
 const ALL = "all";
-const ALL_PAGE_SIZE = 99999;
+const ALL_PAGE_SIZE = 10000; // API caps per_page at 10000
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 
@@ -247,6 +247,8 @@ export const useStore = create((set, get) => ({
   pageNumber: 1,
   pageSize: 5,
 
+  searchExcludeTags: [], // effective exclusion (starts as the user default)
+  defaultExcludedTags: [], // saved in user preferences
   searchSelectedTags: [],
   searchSelectedBanks: [],
   searchEntryKeyword: "",
@@ -281,6 +283,7 @@ export const useStore = create((set, get) => ({
   setPageNumber: (v) => set({ pageNumber: v }),
   setPageSize: (v) => set({ pageSize: v }),
   setSearchSelectedTags: (v) => set({ searchSelectedTags: v }),
+  setSearchExcludeTags: (v) => set({ searchExcludeTags: v }),
   setSearchSelectedBanks: (v) => set({ searchSelectedBanks: v }),
   setSearchEntryKeyword: (v) => set({ searchEntryKeyword: v }),
   setSearchSelectedDaterange: (v) => set({ searchSelectedDaterange: v }),
@@ -375,6 +378,8 @@ export const useStore = create((set, get) => ({
           privacyMode: prefs.privacy_mode_enabled ?? get().privacyMode,
           pageSize: prefs.page_size ?? get().pageSize,
           banksDisplayOrder: displayOrder,
+          defaultExcludedTags:
+            prefs.default_excluded_tags ?? get().defaultExcludedTags,
         });
       }
 
@@ -440,6 +445,7 @@ export const useStore = create((set, get) => ({
         remainingBalance: e.current_balance,
         bankId: e.id,
       }));
+      const defaultExcluded = prefs?.default_excluded_tags ?? [];
       const displayOrder = prefs?.banks_display_order ?? [];
       if (Array.isArray(displayOrder) && displayOrder.length > 0) {
         const orderMap = new Map(displayOrder.map((id, idx) => [id, idx]));
@@ -463,12 +469,23 @@ export const useStore = create((set, get) => ({
         pageSize: ps,
         isDarkMode: dark,
         privacyMode: privacy,
+        defaultExcludedTags: defaultExcluded,
+        searchExcludeTags: defaultExcluded,
       });
 
       if (selectedBankId) {
         const [expRes, tagRes] = await Promise.all([
           axios.get(`${BASE_URL}/expenses/`, {
-            params: { bank_id: selectedBankId, per_page: ps },
+            params: defaultExcluded.length
+              ? {
+                  data: JSON.stringify({
+                    bank_id: selectedBankId,
+                    per_page: ps,
+                    page_number: 1,
+                    exclude_tags: defaultExcluded,
+                  }),
+                }
+              : { bank_id: selectedBankId, per_page: ps },
           }),
           axios.get(`${BASE_URL}/entry-tags/`),
         ]);
@@ -533,11 +550,17 @@ export const useStore = create((set, get) => ({
         operator: s.searchOperator,
         advanced_search: s.isAdvancedSearch,
       };
+      // Exclusion applies in every mode (default comes from user preferences).
+      if (s.searchExcludeTags?.length) data.exclude_tags = s.searchExcludeTags;
       if (s.isAdvancedSearch) {
         if (s.searchSelectedTags?.length)
           data.search_by_tags = s.searchSelectedTags;
         if (s.searchSelectedBanks?.length)
           data.search_by_bank_ids = s.searchSelectedBanks;
+        else if (s.analyticsOpen && s.currentSelectedBankId)
+          // Workspace filter bar: no account picked means "the account
+          // selected in the sidebar", not every account.
+          data.search_by_bank_ids = [s.currentSelectedBankId];
         if (s.searchEntryKeyword) data.search_by_keyword = s.searchEntryKeyword;
         if (s.searchSelectedDaterange)
           data.search_by_daterange = {
@@ -730,6 +753,22 @@ export const useStore = create((set, get) => ({
       if (r.status === 200) window.location.reload();
     } catch (err) {
       set({ showLoader: false });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  /** Save the tags that are hidden from the expense list by default, apply
+   * them right away and reload the list. */
+  async setDefaultExcludedTags(ids) {
+    const prev = get().defaultExcludedTags;
+    set({ defaultExcludedTags: ids, searchExcludeTags: ids, pageNumber: 1 });
+    try {
+      await axios.patch(`${BASE_URL}/user-preferences/update`, {
+        default_excluded_tags: ids,
+      });
+      await get().fetchExpenses();
+    } catch (err) {
+      set({ defaultExcludedTags: prev, searchExcludeTags: prev });
       get().pushAlert(handleError(err));
     }
   },

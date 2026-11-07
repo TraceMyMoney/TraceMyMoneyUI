@@ -14,6 +14,7 @@ export default function SearchPanel({ open, onClose }) {
     pageSize,
     isAdvancedSearch,
     setSearchSelectedTags,
+    setSearchExcludeTags,
     setSearchSelectedBanks,
     setSearchEntryKeyword,
     setSearchSelectedDaterange,
@@ -38,6 +39,7 @@ export default function SearchPanel({ open, onClose }) {
 
   const reset = () => {
     setSearchSelectedTags([]);
+    setSearchExcludeTags(defaultExcludedTags || []);
     setSearchSelectedBanks([]);
     setSearchEntryKeyword("");
     setSearchSelectedDaterange(null);

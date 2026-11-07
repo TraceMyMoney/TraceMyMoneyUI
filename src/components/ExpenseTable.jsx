@@ -60,7 +60,7 @@ function InlineAddEntries({ expenseId, mini }) {
   return (
     <div className={padClass}>
       {entries.map((en, i) => (
-        <div key={i}>
+        <div key={i} className="inline-entry-card">
           <div className="entry-type-toggle entry-type-toggle--inline">
             <button
               type="button"
@@ -91,7 +91,11 @@ function InlineAddEntries({ expenseId, mini }) {
               value={en.description}
               onChange={(e) => update(i, "description", e.target.value)}
             />
-            <button className="inline-remove-btn" onClick={() => remove(i)}>
+            <button
+              className="inline-remove-btn"
+              aria-label="Remove entry"
+              onClick={() => remove(i)}
+            >
               ×
             </button>
           </div>

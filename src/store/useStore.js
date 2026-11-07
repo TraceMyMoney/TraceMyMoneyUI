@@ -1,9 +1,17 @@
 import { create } from "zustand";
 import axios from "axios";
 
+// In dev, default to whatever host the page itself was loaded from (works
+// for localhost, a LAN IP, etc. - including from a phone on the same
+// network) instead of a hardcoded address that only resolves on one
+// machine. An explicit VITE_TM_BACKEND_URL always wins if set.
 const BASE_URL =
-  import.meta.env.VITE_TM_BACKEND_URL || "https://api.stalk-my-money.in/";
+  import.meta.env.VITE_TM_BACKEND_URL ||
+  (import.meta.env.DEV
+    ? `http://${window.location.hostname}:5000`
+    : "https://api.stalk-my-money.in/");
 const ALL = "all";
+const ALL_PAGE_SIZE = 10000; // API caps per_page at 10000
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 
@@ -195,12 +203,35 @@ export const useStore = create((set, get) => ({
   // state
   userName: null,
   isLoggedIn: false,
+  isAdmin: false,
+  // Whether the AI chatbot is enabled for THIS user - a per-user
+  // entitlement an admin grants/revokes from the admin dashboard (see
+  // adminUsers/fetchAdminUsers/setUserChatbotAccess below), not a global
+  // switch.
+  chatbotEnabled: false,
+  // Admin dashboard state - only ever populated for isAdmin users.
+  // Server-paginated (not loaded all at once) - adminUsers holds just the
+  // current page.
+  adminUsers: [],
+  adminUsersLoading: false,
+  adminUsersTotal: 0,
+  adminUsersPage: 1,
+  adminUsersPageSize: 5,
+  adminUsersSearch: "",
+  isAdminDashboardOpen: false,
   isDarkMode: true,
   privacyMode: false,
+  // Shown to every signed-out visitor before Login/Register (see
+  // LandingPage.jsx) - lives here, not as local App.jsx state, so Login/
+  // Register can flip it back on (a "back" button) without prop drilling.
+  showLanding: true,
   showLoginPage: true,
   showLoader: false,
   showAlert: false,
   alertMessages: [],
+  // { message, confirmLabel, resolve } | null - drives the shared
+  // ConfirmDialog, replacing native window.confirm() everywhere.
+  confirmState: null,
 
   banksList: [],
   bankItems: [],
@@ -216,6 +247,8 @@ export const useStore = create((set, get) => ({
   pageNumber: 1,
   pageSize: 5,
 
+  searchExcludeTags: [], // effective exclusion (starts as the user default)
+  defaultExcludedTags: [], // saved in user preferences
   searchSelectedTags: [],
   searchSelectedBanks: [],
   searchEntryKeyword: "",
@@ -236,7 +269,10 @@ export const useStore = create((set, get) => ({
   // ── setters ──────────────────────────────────────────────
   setUserName: (v) => set({ userName: v }),
   setLoggedInStatus: (v) => set({ isLoggedIn: v }),
+  setIsAdmin: (v) => set({ isAdmin: v }),
+  setChatbotAccess: (v) => set({ chatbotEnabled: v }),
   setLoginPageStatus: (v) => set({ showLoginPage: v }),
+  setShowLanding: (v) => set({ showLanding: v }),
   setShowAlert: (v) => set({ showAlert: v }),
   setAlertMessages: (v) => set({ alertMessages: v }),
   setShowLoader: (v) => set({ showLoader: v }),
@@ -247,6 +283,7 @@ export const useStore = create((set, get) => ({
   setPageNumber: (v) => set({ pageNumber: v }),
   setPageSize: (v) => set({ pageSize: v }),
   setSearchSelectedTags: (v) => set({ searchSelectedTags: v }),
+  setSearchExcludeTags: (v) => set({ searchExcludeTags: v }),
   setSearchSelectedBanks: (v) => set({ searchSelectedBanks: v }),
   setSearchEntryKeyword: (v) => set({ searchEntryKeyword: v }),
   setSearchSelectedDaterange: (v) => set({ searchSelectedDaterange: v }),
@@ -256,8 +293,25 @@ export const useStore = create((set, get) => ({
   setIsDarkMode: (v) => set({ isDarkMode: v }),
   setPrivacyMode: (v) => set({ privacyMode: v }),
 
-  pushAlert(msg) {
-    set((s) => ({ showAlert: true, alertMessages: [...s.alertMessages, msg] }));
+  pushAlert(msg, type = "error") {
+    set((s) => ({ showAlert: true, alertMessages: [...s.alertMessages, { msg, type }] }));
+  },
+
+  /** Custom replacement for window.confirm() - await it, resolves to
+   * true/false once the user picks a button on the ConfirmDialog. If
+   * another confirmation is already pending, that one is auto-cancelled
+   * (resolved false) first, since only one can be shown at a time. */
+  requestConfirm(message, confirmLabel = "Delete") {
+    const prev = get().confirmState;
+    if (prev) prev.resolve(false);
+    return new Promise((resolve) => {
+      set({ confirmState: { message, confirmLabel, resolve } });
+    });
+  },
+  resolveConfirm(result) {
+    const cs = get().confirmState;
+    set({ confirmState: null });
+    cs?.resolve(result);
   },
 
   // ── helpers ───────────────────────────────────────────────
@@ -298,11 +352,83 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  // Re-pull everything the chat agent can touch (banks, expenses, tags,
+  // preferences) after it confirms a write action, so the dashboard
+  // reflects it immediately instead of needing a manual page reload.
+  async refreshAfterAgentAction() {
+    try {
+      // Preferences and banks don't depend on each other at the network
+      // level - fetch both at once instead of sequencing them, then apply
+      // the fresh display order to the fresh bank list directly (rather
+      // than going through fetchBanks(), which would re-read
+      // banksDisplayOrder from state before this set() below lands it).
+      const [prefsRes, banksRes] = await Promise.all([
+        axios.get(`${BASE_URL}/user-preferences/`),
+        axios.get(`${BASE_URL}/banks/`),
+      ]);
+
+      const prefs = prefsRes?.data?.user_preferences ?? prefsRes?.data;
+      const displayOrder = prefs?.banks_display_order ?? get().banksDisplayOrder;
+      if (prefs) {
+        const dark = prefs.is_dark_mode ?? get().isDarkMode;
+        if (dark) document.body.classList.remove("light");
+        else document.body.classList.add("light");
+        set({
+          isDarkMode: dark,
+          privacyMode: prefs.privacy_mode_enabled ?? get().privacyMode,
+          pageSize: prefs.page_size ?? get().pageSize,
+          banksDisplayOrder: displayOrder,
+          defaultExcludedTags:
+            prefs.default_excluded_tags ?? get().defaultExcludedTags,
+        });
+      }
+
+      const banks = (banksRes.data?.banks || []).map((e) => ({
+        bankName: e.name,
+        remainingBalance: e.current_balance,
+        bankId: e.id,
+      }));
+      if (Array.isArray(displayOrder) && displayOrder.length > 0) {
+        const orderMap = new Map(displayOrder.map((id, idx) => [id, idx]));
+        banks.sort((a, b) => {
+          const ai = orderMap.has(a.bankId) ? orderMap.get(a.bankId) : Infinity;
+          const bi = orderMap.has(b.bankId) ? orderMap.get(b.bankId) : Infinity;
+          return ai - bi;
+        });
+      }
+      const bankItems = banks.map((e) => ({ title: e.bankName, value: e.bankId }));
+
+      // If the agent deleted the currently-selected bank, fall back to
+      // whatever's left instead of fetchExpenses silently querying a
+      // bank id that no longer exists.
+      const stillExists = banks.some((b) => b.bankId === get().currentSelectedBankId);
+      set({
+        banksList: banks,
+        bankItems,
+        ...(stillExists ? {} : { currentSelectedBankId: banks[0]?.bankId ?? null }),
+      });
+
+      await Promise.all([
+        get().fetchExpenses({ silent: true }),
+        axios.get(`${BASE_URL}/entry-tags/`).then((r) => {
+          const tags = (r.data?.entry_tags || [])
+            .map((e) => ({ title: e.name, value: e.id }))
+            .sort((a, b) => a.title.localeCompare(b.title));
+          set({ entryTags: tags });
+        }),
+      ]);
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    }
+  },
+
   async getInitialData() {
     const s = get();
     if (!s.isLoggedIn) return;
     set({ showLoader: true });
     try {
+      // chatbotEnabled/isAdmin come from the JWT at login (see main.jsx) -
+      // they're per-user flags, not something to re-fetch here.
       const [banksRes, prefsRes] = await Promise.all([
         axios.get(`${BASE_URL}/banks/`),
         axios.get(`${BASE_URL}/user-preferences/`),
@@ -319,6 +445,7 @@ export const useStore = create((set, get) => ({
         remainingBalance: e.current_balance,
         bankId: e.id,
       }));
+      const defaultExcluded = prefs?.default_excluded_tags ?? [];
       const displayOrder = prefs?.banks_display_order ?? [];
       if (Array.isArray(displayOrder) && displayOrder.length > 0) {
         const orderMap = new Map(displayOrder.map((id, idx) => [id, idx]));
@@ -342,12 +469,23 @@ export const useStore = create((set, get) => ({
         pageSize: ps,
         isDarkMode: dark,
         privacyMode: privacy,
+        defaultExcludedTags: defaultExcluded,
+        searchExcludeTags: defaultExcluded,
       });
 
       if (selectedBankId) {
         const [expRes, tagRes] = await Promise.all([
           axios.get(`${BASE_URL}/expenses/`, {
-            params: { bank_id: selectedBankId, per_page: ps },
+            params: defaultExcluded.length
+              ? {
+                  data: JSON.stringify({
+                    bank_id: selectedBankId,
+                    per_page: ps,
+                    page_number: 1,
+                    exclude_tags: defaultExcluded,
+                  }),
+                }
+              : { bank_id: selectedBankId, per_page: ps },
           }),
           axios.get(`${BASE_URL}/entry-tags/`),
         ]);
@@ -376,7 +514,7 @@ export const useStore = create((set, get) => ({
     set({ showLoader: true, currentSelectedBankId: bank.bankId });
     try {
       const s = get();
-      const ps = s.pageSize === ALL ? s.currentTotalExpenses * 100 : s.pageSize;
+      const ps = s.pageSize === ALL ? ALL_PAGE_SIZE : s.pageSize;
       const r = await axios.get(`${BASE_URL}/expenses/`, {
         params: {
           per_page: ps,
@@ -405,18 +543,24 @@ export const useStore = create((set, get) => ({
     if (!silent) set({ showLoader: true });
     try {
       const s = get();
-      const ps = s.pageSize === ALL ? s.currentTotalExpenses * 100 : s.pageSize;
+      const ps = s.pageSize === ALL ? ALL_PAGE_SIZE : s.pageSize;
       const data = {
         page_number: s.pageNumber,
         per_page: ps,
         operator: s.searchOperator,
         advanced_search: s.isAdvancedSearch,
       };
+      // Exclusion applies in every mode (default comes from user preferences).
+      if (s.searchExcludeTags?.length) data.exclude_tags = s.searchExcludeTags;
       if (s.isAdvancedSearch) {
         if (s.searchSelectedTags?.length)
           data.search_by_tags = s.searchSelectedTags;
         if (s.searchSelectedBanks?.length)
           data.search_by_bank_ids = s.searchSelectedBanks;
+        else if (s.analyticsOpen && s.currentSelectedBankId)
+          // Workspace filter bar: no account picked means "the account
+          // selected in the sidebar", not every account.
+          data.search_by_bank_ids = [s.currentSelectedBankId];
         if (s.searchEntryKeyword) data.search_by_keyword = s.searchEntryKeyword;
         if (s.searchSelectedDaterange)
           data.search_by_daterange = {
@@ -613,6 +757,22 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  /** Save the tags that are hidden from the expense list by default, apply
+   * them right away and reload the list. */
+  async setDefaultExcludedTags(ids) {
+    const prev = get().defaultExcludedTags;
+    set({ defaultExcludedTags: ids, searchExcludeTags: ids, pageNumber: 1 });
+    try {
+      await axios.patch(`${BASE_URL}/user-preferences/update`, {
+        default_excluded_tags: ids,
+      });
+      await get().fetchExpenses();
+    } catch (err) {
+      set({ defaultExcludedTags: prev, searchExcludeTags: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
   async updateUserPreferences(payload) {
     // ── Optimistic UI update — apply immediately, no loader ──
     const prev = {};
@@ -645,6 +805,274 @@ export const useStore = create((set, get) => ({
         set({ privacyMode: prev.privacyMode });
       if ("page_size" in payload) set({ pageSize: prev.pageSize });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  // ── Admin dashboard - the backend also enforces admin-only on both of
+  // these (403s a non-admin), this is just so the UI itself is only ever
+  // shown/usable for admins. ──
+  setAdminDashboardOpen: (v) => set({ isAdminDashboardOpen: v }),
+
+  async fetchAdminUsers(overrides = {}) {
+    const page = overrides.page ?? get().adminUsersPage;
+    const pageSize = overrides.pageSize ?? get().adminUsersPageSize;
+    const search = "search" in overrides ? overrides.search : get().adminUsersSearch;
+    set({ adminUsersLoading: true, adminUsersPage: page, adminUsersPageSize: pageSize, adminUsersSearch: search });
+    try {
+      const params = new URLSearchParams({ page_number: page, per_page: pageSize });
+      if (search.trim()) params.append("search", search.trim());
+      const r = await axios.get(`${BASE_URL}/admin/users?${params.toString()}`);
+      set({
+        adminUsers: r.data?.users || [],
+        adminUsersTotal: r.data?.total || 0,
+      });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ adminUsersLoading: false });
+    }
+  },
+
+  setAdminUsersSearch(search) {
+    get().fetchAdminUsers({ search, page: 1 });
+  },
+
+  setAdminUsersPage(page) {
+    get().fetchAdminUsers({ page });
+  },
+
+  setAdminUsersPageSize(pageSize) {
+    get().fetchAdminUsers({ pageSize, page: 1 });
+  },
+
+  async setUserChatbotAccess(userId, enabled) {
+    const prev = get().adminUsers;
+    set({
+      adminUsers: prev.map((u) =>
+        u.id === userId ? { ...u, chatbot_enabled: enabled } : u,
+      ),
+    });
+    try {
+      await axios.patch(`${BASE_URL}/admin/users/${userId}/chatbot`, {
+        chatbot_enabled: enabled,
+      });
+    } catch (err) {
+      set({ adminUsers: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  async setUserIsAdmin(userId, isAdminFlag) {
+    const prev = get().adminUsers;
+    set({
+      adminUsers: prev.map((u) =>
+        u.id === userId ? { ...u, is_admin: isAdminFlag } : u,
+      ),
+    });
+    try {
+      await axios.patch(`${BASE_URL}/admin/users/${userId}/admin`, {
+        is_admin: isAdminFlag,
+      });
+    } catch (err) {
+      set({ adminUsers: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  async setUserDisabled(userId, isDisabled) {
+    const prev = get().adminUsers;
+    set({
+      adminUsers: prev.map((u) =>
+        u.id === userId ? { ...u, is_disabled: isDisabled } : u,
+      ),
+    });
+    try {
+      await axios.patch(`${BASE_URL}/admin/users/${userId}/disabled`, {
+        is_disabled: isDisabled,
+      });
+    } catch (err) {
+      set({ adminUsers: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  // ── AI provider config - admin-editable, takes effect on the backend's
+  // very next chat turn (see TraceMyMoneyAPI/app/core/llm.py). ──
+  aiConfig: null,
+  aiConfigLoading: false,
+  aiConfigSaving: false,
+
+  async fetchAiConfig() {
+    set({ aiConfigLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/ai-config`);
+      set({ aiConfig: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ aiConfigLoading: false });
+    }
+  },
+
+  async saveAiConfig(config) {
+    set({ aiConfigSaving: true });
+    try {
+      const r = await axios.put(`${BASE_URL}/admin/ai-config`, config);
+      set({ aiConfig: r.data });
+      get().pushAlert("AI provider config saved.");
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    } finally {
+      set({ aiConfigSaving: false });
+    }
+  },
+
+  // ── Per-provider API keys - admin sets these from the dashboard instead
+  // of needing .env access. The server only ever returns a masked status
+  // (never the real key), so this never holds a raw secret client-side. ──
+  providerKeys: null,
+  providerKeysLoading: false,
+  providerKeysSaving: {},
+
+  async fetchProviderKeys() {
+    set({ providerKeysLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/provider-keys`);
+      set({ providerKeys: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ providerKeysLoading: false });
+    }
+  },
+
+  async saveProviderKey(provider, apiKey) {
+    set((s) => ({ providerKeysSaving: { ...s.providerKeysSaving, [provider]: true } }));
+    try {
+      const r = await axios.put(`${BASE_URL}/admin/provider-keys`, {
+        provider,
+        api_key: apiKey,
+      });
+      set((s) => ({ providerKeys: { ...s.providerKeys, [provider]: r.data } }));
+      get().pushAlert(apiKey ? `${provider} API key saved.` : `${provider} API key cleared.`, "success");
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    } finally {
+      set((s) => ({ providerKeysSaving: { ...s.providerKeysSaving, [provider]: false } }));
+    }
+  },
+
+  // ── Feature flags - runtime toggles, no redeploy needed. ──
+  featureFlags: null,
+  featureFlagsLoading: false,
+
+  async fetchFeatureFlags() {
+    set({ featureFlagsLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/feature-flags`);
+      set({ featureFlags: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ featureFlagsLoading: false });
+    }
+  },
+
+  // Any logged-in user (not just admins) can read flags via this
+  // non-admin endpoint - used by e.g. ChatAssistantDialog to decide
+  // whether to show the voice-input mic button. Silent on failure (no
+  // alert) since this is a minor UI toggle, not a user-initiated action.
+  async fetchPublicFeatureFlags() {
+    if (get().featureFlags) return;
+    try {
+      const r = await axios.get(`${BASE_URL}/feature-flags`);
+      set({ featureFlags: r.data });
+    } catch {
+      // Leave featureFlags null - callers treat null the same as "flag on"
+      // (today's default behavior), so a failed fetch just means no gating.
+    }
+  },
+
+  async setFeatureFlag(key, value) {
+    const prev = get().featureFlags;
+    const next = { ...prev, [key]: value };
+    set({ featureFlags: next });
+    try {
+      const r = await axios.put(`${BASE_URL}/admin/feature-flags`, next);
+      set({ featureFlags: r.data });
+    } catch (err) {
+      set({ featureFlags: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  // ── Usage/quota visibility - surfaces the last chat-LLM failure (e.g. a
+  // Groq rate limit, with used/limit/retry parsed out) without digging
+  // through server logs. ──
+  llmStatus: null,
+  llmStatusLoading: false,
+
+  async fetchLlmStatus() {
+    set({ llmStatusLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/llm-status`);
+      set({ llmStatus: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ llmStatusLoading: false });
+    }
+  },
+
+  // ── Token usage metrics - how many tokens chat requests are actually
+  // sending to the LLM, per request and totals (see admin/llm-metrics -
+  // process-local, resets on restart, an operational view not a billing
+  // system of record). ──
+  llmMetrics: null,
+  llmMetricsLoading: false,
+
+  async fetchLlmMetrics() {
+    set({ llmMetricsLoading: true });
+    try {
+      const r = await axios.get(`${BASE_URL}/admin/llm-metrics`);
+      set({ llmMetrics: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ llmMetricsLoading: false });
+    }
+  },
+
+  // ── Analytics - spend aggregated by bank / tag / day, for the charts
+  // view. Available to every signed-in user (not admin-gated). ──
+  analyticsOpen: false,
+  analyticsData: null,
+  analyticsLoading: false,
+  setAnalyticsOpen: (v) => set({ analyticsOpen: v }),
+
+  async fetchAnalytics(filters = {}) {
+    set({ analyticsLoading: true });
+    try {
+      const params = new URLSearchParams();
+      (filters.bankIds || []).forEach((id) => params.append("bank_id", id));
+      (filters.tagIds || []).forEach((id) => params.append("tag_id", id));
+      (filters.excludeTagIds || []).forEach((id) => params.append("exclude_tag_id", id));
+      if (filters.startDate) params.append("start_date", filters.startDate);
+      if (filters.endDate) params.append("end_date", filters.endDate);
+      if (filters.keyword) params.append("keyword", filters.keyword);
+      const qs = params.toString();
+      const r = await axios.get(
+        `${BASE_URL}/expenses/analytics/overview${qs ? `?${qs}` : ""}`,
+      );
+      set({ analyticsData: r.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ analyticsLoading: false });
     }
   },
 

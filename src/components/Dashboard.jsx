@@ -10,6 +10,11 @@ import CreateBankDialog from "./CreateBankDialog.jsx";
 import CreateTagDialog from "./CreateTagDialog.jsx";
 import ApplyTagsDialog from "./ApplyTagsDialog.jsx";
 import ChatAssistantDialog from "./ChatAssistantDialog.jsx";
+import AdminDashboard from "./AdminDashboard.jsx";
+import ExpenseInsights from "./ExpenseInsights.jsx";
+import ExcludedTagsDialog from "./ExcludedTagsDialog.jsx";
+import InsightsFilterBar from "./InsightsFilterBar.jsx";
+import useWideScreen, { useTabletScreen } from "../useWideScreen.js";
 
 function isTypingInField(el) {
   if (!el || !el.tagName) return false;
@@ -20,22 +25,46 @@ function isTypingInField(el) {
 }
 
 export default function Dashboard() {
-  const { setApplyEntryTagVisible, setApplyTagEntry } = useStore();
+  const {
+    setApplyEntryTagVisible,
+    setApplyTagEntry,
+    chatbotEnabled,
+    setAdminDashboardOpen,
+    isAdminDashboardOpen,
+    analyticsOpen,
+    setAnalyticsOpen,
+  } = useStore();
+  const wide = useWideScreen();
+  const tablet = useTabletScreen();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [excludedOpen, setExcludedOpen] = useState(false);
 
   const handleEditEntry = (entry) => {
     setApplyTagEntry(entry);
     setApplyEntryTagVisible(true);
   };
+  // Analytics: split view on desktop, popup on tablets, off on phones.
+  const showSplit = analyticsOpen && wide;
+  const showModal = analyticsOpen && tablet;
+  useEffect(() => {
+    if (!wide && !tablet && analyticsOpen) setAnalyticsOpen(false);
+  }, [wide, tablet, analyticsOpen, setAnalyticsOpen]);
+  useEffect(() => {
+    if (!showModal) return;
+    const esc = (e) => e.key === "Escape" && setAnalyticsOpen(false);
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [showModal, setAnalyticsOpen]);
   const openChat = useCallback(() => setChatOpen(true), []);
   const closeChat = useCallback(() => setChatOpen(false), []);
 
   useEffect(() => {
+    if (!chatbotEnabled) return;
     let lastSpaceAt = 0;
     const DOUBLE_MS = 480;
     const onKeyDown = (e) => {
@@ -55,13 +84,15 @@ export default function Dashboard() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [chatbotEnabled]);
 
   return (
     <div className="app-shell">
       <Topbar
         onMenuClick={() => setSidebarOpen((v) => !v)}
         onOpenChat={openChat}
+        onOpenAdmin={() => setAdminDashboardOpen(true)}
+        onOpenExcludedTags={() => setExcludedOpen(true)}
       />
 
       <div className="body-layout">
@@ -70,55 +101,76 @@ export default function Dashboard() {
           onClose={() => setSidebarOpen(false)}
           activeTagFilter={tagFilter}
           onTagFilter={setTagFilter}
+          onOpenAdmin={() => setAdminDashboardOpen(true)}
         />
 
         <main className="main-content">
-          {/* Command Bar */}
-          <div className="command-bar">
-            <div
-              className="cmd-search"
-              onClick={() => setSearchOpen((v) => !v)}
-              style={{ cursor: "pointer" }}
-            >
-              <span
-                style={{ color: "var(--faint)", fontSize: 16, flexShrink: 0 }}
-              >
-                ⌕
-              </span>
-              <span
-                className="cmd-input-area"
-                style={{ color: "var(--faint)" }}
-              >
-                Search / filter expenses...
-              </span>
-            </div>
-            <div className="cmd-actions">
-              <button
-                onClick={() => setTagDialogOpen(true)}
-                className="add-expense-btn"
-              >
-                + Tag
-              </button>
-              <button
-                className="add-expense-btn"
-                onClick={() => setDrawerOpen(true)}
-              >
-                <span>＋</span>
-                <span className="btn-text">Add Expense</span>
-              </button>
-            </div>
-          </div>
+          {isAdminDashboardOpen ? (
+            <AdminDashboard />
+          ) : (
+            <>
+              {/* Command Bar */}
+              <div className="command-bar">
+                <div className="cmd-actions">
+                  <button
+                    type="button"
+                    className="add-expense-btn"
+                    onClick={() => setSearchOpen((v) => !v)}
+                  >
+                    <span>⌕</span>
+                    <span className="btn-text">Search / filter</span>
+                  </button>
+                  <button
+                    onClick={() => setTagDialogOpen(true)}
+                    className="add-expense-btn"
+                  >
+                    + Tag
+                  </button>
+                  <button
+                    className="add-expense-btn"
+                    onClick={() => setDrawerOpen(true)}
+                  >
+                    <span>＋</span>
+                    <span className="btn-text">Add Expense</span>
+                  </button>
+                </div>
+              </div>
 
-          {/* Search Panel */}
-          <SearchPanel open={searchOpen} />
+              {/* Search Panel */}
+              <SearchPanel open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-          {/* Expense Table */}
-          <ExpenseTable onEditEntry={handleEditEntry} />
+              {/* Workspace: expenses on the left; when Analytics is on, a filter
+                  row on top and charts of the visible rows on the right. */}
+              <div className={`workspace${showSplit ? " split" : ""}`}>
+                {showSplit && <InsightsFilterBar />}
+                <div className="workspace-body">
+                  <div className="workspace-left">
+                    <ExpenseTable onEditEntry={handleEditEntry} />
+                  </div>
+                  {showSplit && <ExpenseInsights />}
+                </div>
+              </div>
 
-          {/* Pagination */}
-          <Pagination />
+              {/* Pagination (full width, so it never sits under the chat hint) */}
+              <Pagination />
+            </>
+          )}
         </main>
       </div>
+
+      <ExcludedTagsDialog open={excludedOpen} onClose={() => setExcludedOpen(false)} />
+
+      {showModal && (
+        <div
+          className="insights-modal-backdrop"
+          onMouseDown={(e) => e.target === e.currentTarget && setAnalyticsOpen(false)}
+        >
+          <div className="insights-modal" role="dialog" aria-label="Analytics">
+            <InsightsFilterBar />
+            <ExpenseInsights onClose={() => setAnalyticsOpen(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Mobile floating FAB — bottom right, only on mobile */}
       <button
@@ -140,9 +192,14 @@ export default function Dashboard() {
         onClose={() => setTagDialogOpen(false)}
       />
       <ApplyTagsDialog />
-      <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
-
-      <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
+      {chatbotEnabled && (
+        <>
+          <ChatAssistantDialog open={chatOpen} onClose={closeChat} />
+          {!isAdminDashboardOpen && (
+            <h1 className="chat-shortcut-hint">Press Space twice to chat with me</h1>
+          )}
+        </>
+      )}
     </div>
   );
 }

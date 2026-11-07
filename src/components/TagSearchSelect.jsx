@@ -31,11 +31,14 @@ export default function TagSearchSelect({
   onChange,
   placeholder = "Search tags…",
   zIndex = 502,
+  summary = false, // collapse 2+ chips into one "N selected" chip
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapRef = useRef(null);
+  const optionRefs = useRef([]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -48,6 +51,17 @@ export default function TagSearchSelect({
           .includes(q),
     );
   }, [tags, query]);
+
+  // Keep the highlight in range whenever the list changes (typing a query,
+  // opening/closing) instead of pointing at a stale/out-of-bounds index.
+  useEffect(() => {
+    setHighlightedIndex(filtered.length > 0 ? 0 : -1);
+  }, [filtered, open]);
+
+  useEffect(() => {
+    if (highlightedIndex < 0) return;
+    optionRefs.current[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex]);
 
   const syncMenuPosition = useCallback(() => {
     if (!wrapRef.current) return;
@@ -110,6 +124,43 @@ export default function TagSearchSelect({
 
   const remove = (value) => onChange(selected.filter((x) => x !== value));
 
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      setHighlightedIndex((i) =>
+        filtered.length === 0 ? -1 : (i + 1) % filtered.length,
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      setHighlightedIndex((i) =>
+        filtered.length === 0 ? -1 : (i - 1 + filtered.length) % filtered.length,
+      );
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      const option = filtered[highlightedIndex];
+      if (option) toggle(option.value);
+    } else if (e.key === "Escape") {
+      if (open) {
+        e.preventDefault();
+        setOpen(false);
+      }
+    } else if (e.key === "Tab") {
+      setOpen(false);
+    }
+  };
+
   const selectedMeta = useMemo(
     () => selected.map((v) => tags.find((t) => t.value === v)).filter(Boolean),
     [selected, tags],
@@ -119,19 +170,38 @@ export default function TagSearchSelect({
     <div className="tag-search-select" ref={wrapRef}>
       {selectedMeta.length > 0 && (
         <div className="tag-search-selected">
-          {selectedMeta.map((t) => (
-            <span key={t.value} className="tag-search-chip">
-              <span className="tag-search-chip-text">{t.title}</span>
+          {summary && selectedMeta.length > 1 ? (
+            <span
+              className="tag-search-chip"
+              title={selectedMeta.map((t) => t.title).join(", ")}
+            >
+              <span className="tag-search-chip-text">
+                {selectedMeta.length} selected
+              </span>
               <button
                 type="button"
                 className="tag-search-chip-remove"
-                aria-label={`Remove ${t.title}`}
-                onClick={() => remove(t.value)}
+                aria-label="Clear selection"
+                onClick={() => onChange([])}
               >
                 ×
               </button>
             </span>
-          ))}
+          ) : (
+            selectedMeta.map((t) => (
+              <span key={t.value} className="tag-search-chip">
+                <span className="tag-search-chip-text">{t.title}</span>
+                <button
+                  type="button"
+                  className="tag-search-chip-remove"
+                  aria-label={`Remove ${t.title}`}
+                  onClick={() => remove(t.value)}
+                >
+                  ×
+                </button>
+              </span>
+            ))
+          )}
         </div>
       )}
       <input
@@ -141,10 +211,16 @@ export default function TagSearchSelect({
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => setOpen(true)}
         onClick={() => setOpen(true)}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-activedescendant={
+          highlightedIndex >= 0 && filtered[highlightedIndex]
+            ? `tag-search-option-${filtered[highlightedIndex].value}`
+            : undefined
+        }
       />
       {open &&
         menuPos &&
@@ -168,15 +244,19 @@ export default function TagSearchSelect({
               {filtered.length === 0 ? (
                 <div className="tag-search-empty">No tags match</div>
               ) : (
-                filtered.map((t) => {
+                filtered.map((t, i) => {
                   const isOn = selected.includes(t.value);
+                  const isHighlighted = i === highlightedIndex;
                   return (
                     <div
                       key={t.value}
+                      id={`tag-search-option-${t.value}`}
+                      ref={(el) => (optionRefs.current[i] = el)}
                       role="option"
                       aria-selected={isOn}
                       tabIndex={-1}
-                      className={`tag-search-option${isOn ? " active" : ""}`}
+                      className={`tag-search-option${isOn ? " active" : ""}${isHighlighted ? " highlighted" : ""}`}
+                      onMouseEnter={() => setHighlightedIndex(i)}
                       onClick={() => toggle(t.value)}
                     >
                       <span className="tag-search-option-label">{t.title}</span>

@@ -1,0 +1,41 @@
+name: Deploy to Surge.sh
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: NodeJS Setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # Reuse ~/.npm between runs (keyed on package-lock.json) so a cold
+          # `npm ci` doesn't re-download every package on each deploy.
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --prefer-offline
+
+      # build:prod runs `vite build --mode prod`, which reads the committed
+      # .env.prod. Vite bakes VITE_TM_BACKEND_URL (https://api.stalk-my-money.in)
+      # into the bundle at build time, so the production build must use this
+      # script and not `npm run build`.
+      - name: Build
+        run: npm run build:prod
+
+      # Surge serves 200.html for any URL it can't find, so a refresh on any
+      # path still loads the app.
+      - name: SPA fallback
+        run: cp dist/index.html dist/200.html
+
+      - name: Deploy to Surge
+        run: npx surge dist app.stalk-my-money.in --token ${{ secrets.SURGE_TOKEN }}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useStore } from '../store/useStore.js'
 export default function Register() {
-  const { registerUser, setLoginPageStatus } = useStore()
+  const { registerUser, setLoginPageStatus, setShowLanding } = useStore()
   const [form, setForm] = useState({ username:'', email:'', password:'', confirm:'' })
   const [showPw, setShowPw] = useState(false)
   const up = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
@@ -16,6 +16,9 @@ export default function Register() {
       <div className="auth-panel" style={{ borderColor: 'rgba(77,170,255,0.15)' }}>
         <div className="auth-scanlines" />
         <div className="auth-top">
+          <button type="button" className="auth-back" onClick={() => setShowLanding(true)}>
+            <ArrowLeft size={14} /> Back
+          </button>
           <div className="auth-logo-row">
             <div className="auth-logo-hex" style={{ background: 'var(--blue)' }}>₹</div>
             <div className="auth-logo-name">Stalk<span>My</span>Money</div>

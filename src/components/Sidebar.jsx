@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 
 const COLORS = [
   "var(--acid)",
@@ -15,11 +15,13 @@ export default function Sidebar({
   onClose,
   activeTagFilter,
   onTagFilter,
+  onOpenAdmin,
 }) {
   const {
     banksList,
     privacyMode,
     isDarkMode,
+    isAdmin,
     currentTotalOfTopupExpenses,
     currentTotalOfExpenses,
     currentTotalExpenses,
@@ -29,6 +31,7 @@ export default function Sidebar({
     updateUserPreferences,
     logoutUser,
     reorderBanks,
+    requestConfirm,
   } = useStore();
 
   const [activeIdx, setActiveIdx] = useState(0);
@@ -55,9 +58,9 @@ export default function Sidebar({
     onClose?.();
   };
 
-  const delBank = (e, id) => {
+  const delBank = async (e, id) => {
     e.stopPropagation();
-    if (confirm("Delete this account?")) deleteBank(id);
+    if (await requestConfirm("Delete this account?")) deleteBank(id);
   };
 
   /** Return the card index whose bounding rect contains the point (cx, cy). */
@@ -311,7 +314,7 @@ export default function Sidebar({
             onClick={() => updateUserPreferences({ is_dark_mode: !isDarkMode })}
             title={isDarkMode ? "Light mode" : "Dark mode"}
           >
-            {isDarkMode ? "☀" : "◑"}
+            {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
             <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
           </button>
           <button
@@ -324,12 +327,23 @@ export default function Sidebar({
             {privacyMode ? <EyeOff size={15} /> : <Eye size={15} />}
             <span>{privacyMode ? "Show Amounts" : "Hide Amounts"}</span>
           </button>
+          {isAdmin && (
+            <button
+              className="sidebar-ctrl-btn"
+              onClick={() => onOpenAdmin?.()}
+              title="Admin dashboard"
+            >
+              <ShieldCheck size={15} />
+              <span>Admin Dashboard</span>
+            </button>
+          )}
           <button
             className="sidebar-ctrl-btn sidebar-ctrl-btn--danger"
             onClick={logoutUser}
             title="Logout"
           >
-            ⏻<span>Logout</span>
+            <LogOut size={15} />
+            <span>Logout</span>
           </button>
         </div>
         <div style={{ marginTop: 10 }} />

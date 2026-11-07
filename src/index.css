@@ -264,13 +264,83 @@ body::after {
     /* hidden on mobile via media query */
 }
 
+.topbar-user-menu {
+    position: relative;
+}
 .topbar-user-chip {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 3px 12px 3px 4px;
+    padding: 3px 10px 3px 4px;
     border: 1px solid var(--line);
     border-radius: 100px;
+    /* Now a <button> (was a bare <div>) so it's keyboard/click
+       accessible as the dropdown trigger - reset the UA button defaults
+       that would otherwise bleed through. */
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.topbar-user-chip:hover,
+.topbar-user-chip.is-open {
+    border-color: var(--acid-mid);
+    background: var(--acid-dim);
+}
+.topbar-user-chevron {
+    color: var(--faint);
+    transition: transform 0.15s;
+}
+.topbar-user-chip.is-open .topbar-user-chevron {
+    transform: rotate(180deg);
+    color: var(--acid);
+}
+
+.topbar-user-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 200px;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-md);
+    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 50;
+    animation: fadeUp 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.topbar-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: var(--r-sm);
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--f-body);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.topbar-dropdown-item:hover {
+    background: var(--acid-dim);
+    color: var(--acid);
+}
+.topbar-dropdown-item--danger:hover {
+    background: rgba(255, 59, 92, 0.1);
+    color: var(--red);
+}
+.topbar-dropdown-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 4px 2px;
 }
 
 .topbar-user-av {
@@ -311,6 +381,11 @@ body::after {
     justify-content: center;
     flex-shrink: 0;
     transition: all 0.18s;
+}
+.topbar-menu-btn:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
 }
 
 /* Icon button base */
@@ -379,7 +454,7 @@ body::after {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 16px;
 }
 .sidebar-section-label::after {
     content: "";
@@ -391,11 +466,13 @@ body::after {
 .account-card {
     display: flex;
     align-items: center;
-    padding: 11px 12px;
-    border-radius: var(--r-sm);
-    margin-bottom: 5px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    margin-bottom: 6px;
     cursor: pointer;
-    border: 1px solid transparent;
+    /* Faint outline even at rest - unselected cards were invisible as
+       cards, just text floating on the sidebar background. */
+    border: 1px solid var(--line);
     background: transparent;
     position: relative;
     overflow: hidden;
@@ -408,6 +485,7 @@ body::after {
 .account-card.active {
     background: var(--ink-3);
     border-color: var(--line-mid);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 .account-card--drag-over {
     border-color: var(--acid);
@@ -444,19 +522,19 @@ body::after {
 
 .account-card-indicator {
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    left: 6px;
+    top: 10px;
+    bottom: 10px;
     width: 3px;
     background: var(--acid);
     box-shadow: 0 0 8px var(--acid-glow);
-    border-radius: 0 2px 2px 0;
+    border-radius: 2px;
 }
 
 .account-initial {
-    width: 34px;
-    height: 34px;
-    border-radius: var(--r-sm);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -464,16 +542,17 @@ body::after {
     font-weight: 800;
     font-size: 16px;
     flex-shrink: 0;
-    margin-right: 10px;
+    margin-right: 12px;
     background: var(--ink-4);
     border: 1px solid var(--line);
     color: var(--muted);
     transition: all 0.18s;
 }
 .account-card.active .account-initial {
-    background: rgba(184, 255, 0, 0.1);
-    border-color: rgba(184, 255, 0, 0.25);
+    background: rgba(184, 255, 0, 0.12);
+    border-color: var(--acid-mid);
     color: var(--acid);
+    box-shadow: 0 0 0 3px var(--acid-dim), 0 0 16px var(--acid-glow);
 }
 
 .account-info {
@@ -606,7 +685,7 @@ body::after {
     align-items: center;
     gap: 10px;
     width: 100%;
-    padding: 10px 8px;
+    padding: 8px;
     border-radius: var(--r-sm);
     border: none;
     background: transparent;
@@ -624,11 +703,33 @@ body::after {
     background: var(--ink-3);
     color: var(--text);
 }
+/* Icon gets its own small rounded chip, matching the account avatars'
+   treatment, instead of sitting bare next to the label. */
+.sidebar-ctrl-btn > svg {
+    flex-shrink: 0;
+    /* Box is 22px, but padding keeps the drawn icon itself around 12-13px -
+       width/height here would otherwise override the size={} prop passed
+       in JSX and stretch the glyph to fill the whole box. */
+    width: 22px;
+    height: 22px;
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
+    background: var(--ink-4);
+    border: 1px solid var(--line);
+}
 .sidebar-ctrl-btn--danger {
     color: var(--red);
 }
 .sidebar-ctrl-btn--danger:hover {
     background: var(--red-dim);
+}
+.sidebar-ctrl-btn--danger > svg {
+    border-color: rgba(255, 59, 92, 0.25);
+    color: var(--red);
 }
 
 .sidebar-footer {
@@ -668,6 +769,12 @@ body::after {
 .command-bar {
     display: flex;
     align-items: center;
+    /* .cmd-actions is the only child now that search lives inside it as
+       a button too (previously .cmd-search's flex:1 pushed .cmd-actions
+       to the end on its own) - push it to the end explicitly so the
+       whole button row stays right-aligned instead of hugging the left
+       edge of a now-empty bar. */
+    justify-content: flex-end;
     background: var(--ink-2);
     border-bottom: 1px solid var(--line);
     padding: 0 20px;
@@ -780,32 +887,56 @@ body::after {
     transform: translateY(-1px);
 }
 
-/* ═══════════════════════════════════════════════════════
-   SEARCH PANEL
-═══════════════════════════════════════════════════════ */
-.search-panel {
-    background: var(--ink-2);
-    border-bottom: 1px solid var(--line);
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+/* Was a wide bar spanning the left side of the command bar - now a
+   compact button living alongside +Tag/+Add Expense instead, same
+   height/shape as those but outlined rather than filled, so it reads as
+   a secondary action next to the two primary green CTAs. */
+.cmd-search-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line-mid);
+    cursor: pointer;
+    font-family: var(--f-head);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    transition: all 0.18s;
+    white-space: nowrap;
 }
-.search-panel.open {
-    max-height: 480px;
+.cmd-search-btn:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
+}
+.cmd-search-btn-icon {
+    font-size: 15px;
+    flex-shrink: 0;
 }
 
-.search-panel-inner {
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+/* ═══════════════════════════════════════════════════════
+   SEARCH / FILTER DIALOG
+   (was an inline panel that expanded and pushed the expense list down -
+   now a proper modal, built on the shared .dialog-overlay/.dialog-panel
+   pattern used by the other dialogs in the app.)
+═══════════════════════════════════════════════════════ */
+.search-dialog-panel {
+    max-width: 480px;
 }
 
 .search-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    /* Single column - a 4-up grid never fit well once this became a
+       ~480px-wide dialog instead of the full-width inline panel it used
+       to be. */
+    grid-template-columns: 1fr;
     gap: 14px;
     align-items: start;
+    margin-bottom: 18px;
 }
 
 .search-field-group {
@@ -994,7 +1125,7 @@ body::after {
 
 .table-head {
     display: grid;
-    grid-template-columns: 72px 1fr 110px 100px 100px 100px 44px;
+    grid-template-columns: 110px 1fr 110px 100px 100px 100px 44px;
     padding: 0 20px;
     height: 34px;
     align-items: center;
@@ -1030,7 +1161,7 @@ body::after {
 
 .expense-row {
     display: grid;
-    grid-template-columns: 72px 1fr 110px 100px 100px 100px 44px;
+    grid-template-columns: 110px 1fr 110px 100px 100px 100px 44px;
     padding: 0 20px;
     height: 56px;
     align-items: center;
@@ -1055,6 +1186,12 @@ body::after {
     border-radius: 0 2px 2px 0;
 }
 
+.exp-date-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .exp-date-day {
     font-family: var(--f-head);
     font-size: 26px;
@@ -1071,6 +1208,13 @@ body::after {
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
+}
+.exp-date-yr {
+    font-family: var(--f-head);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--faint);
 }
 
 .exp-meta-bank {
@@ -1192,7 +1336,7 @@ body::after {
 
 .entry-row {
     display: grid;
-    grid-template-columns: 72px 1fr 110px 100px 100px 100px 44px;
+    grid-template-columns: 110px 1fr 110px 100px 100px 100px 44px;
     padding: 0 20px;
     height: 40px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.025);
@@ -1273,35 +1417,58 @@ body::after {
     background: var(--red-dim);
 }
 
-/* Inline add entries */
+/* Inline add entries — left edge lines up with the description column
+   of .entry-row (20px row padding + 110px date column) */
 .inline-add-entries {
-    padding: 12px 20px 14px;
+    --inline-indent: 130px;
+    padding: 14px 20px 16px var(--inline-indent);
     border-top: 1px solid var(--line);
     background: var(--ink-3);
+}
+.inline-add-entries .inline-entry-card {
+    max-width: 640px;
+}
+
+.inline-entry-card {
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md, 8px);
+    padding: 12px 14px 4px;
+    margin-bottom: 10px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.inline-entry-card:focus-within {
+    border-color: var(--acid-mid);
+    box-shadow: 0 0 0 3px var(--acid-dim);
+}
+.inline-entry-card .entry-type-toggle--inline {
+    margin-bottom: 10px;
 }
 
 .inline-entry-row {
     display: grid;
-    grid-template-columns: 110px 1fr 24px;
-    gap: 8px;
+    grid-template-columns: 120px 1fr 28px;
+    gap: 12px;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .inline-input {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--line-mid);
+    background: var(--ink-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
     outline: none;
     color: var(--text);
     font-family: var(--f-mono);
     font-size: 13px;
     width: 100%;
-    padding: 4px 0;
-    transition: border-color 0.15s;
+    height: 34px;
+    padding: 0 10px;
+    transition: border-color 0.15s, background 0.15s;
 }
 .inline-input:focus {
-    border-bottom-color: var(--acid-mid);
+    border-color: var(--acid-mid);
+    background: var(--ink);
 }
 .inline-input::placeholder {
     color: var(--faint);
@@ -1342,7 +1509,7 @@ body::after {
     gap: 8px;
 }
 .inline-add-btn {
-    padding: 6px 12px;
+    padding: 8px 14px;
     border: 1px dashed var(--line-mid);
     border-radius: var(--r-sm);
     background: transparent;
@@ -1361,7 +1528,7 @@ body::after {
     background: var(--acid-dim);
 }
 .inline-save-btn {
-    padding: 6px 14px;
+    padding: 8px 16px;
     border-radius: var(--r-sm);
     border: none;
     background: var(--acid);
@@ -1378,6 +1545,9 @@ body::after {
     box-shadow: 0 0 12px var(--acid-glow);
 }
 .inline-remove-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--r-sm);
     background: transparent;
     border: none;
     cursor: pointer;
@@ -1388,6 +1558,7 @@ body::after {
 }
 .inline-remove-btn:hover {
     color: var(--red);
+    background: var(--red-dim);
 }
 
 /* Empty state */
@@ -1420,7 +1591,7 @@ body::after {
 /* ── Expense totals footer row (desktop) ── */
 .expense-totals-row {
     display: grid;
-    grid-template-columns: 72px 1fr 110px 100px 100px 100px 44px;
+    grid-template-columns: 110px 1fr 110px 100px 100px 100px 44px;
     padding: 0 20px;
     height: 44px;
     align-items: center;
@@ -1462,14 +1633,21 @@ body::after {
 .expense-card {
     display: none; /* shown only on mobile via media query */
     padding: 16px;
-    border-bottom: 1px solid var(--line);
+    margin: 0 12px 10px;
+    border-radius: var(--r-md);
+    background: var(--ink-2);
+    border: 1px solid var(--line);
     cursor: pointer;
-    transition: background 0.12s;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.18s;
     animation: fadeUp 0.3s ease both;
 }
-.expense-card:hover,
+.expense-card:active {
+    background: var(--ink-3);
+}
 .expense-card.open {
-    background: var(--ink-2);
+    background: var(--ink-3);
+    border-color: var(--line-mid);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .expense-card-top {
@@ -1482,19 +1660,28 @@ body::after {
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
-    padding: 8px 10px;
+    padding: 9px 10px;
     border-radius: var(--r-sm);
-    background: var(--ink-3);
-    border: 1px solid var(--line);
+    background: linear-gradient(160deg, var(--acid-dim), transparent);
+    border: 1px solid var(--acid-mid);
     min-width: 52px;
 }
 .expense-card-day {
     font-family: var(--f-head);
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 900;
     line-height: 1;
     color: var(--acid);
 }
+.expense-card-yr {
+    font-family: var(--f-head);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--faint);
+    margin-top: 1px;
+}
+
 .expense-card-mon {
     font-family: var(--f-head);
     font-size: 10px;
@@ -1502,7 +1689,7 @@ body::after {
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 .expense-card-body {
@@ -1516,22 +1703,35 @@ body::after {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     font-family: var(--f-head);
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 .expense-card-amounts {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    gap: 18px;
+    align-items: flex-end;
     flex-wrap: wrap;
-    margin-bottom: 6px;
+}
+.expense-card-amt-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.expense-card-amt-label {
+    font-family: var(--f-head);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
 }
 .expense-card-amt {
     font-family: var(--f-mono);
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
+    line-height: 1;
 }
 .expense-card-remaining {
     font-family: var(--f-mono);
@@ -1560,21 +1760,27 @@ body::after {
     color: var(--acid);
 }
 
-/* Mobile entries panel */
+/* Mobile entries panel — inset "well" look, distinct from the card itself */
 .mobile-entries-panel {
-    border-top: 1px solid var(--line);
+    margin: 14px -4px -4px -4px;
+    padding: 4px;
+    background: var(--ink);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
     animation: slideDown 0.2s ease;
-    margin: 12px -16px -16px -16px;
 }
 .mobile-entry-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding: 10px 10px;
+    border-radius: 6px;
     transition: background 0.12s;
 }
-.mobile-entry-item:hover {
+.mobile-entry-item:not(:last-child) {
+    margin-bottom: 2px;
+}
+.mobile-entry-item:active {
     background: var(--ink-3);
 }
 
@@ -1595,7 +1801,7 @@ body::after {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.mobile-entry-desc-wrap:hover .mobile-entry-desc {
+.mobile-entry-desc-wrap:active .mobile-entry-desc {
     color: var(--acid);
 }
 
@@ -1608,12 +1814,15 @@ body::after {
     min-width: 60px;
 }
 
-/* Delete button on mobile entries — always visible (no hover state on touch) */
+/* Delete button on mobile entries — lower-weight by default (muted/small),
+   touch devices have no hover so this just needs to read as "secondary"
+   at rest instead of visually competing with the amount/description. */
 .mobile-entry-del-btn {
     background: transparent;
     border: none;
     cursor: pointer;
     color: var(--faint);
+    opacity: 0.55;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1624,18 +1833,19 @@ body::after {
     width: 32px;
     height: 32px;
 }
-.mobile-entry-del-btn:hover,
 .mobile-entry-del-btn:active {
+    opacity: 1;
     color: var(--red);
     background: var(--red-dim);
 }
 
-/* Delete button on mobile expense cards — always visible */
+/* Delete button on mobile expense cards — same lower-weight-at-rest treatment */
 .mobile-exp-del-btn {
     background: transparent;
     border: none;
     cursor: pointer;
     color: var(--faint);
+    opacity: 0.55;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1647,13 +1857,23 @@ body::after {
 }
 .mobile-exp-del-btn:hover,
 .mobile-exp-del-btn:active {
+    opacity: 1;
     color: var(--red);
     background: var(--red-dim);
 }
 
 .mobile-inline-add {
-    padding: 12px 16px;
-    border-top: 1px solid var(--line);
+    padding: 10px 4px 2px;
+}
+.mobile-inline-add .inline-add-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 11px;
+    /* No hover on touch - give it a visible baseline instead of relying on
+       :hover to ever read as more than a faint dashed outline. */
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2013,6 +2233,27 @@ body::after {
     color: var(--acid);
 }
 
+.d-tag-suggestion-chip {
+    margin-top: 8px;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--purple-dim);
+    border: 1px solid rgba(155, 127, 255, 0.3);
+    color: var(--purple);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.d-tag-suggestion-chip:hover {
+    background: rgba(155, 127, 255, 0.18);
+    border-color: rgba(155, 127, 255, 0.5);
+}
+
 .d-entry-tags-field {
     margin-top: 8px;
     display: flex;
@@ -2184,6 +2425,14 @@ body::after {
     background: var(--acid-dim);
     color: var(--acid);
 }
+.tag-search-option.highlighted {
+    background: var(--ink-5);
+}
+.tag-search-option.active.highlighted {
+    background: var(--acid-dim);
+    outline: 1px solid var(--acid);
+    outline-offset: -1px;
+}
 .tag-search-option-label {
     flex: 1;
     overflow: hidden;
@@ -2226,6 +2475,16 @@ body::after {
 .d-btn-primary:hover {
     box-shadow: 0 0 22px var(--acid-glow);
 }
+.d-btn:disabled {
+    /* Every "Save" button in a row of 4 provider-key cards used to render
+       full-strength green regardless of whether there was anything to
+       save - 3 identical loud CTAs competing for attention when they're
+       actually inert. Disabled now visibly recedes. */
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
 
 /* ═══════════════════════════════════════════════════════
    DIALOGS (Bank, Tag, Apply Tags)
@@ -2259,6 +2518,1625 @@ body::after {
 .dialog-panel.wide {
     max-width: 460px;
 }
+.dialog-panel.admin-wide {
+    max-width: 760px;
+    height: 640px;
+    max-height: 90vh;
+}
+
+.admin-dashboard-body {
+    padding: 16px 24px 24px;
+    gap: 0;
+}
+.admin-search-wrap {
+    height: 44px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+    /* Same low-contrast issue as the AI config fields - .d-input-wrap's
+       default --ink-3/--line-mid barely registers against this page's
+       --ink-2 panels, especially in light mode. */
+    background: var(--ink);
+    border-color: var(--line-str);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+    border-radius: var(--r-md);
+}
+.admin-search-wrap:focus-within {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 3px var(--acid-dim);
+}
+.admin-search-clear {
+    width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--faint);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+.admin-search-clear:hover {
+    color: var(--text);
+}
+.admin-users-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.admin-users-controls .admin-search-wrap {
+    /* .admin-search-wrap's own margin-bottom:14px is for when it sits
+       alone above the table - as a flex sibling here it just throws off
+       align-items:center (extra margin on one side shifts its centered
+       box relative to the page-size control next to it). */
+    margin-bottom: 0;
+}
+.admin-page-size-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Matches .admin-search-wrap's actual rendered height (48px, not its
+       own 44px rule - a later .d-input-wrap rule in this file wins the
+       cascade and overrides it), so the two controls sit flush. */
+    height: 48px;
+    padding: 0 34px 0 14px;
+    background: var(--ink);
+    border: 1px solid var(--line-str);
+    border-radius: var(--r-md);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-page-size-wrap:focus-within {
+    border-color: var(--acid-mid);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 3px var(--acid-dim);
+}
+.admin-page-size-label {
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    white-space: nowrap;
+}
+.admin-page-size-value {
+    font-family: var(--f-mono);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+}
+.admin-page-size-select {
+    /* Covers the whole pill (not just its own tiny native hit-area) and
+       stays invisible - .admin-page-size-value above is what's actually
+       seen; this only needs to catch the click and open its own native
+       popup, which opacity:0 doesn't prevent. */
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    color-scheme: dark;
+}
+body.light .admin-page-size-select {
+    color-scheme: light;
+}
+.admin-page-size-select option {
+    background: var(--ink-2);
+    color: var(--text);
+    opacity: 1;
+}
+.admin-page-size-chevron {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--faint);
+    pointer-events: none;
+}
+.admin-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid color-mix(in srgb, var(--line-str) 60%, transparent);
+}
+.admin-pagination-info {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--faint);
+}
+.admin-pagination-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.admin-pg-btn {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1px solid var(--line-str);
+    background: color-mix(in srgb, var(--ink-4) 70%, transparent);
+    font-family: var(--f-mono);
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s, background 0.15s, color 0.15s;
+}
+.admin-pg-btn--nav {
+    color: var(--faint);
+}
+.admin-pg-btn:hover:not(:disabled) {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
+    transform: translateY(-1px);
+}
+.admin-pg-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.admin-pg-btn.active {
+    background: linear-gradient(135deg, var(--acid), color-mix(in srgb, var(--acid) 70%, var(--green)));
+    color: var(--ink);
+    border-color: transparent;
+    font-weight: 800;
+    box-shadow: 0 4px 14px -4px var(--acid-glow);
+}
+.admin-pg-ellipsis {
+    color: var(--faint);
+    font-size: 13px;
+    padding: 0 2px;
+    display: flex;
+    align-items: center;
+}
+.admin-dashboard-empty {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px 0;
+    text-align: center;
+}
+
+.admin-user-table {
+    display: flex;
+    flex-direction: column;
+}
+.admin-user-row {
+    display: grid;
+    grid-template-columns: 1fr 110px 90px 70px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px;
+    margin: 0 -10px;
+    border-radius: var(--r-sm);
+    border-bottom: 1px solid var(--line);
+    transition: background 0.15s;
+}
+.admin-user-row:hover {
+    background: var(--ink-4);
+}
+.admin-user-row--head {
+    font-family: var(--f-head);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 12px;
+    padding-top: 0;
+}
+.admin-user-row--head:hover {
+    background: transparent;
+}
+.admin-user-row:last-child {
+    border-bottom: none;
+}
+.admin-user-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.admin-user-av {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--f-head);
+    font-weight: 700;
+    font-size: 13px;
+    background: var(--acid-dim);
+    color: var(--acid);
+    border: 1px solid var(--acid-mid);
+}
+.admin-user-name {
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.admin-user-email {
+    font-size: 11px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.admin-user-joined {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--muted);
+}
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--ink-5);
+    border: 1px solid var(--line-mid);
+    color: var(--muted);
+    white-space: nowrap;
+}
+.admin-badge--admin {
+    background: var(--acid-dim);
+    border-color: var(--acid-mid);
+    color: var(--acid);
+}
+
+.admin-toggle {
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-4);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.admin-toggle-knob {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--faint);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s, background 0.15s;
+}
+.admin-toggle.on {
+    background: var(--acid-dim);
+    border-color: var(--acid-mid);
+}
+.admin-toggle.on .admin-toggle-knob {
+    transform: translateX(18px);
+    background: var(--acid);
+}
+
+.admin-user-table--wide .admin-user-row {
+    grid-template-columns: 1fr 100px 70px 90px 70px;
+}
+.admin-toggle--danger.on {
+    background: color-mix(in srgb, var(--red) 22%, transparent);
+    border-color: var(--red);
+}
+.admin-toggle--danger.on .admin-toggle-knob {
+    background: var(--red);
+}
+
+@media (max-width: 640px) {
+    .admin-user-row,
+    .admin-user-table--wide .admin-user-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+    }
+    .admin-user-row--head {
+        display: none;
+    }
+    .admin-user-identity {
+        flex: 1 1 100%;
+    }
+    .admin-user-joined,
+    .admin-badge {
+        order: 1;
+    }
+    .admin-toggle {
+        order: 2;
+    }
+}
+
+/* ── Admin dashboard: separate full-screen page (not a modal) ───────── */
+.admin-page {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: var(--ink);
+    /* Soft ambient color blobs behind the glass panels - without
+       something to blur, a backdrop-filter has no visible effect at
+       all; this is what actually makes the glassmorphism read. */
+    background-image: radial-gradient(
+            640px circle at 12% -10%,
+            color-mix(in srgb, var(--acid) 10%, transparent),
+            transparent 60%
+        ),
+        radial-gradient(
+            560px circle at 100% 20%,
+            color-mix(in srgb, var(--purple) 12%, transparent),
+            transparent 55%
+        );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeUp 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Everything - header, tabs, body - lives in one centered column, instead
+   of a full-width header sitting above a separately-centered (and
+   narrower) body, which is what made the page look lopsided/left-stuck
+   on wide screens. */
+.admin-page-inner {
+    width: 100%;
+    max-width: 900px;
+    height: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+}
+/* Admin Dashboard and Analytics used to take over the whole screen as a
+   fixed-position overlay, hiding the topbar/sidebar entirely - per
+   feedback, they should stay part of the normal app layout instead, so
+   navigation is always reachable. This renders the same header/tabs/
+   content markup inline inside .main-content rather than as a takeover:
+   same glass-panel look, just filling the content column instead of the
+   whole viewport. */
+.inline-view {
+    flex: 1;
+    min-height: 0;
+    background: var(--ink);
+    background-image: radial-gradient(
+            640px circle at 12% -10%,
+            color-mix(in srgb, var(--acid) 10%, transparent),
+            transparent 60%
+        ),
+        radial-gradient(
+            560px circle at 100% 20%,
+            color-mix(in srgb, var(--purple) 12%, transparent),
+            transparent 55%
+        );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    animation: fadeUp 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.inline-view .admin-page-inner {
+    max-width: none;
+    border: none;
+}
+.admin-page-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    /* Translucent + blurred, so the ambient gradient on .admin-page
+       shows through softly instead of being fully blocked - the glass
+       effect needs to be visible from the very top of the page, not
+       just inside the panels further down. */
+    background: color-mix(in srgb, var(--ink) 72%, transparent);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+.admin-page-header > div:nth-child(2) {
+    flex: 1;
+    min-width: 0;
+}
+.admin-page-close {
+    position: static;
+}
+.admin-tabs {
+    display: flex;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--ink-2) 65%, transparent);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+.admin-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.admin-tab-btn:hover {
+    color: var(--text);
+    background: var(--ink-3);
+}
+.admin-tab-btn.active {
+    /* A solid fill (same acid-bg/ink-text combo as the primary buttons),
+       not just a faint tint - acid-dim's ~7% opacity was nearly
+       invisible against the already-pale canvas in light mode, so the
+       active tab didn't read as "selected" at a glance. */
+    color: var(--ink);
+    background: var(--acid);
+    border-color: var(--acid);
+    box-shadow: 0 2px 8px var(--acid-glow);
+}
+.admin-tab-btn.active:hover {
+    color: var(--ink);
+    background: var(--acid);
+}
+.admin-page-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Translucent canvas tint, not a solid fill - lets the ambient
+       gradient on .admin-page show through faintly across the whole
+       scroll area, with the glass panels sitting more opaque on top for
+       legibility. */
+    background: color-mix(in srgb, var(--ink-2) 55%, transparent);
+}
+.admin-page-content .admin-dashboard-body {
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 28px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.admin-tab-sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 16px;
+    line-height: 1.5;
+    max-width: 560px;
+    text-align: left;
+}
+.admin-tab-sub--with-action {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+}
+/* The Users tab's intro line sits above a full-width table, not a narrow
+   centered form - keep it left-aligned and full-width there instead. */
+.admin-tab-sub--wide {
+    max-width: none;
+    text-align: left;
+    margin: 0;
+}
+.admin-tab-sub--tight {
+    margin: 0;
+}
+
+/* Every tab's content sits in one or more of these elevated cards,
+   instead of bare text/inputs floating directly on the page background -
+   that flat, borderless look (no depth, no grouping) was the core of the
+   "looks like a 90s website" complaint. */
+.admin-panel {
+    /* Glass card: translucent --ink-3 (the elevation stack's "one above
+       canvas" step - see .admin-page-content) over the page's blurred
+       ambient gradient, not a flat fill. backdrop-filter is what
+       actually blurs whatever's behind the card into soft color; the
+       translucent background on top of that is what keeps panel text
+       legible against it. */
+    position: relative;
+    background: color-mix(in srgb, var(--ink-3) 68%, transparent);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid color-mix(in srgb, var(--line-str) 70%, transparent);
+    border-radius: 20px;
+    padding: 30px 32px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06), 0 16px 40px -12px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+body.light .admin-panel {
+    box-shadow: 0 1px 1px rgba(20, 24, 40, 0.03), 0 16px 40px -12px rgba(20, 24, 40, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+/* A faint 1px highlight along the top edge - the classic glass-card
+   "catching light" cue that sells the material, subtle enough not to
+   look like a stray border. */
+.admin-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--text) 14%, transparent),
+        transparent 40%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+.admin-panel-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.admin-panel-row:last-child {
+    margin-bottom: 0;
+}
+.admin-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--f-head);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--text);
+}
+/* Same colored-chip treatment as .dialog-icon.acid (the chat/admin
+   dialog headers elsewhere) - a flat icon reading as plain decoration,
+   a chip reads as a deliberate section marker. */
+.admin-panel-title svg {
+    color: var(--acid);
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    border-radius: var(--r-sm);
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+.admin-panel-desc {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 560px;
+    margin: 4px 0 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--line-str) 55%, transparent);
+}
+.admin-panel-desc--tight {
+    margin-bottom: 0;
+}
+
+.admin-ai-columns {
+    display: grid;
+    /* Model's column is sized to the form's own 356px max-width
+       (.admin-ai-form) plus the panel's padding - just enough to hold
+       its inputs, not an arbitrary share of the row. A `fit-content()`
+       cap alone doesn't achieve this: the form's `width: 100%` fields
+       report a max-content size at least as large as the cap, so the
+       track always settles at the cap anyway. A fixed px column with a
+       matching, narrower form max-width is what actually shrinks it.
+       Provider API Keys takes whatever width is left over. */
+    grid-template-columns: 420px minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+}
+.admin-ai-columns > .admin-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+@media (max-width: 860px) {
+    .admin-ai-columns {
+        grid-template-columns: 1fr;
+    }
+    .admin-ai-columns > .admin-panel {
+        height: auto;
+    }
+}
+.admin-ai-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 356px;
+    margin: 0;
+}
+.admin-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    /* A grid item's default min-width is `auto` (content-based), not 0 -
+       inside .admin-form-row's 1fr/1fr tracks that meant a field whose
+       content needed more than half the row (Temperature's slider+number
+       pair) forced the whole row wider than the panel instead of
+       shrinking, pushing Max Tokens off the right edge at narrower
+       widths. min-width: 0 lets the track actually shrink to its fr
+       share and the input inside wrap/truncate instead. */
+    min-width: 0;
+}
+/* .d-input-field has no border/background of its own - normally it sits
+   inside a .d-input-wrap that supplies both. The admin form uses bare
+   inputs/selects (no wrap div, so an icon can't be slotted in), so give
+   them that same boxed look directly instead. */
+.admin-form-field > .d-input-field {
+    /* The global .d-input-field rule sets `flex: 1 1 0%` (for its usual
+       home inside a row-direction .d-input-wrap, where that only affects
+       width). .admin-form-field is a COLUMN flex container though, and
+       in a column flex context flex-basis (the "0%" in that shorthand)
+       overrides the plain `height` property below for sizing purposes -
+       per spec, flex-basis wins over height/width when both apply. That
+       silently capped every field in this form to a tiny near-zero
+       height no matter what height value was set (even via an inline
+       style), which is what actually caused the squashed-pill look.
+       `flex: none` restores `height` as the authority. */
+    flex: none;
+    height: 38px;
+    /* Solid, not translucent - the panel itself is already glass
+       (translucent + blurred), and layering a semi-transparent field on
+       top of a semi-transparent panel compounds into washed-out, barely-
+       there contrast. A field needs to read clearly on first glance, so
+       it stays fully opaque even though its container doesn't. */
+    background: var(--ink);
+    border: 1.5px solid var(--line-str);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-form-field > .d-input-field::placeholder {
+    color: var(--muted);
+}
+/* Hide the native up/down spinner on number inputs - it clashes with the
+   DM Mono numeric styling used everywhere else in the app. */
+.admin-form-field > input[type="number"]::-webkit-outer-spin-button,
+.admin-form-field > input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.admin-form-field > input[type="number"] {
+    /* Firefox-only - -moz-appearance: textfield is the standard, narrowly-
+       scoped way to hide its spinner. The unprefixed `appearance:
+       textfield` that used to be here as well is what actually broke
+       these fields: in this Chromium build it forces the number input
+       into a native-control rendering mode that ignores author-set
+       height entirely (confirmed - even an inline `el.style.height`
+       override had zero effect), which is why Temperature/Max Tokens/
+       Timeout/Max Retries kept rendering as a squashed ~19px pill no
+       matter what the surrounding CSS said. Removing it - the webkit
+       pseudo-elements above are sufficient to hide Chromium's spinner on
+       their own, no appearance change needed there at all. */
+    -moz-appearance: textfield;
+}
+.admin-form-field > .d-input-field:focus {
+    outline: none;
+    background: var(--ink);
+    border-color: var(--acid);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 4px var(--acid-dim);
+}
+.admin-form-field > span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--f-head);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.admin-field-value {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--acid);
+}
+.admin-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.admin-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 999px;
+    /* Filled portion up to the current value (--pct, set inline from the
+       live temperature), muted track past it - a plain uncolored range
+       input gives no sense of where the value sits without reading the
+       number next to it. */
+    background: linear-gradient(
+        to right,
+        var(--acid) var(--pct, 50%),
+        color-mix(in srgb, var(--line-str) 70%, transparent) var(--pct, 50%)
+    );
+    cursor: pointer;
+    outline: none;
+}
+.admin-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--acid);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--acid) 25%, transparent), 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: transform 0.12s;
+}
+.admin-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+.admin-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: var(--acid);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--acid) 25%, transparent), 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+.admin-slider-number {
+    /* Sits inside .admin-slider-row, not directly inside .admin-form-field
+       - the ".admin-form-field > .d-input-field" rule that normally gives
+       these fields their boxed look only matches a direct child, so this
+       needs its own complete styling rather than relying on that (now
+       non-matching) rule. */
+    flex: 0 0 64px;
+    height: 38px;
+    background: var(--ink);
+    border: 1.5px solid var(--line-str);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--f-mono);
+    font-weight: 500;
+    font-size: 13px;
+    text-align: center;
+    padding: 0 6px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin-slider-number:focus {
+    outline: none;
+    border-color: var(--acid);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 4px var(--acid-dim);
+}
+.admin-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.admin-form-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 2px 0 -4px;
+}
+.admin-form-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: color-mix(in srgb, var(--line-str) 55%, transparent);
+}
+.admin-select-wrap {
+    position: relative;
+}
+.admin-select-wrap .admin-select {
+    width: 100%;
+    cursor: pointer;
+    /* Lives inside .admin-select-wrap (for the custom chevron), which
+       breaks the ".admin-form-field > .d-input-field" direct-child rule
+       that normally supplies the boxed look - so this needs its own
+       explicit border/background instead of inheriting that rule. */
+    height: 46px;
+    /* Solid, not translucent - same reasoning as the text/number inputs
+       above (see that rule's comment): a field needs to read clearly on
+       its own, even sitting inside an already-translucent glass panel. */
+    background: var(--ink);
+    border: 1.5px solid var(--line-str);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: var(--f-mono);
+    font-weight: 500;
+    font-size: 13px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    /* Hides the native arrow so our own ChevronDown (below) is the only
+       one shown - two overlapping arrows is exactly the kind of rough
+       edge that made this page look dated. */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 0 40px 0 16px;
+    /* Without this, the native dropdown popup (options list) renders in
+       the OS/browser's own light theme regardless of our dark colors on
+       the closed <select> itself - this is what actually themes the open
+       popup, not background/color alone. Flipped for body.light below. */
+    color-scheme: dark;
+}
+.admin-select-wrap .admin-select:focus {
+    outline: none;
+    background: var(--ink);
+    border-color: var(--acid);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 4px var(--acid-dim);
+}
+body.light .admin-select-wrap .admin-select {
+    color-scheme: light;
+}
+.admin-select-wrap .admin-select option {
+    background: var(--ink-2);
+    color: var(--text);
+}
+.admin-select-chevron {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--faint);
+    pointer-events: none;
+}
+.admin-ai-save {
+    /* .d-btn sets flex:1 (flex-basis:0%), which in this column-flex form
+       overrides the explicit height below - same root cause as the
+       .admin-form-field inputs earlier. */
+    flex: none;
+    align-self: flex-start;
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    height: 50px;
+    padding: 0 36px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--acid), color-mix(in srgb, var(--acid) 70%, var(--green)));
+    box-shadow: 0 8px 20px -6px var(--acid-glow);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.admin-ai-save:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -6px var(--acid-glow);
+}
+.admin-ai-save:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+}
+
+.admin-keys-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+/* Modern flat settings-list treatment (Stripe/Vercel-dashboard style) -
+   replaces the earlier boxed-card-per-row look, which read as a grid of
+   90s-style bordered boxes once there were four of them stacked. No per-
+   row background/border here; rows are separated by a single hairline
+   and the whole list sits directly on the panel's own glass surface.
+   Status is a small colored dot + text instead of a pill "badge", and
+   the save action is a 32px circular icon button that only lights up
+   once there's a draft to save, instead of four identical bright-green
+   "SAVE" buttons rendered at all times regardless of state. */
+.admin-keys-list--flat .admin-key-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 6px;
+    border-bottom: 1px solid color-mix(in srgb, var(--line-mid) 70%, transparent);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.16s, padding-inline 0.16s;
+}
+.admin-keys-list--flat .admin-key-row:last-child {
+    border-bottom: none;
+}
+.admin-keys-list--flat .admin-key-row:hover {
+    background: color-mix(in srgb, var(--ink-4) 60%, transparent);
+    padding-inline: 10px;
+}
+.admin-keys-list--flat .admin-key-row:active {
+    background: color-mix(in srgb, var(--ink-4) 85%, transparent);
+}
+.admin-keys-list--flat .admin-key-row:focus-visible {
+    outline: 2px solid var(--acid-mid);
+    outline-offset: -2px;
+}
+.admin-key-row--unset {
+    opacity: 0.72;
+}
+.admin-key-row--unset:hover {
+    opacity: 1;
+}
+.admin-key-row.is-active {
+    background: color-mix(in srgb, var(--acid-dim) 55%, transparent);
+}
+.admin-key-row.is-active:hover {
+    background: color-mix(in srgb, var(--acid-dim) 75%, transparent);
+}
+.admin-key-row.just-saved {
+    background: color-mix(in srgb, var(--green-dim) 60%, transparent);
+}
+.admin-key-avatar {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--f-head);
+    font-weight: 800;
+    font-size: 13px;
+}
+.admin-key-avatar--acid {
+    background: var(--acid-dim);
+    color: var(--acid);
+    border: 1px solid var(--acid-mid);
+}
+.admin-key-avatar--green {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(0, 240, 160, 0.3);
+}
+.admin-key-avatar--purple {
+    background: var(--purple-dim);
+    color: var(--purple);
+    border: 1px solid rgba(155, 127, 255, 0.3);
+}
+.admin-key-avatar--blue {
+    background: color-mix(in srgb, var(--blue) 16%, transparent);
+    color: var(--blue);
+    border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent);
+}
+.admin-key-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 0 0 auto;
+    width: 148px;
+}
+.admin-key-provider {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 700;
+}
+.admin-key-sub {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    color: var(--faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.admin-key-dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--faint);
+}
+.admin-key-dot--set {
+    background: var(--acid);
+    box-shadow: 0 0 6px var(--acid-glow);
+}
+.admin-key-dot--env {
+    background: var(--blue);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--blue) 60%, transparent);
+}
+.admin-key-dot--unset {
+    background: color-mix(in srgb, var(--faint) 60%, transparent);
+}
+.admin-key-active-pill {
+    font-family: var(--f-head);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--acid);
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    border-radius: 999px;
+    padding: 2px 7px;
+}
+.admin-key-row-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.admin-key-input-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    background: color-mix(in srgb, var(--ink-5) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 75%, transparent);
+    border-radius: 10px;
+    transition: border-color 0.16s, background 0.16s;
+}
+.admin-key-input-wrap:focus-within {
+    border-color: var(--acid-mid);
+    background: var(--ink-5);
+}
+.admin-key-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    height: 36px;
+    padding: 0 12px;
+    font-family: var(--f-mono);
+    font-size: 12.5px;
+    color: var(--text);
+}
+.admin-key-input::placeholder {
+    color: var(--faint);
+}
+.admin-key-reveal {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin-right: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--faint);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+.admin-key-reveal:hover {
+    color: var(--text);
+    background: color-mix(in srgb, var(--line-mid) 50%, transparent);
+}
+.admin-key-save {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--line-mid) 80%, transparent);
+    border-radius: 50%;
+    color: var(--faint);
+    cursor: pointer;
+    transition: color 0.16s, border-color 0.16s, background 0.16s, transform 0.12s, box-shadow 0.18s;
+}
+.admin-key-save:disabled {
+    cursor: not-allowed;
+}
+.admin-key-save.is-armed:not(:disabled) {
+    color: var(--ink-1);
+    background: var(--acid);
+    border-color: var(--acid);
+    box-shadow: 0 4px 14px -5px var(--acid-glow);
+}
+.admin-key-save.is-armed:not(:disabled):hover {
+    transform: scale(1.06);
+}
+.admin-key-save:active:not(:disabled) {
+    transform: scale(0.92);
+}
+.admin-key-save.just-saved {
+    color: var(--ink-1);
+    background: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 4px 14px -5px rgba(0, 240, 160, 0.5);
+}
+.admin-key-save-spinner {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--faint) 40%, transparent);
+    border-top-color: var(--faint);
+    animation: admin-spin 0.7s linear infinite;
+}
+@keyframes admin-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.admin-key-clear {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--line-mid) 80%, transparent);
+    border-radius: 50%;
+    color: var(--faint);
+    cursor: pointer;
+    transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+.admin-key-clear:hover:not(:disabled) {
+    color: var(--red);
+    border-color: var(--red);
+}
+@media (max-width: 1180px) {
+    .admin-key-identity {
+        width: 92px;
+    }
+}
+
+.admin-badge svg {
+    margin-right: 2px;
+}
+.admin-badge--neutral {
+    background: var(--ink-5);
+    border-color: var(--line-mid);
+    color: var(--muted);
+}
+.admin-badge--warn {
+    background: var(--red-dim);
+    border-color: var(--red);
+    color: var(--red);
+}
+
+.admin-flag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+}
+.admin-flag-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 16px;
+    padding: 18px 20px;
+    transition: border-color 0.18s, transform 0.18s;
+}
+.admin-flag-row:hover {
+    border-color: var(--acid-mid);
+    transform: translateY(-1px);
+}
+.admin-flag-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+.admin-flag-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    max-width: 440px;
+}
+
+.admin-refresh-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-mid);
+    background: var(--ink-3);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.admin-refresh-btn:hover:not(:disabled) {
+    border-color: var(--acid-mid);
+}
+.admin-refresh-btn .spin {
+    animation: admin-spin 0.9s linear infinite;
+}
+@keyframes admin-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.admin-usage-card {
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    padding: 20px;
+    max-width: 520px;
+    margin: 0;
+}
+.admin-usage-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+}
+.admin-usage-row:last-of-type {
+    border-bottom: none;
+}
+.admin-usage-key {
+    color: var(--muted);
+}
+.admin-usage-val {
+    font-family: var(--f-mono);
+    color: var(--red);
+}
+.admin-usage-message {
+    margin-top: 14px;
+    font-size: 11px;
+    font-family: var(--f-mono);
+    color: var(--faint);
+    background: var(--ink-5);
+    border-radius: var(--r-sm);
+    padding: 10px;
+    word-break: break-word;
+    line-height: 1.5;
+}
+.admin-dashboard-empty--ok {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    text-align: left;
+    color: var(--green);
+    padding: 8px 0;
+}
+
+.admin-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.admin-stat-tile {
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.admin-stat-label {
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+.admin-stat-value {
+    font-family: var(--f-mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--acid);
+}
+
+.analytics-page-inner {
+    /* Analytics should use the full viewport width, not the narrow
+       ~900px reading column the Admin Dashboard tabs use. */
+    max-width: none;
+    border-left: none;
+    border-right: none;
+}
+.analytics-mobile-blocked {
+    display: none;
+}
+/* Analytics isn't reachable from mobile's own controls (the trigger lives
+   in the desktop-only topbar dropdown), but someone opening it on desktop
+   and then shrinking/rotating the window would otherwise hit the full
+   desktop layout squeezed into a phone width. Below this breakpoint, swap
+   the whole page body for a plain "use a bigger screen" notice instead. */
+@media (max-width: 600px) {
+    .analytics-page-body {
+        display: none;
+    }
+    .analytics-mobile-blocked {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 60px 28px;
+        color: var(--muted);
+    }
+    .analytics-mobile-blocked-title {
+        font-family: var(--f-head);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .analytics-mobile-blocked-sub {
+        font-family: var(--f-body);
+        font-size: 13px;
+        max-width: 280px;
+        line-height: 1.5;
+    }
+}
+.analytics-page-body {
+    padding: 24px 40px 48px;
+}
+.analytics-filters-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 8px;
+}
+.analytics-filters {
+    /* Flex, not grid: the Reset button only renders once a filter is
+       active, and a grid's reserved track for it (even "auto") still ate
+       space on the row's right edge when empty, leaving Date Range short
+       of the container's right edge. Flex items with flex:1 always fill
+       the full row width whether or not Reset is mounted. */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-mid);
+}
+.analytics-filters > .search-field-group {
+    flex: 1 1 160px;
+    min-width: 160px;
+}
+.analytics-filter-reset {
+    flex: 0 0 auto;
+    height: 36px;
+    white-space: nowrap;
+}
+/* Match .tag-search-input's exact box model so all four filter controls
+   sit on the same baseline in the grid row - react-datepicker's own
+   input defaults to a different font-size/padding than TagSearchSelect's,
+   which threw the row out of alignment. */
+.analytics-date-wrapper {
+    display: block;
+    width: 100%;
+}
+.analytics-date-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--ink-3);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--f-body);
+}
+.analytics-date-input::placeholder {
+    color: var(--faint);
+}
+.analytics-date-input:focus {
+    outline: none;
+    border-color: var(--acid-mid);
+    box-shadow: 0 0 0 1px var(--acid-mid);
+}
+@media (max-width: 900px) {
+    .analytics-filters > .search-field-group {
+        flex: 1 1 45%;
+    }
+    .analytics-filter-reset {
+        flex: 1 1 100%;
+    }
+}
+
+.analytics-grid {
+    display: grid;
+    /* Exactly 2 cards (bank, tag) always sit here - auto-fit left empty
+       trailing tracks un-collapsed on wide monitors (blank space on the
+       right instead of the 2 cards filling the row). A fixed 2-up always
+       fills the full row width with no gap, however wide the page is. */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+.analytics-grid > .analytics-card:first-child {
+    grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.analytics-card {
+    background: color-mix(in srgb, var(--ink-4) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 14px;
+    padding: 16px;
+}
+.analytics-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: var(--acid);
+}
+.analytics-card-title {
+    font-family: var(--f-head);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.01em;
+}
+.analytics-card-sub {
+    font-family: var(--f-body);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+.analytics-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-family: var(--f-body);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    padding: 20px;
+}
+
+.admin-token-table {
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid color-mix(in srgb, var(--line-mid) 85%, transparent);
+    border-radius: 14px;
+}
+.admin-token-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 90px 60px 60px 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+}
+.admin-token-row:last-child {
+    border-bottom: none;
+}
+.admin-token-row--head {
+    position: sticky;
+    top: 0;
+    background: var(--ink-3);
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    z-index: 1;
+}
+/* The In/Out/Total data cells are right-aligned (.admin-token-num) -
+   without this, their header labels sat left-aligned in the same grid
+   column, so the numbers underneath didn't line up under their labels
+   at all. */
+.admin-token-row--head span:nth-child(4),
+.admin-token-row--head span:nth-child(5),
+.admin-token-row--head span:nth-child(6) {
+    text-align: right;
+}
+.admin-token-time {
+    font-family: var(--f-mono);
+    color: var(--muted);
+}
+.admin-token-model {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text);
+}
+.admin-token-category {
+    color: var(--purple);
+    font-family: var(--f-mono);
+    font-size: 11px;
+}
+.admin-token-row--head .admin-token-category {
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+.admin-token-num {
+    font-family: var(--f-mono);
+    text-align: right;
+    color: var(--muted);
+}
+.admin-token-num--total {
+    color: var(--acid);
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .admin-token-row {
+        grid-template-columns: 56px 1fr 50px 50px 50px;
+    }
+    .admin-token-category {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-tabs {
+        padding: 10px 16px;
+    }
+    .admin-page-header {
+        padding: 16px 18px;
+    }
+    .admin-page-content .admin-dashboard-body {
+        padding: 18px 16px 36px;
+        gap: 16px;
+    }
+    .admin-panel {
+        padding: 18px;
+    }
+    .admin-form-row {
+        grid-template-columns: 1fr;
+    }
+    .admin-panel-row {
+        flex-direction: column;
+    }
+}
 
 .dialog-header {
     display: flex;
@@ -2285,6 +4163,10 @@ body::after {
 .dialog-icon.purple {
     background: var(--purple-dim);
     border: 1px solid rgba(155, 127, 255, 0.2);
+}
+.dialog-icon.danger {
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 59, 92, 0.3);
 }
 
 .dialog-title {
@@ -2418,6 +4300,24 @@ body::after {
     opacity: 0.35;
     cursor: not-allowed;
 }
+.d-btn-danger {
+    flex: 2;
+    height: 44px;
+    border-radius: var(--r-sm);
+    background: var(--red);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--f-head);
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.18s;
+}
+.d-btn-danger:hover {
+    box-shadow: 0 0 18px rgba(255, 59, 92, 0.45);
+}
 .d-btn-purple {
     flex: 2;
     height: 44px;
@@ -2439,36 +4339,28 @@ body::after {
 
 /* Chat assistant (user/chat) */
 .chat-dialog-overlay {
+    /* Not a modal backdrop - a floating window. No background/blur, and
+       pointer-events:none lets every click pass straight through to the
+       rest of the app; only the panel itself (pointer-events:auto below)
+       is interactive. The panel positions itself (position:fixed with
+       explicit left/top/width/height - see ChatAssistantDialog.jsx), so
+       this wrapper does nothing layout-wise anymore; it only carries the
+       z-index above every other overlay in the app (loader: 9998, alerts:
+       9997, grain/datepicker: 9999, tag-search dropdown: 10000). */
     position: fixed;
     inset: 0;
-    background: rgba(8, 11, 17, 0.88);
-    z-index: 620;
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.15s ease;
-    padding: max(16px, calc(env(safe-area-inset-top, 0px) + 12px))
-        max(16px, calc(env(safe-area-inset-right, 0px) + 12px))
-        max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px))
-        max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
-    touch-action: manipulation;
+    z-index: 10050;
+    pointer-events: none;
 }
 .chat-dialog-panel {
-    width: 100%;
-    max-width: min(640px, 100%);
-    min-height: 0;
-    height: min(
-        720px,
-        calc(
-            100dvh - env(safe-area-inset-top, 0px) -
-                env(safe-area-inset-bottom, 0px) - 56px
-        )
-    );
-    max-height: calc(
-        100dvh - env(safe-area-inset-top, 0px) -
-            env(safe-area-inset-bottom, 0px) - 56px
-    );
+    pointer-events: auto;
+    /* width/height/left/top come from inline style (computeDefaultRect +
+       drag/resize state in ChatAssistantDialog.jsx) - these min/max act
+       only as a defense-in-depth clamp on top of that. */
+    max-width: min(95vw, 1100px);
+    min-width: 320px;
+    min-height: 320px;
+    max-height: 95dvh;
     background: var(--ink-2);
     border: 1px solid var(--line-mid);
     border-radius: var(--r-lg);
@@ -2477,14 +4369,95 @@ body::after {
     flex-direction: column;
     overflow: hidden;
     animation: fadeUp 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Lift feedback for .is-dragging/.is-resizing below. Deliberately not
+       transitioning `translate`/`width`/`height` themselves - those are
+       driven every pointermove in JS and must track the cursor exactly,
+       with no easing lag. */
+    transition: scale 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.chat-dialog-panel.is-dragging {
+    scale: 1.015;
+    box-shadow: 0 32px 88px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--acid-mid);
+}
+.chat-dialog-panel.is-resizing {
+    border-color: var(--acid-mid);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--acid-mid);
 }
 .chat-dialog-header {
     display: flex;
     align-items: center;
     gap: 12px;
+    cursor: grab;
+    user-select: none;
     padding: 16px 18px;
     border-bottom: 1px solid var(--line);
     flex-shrink: 0;
+}
+.chat-dialog-header:active {
+    cursor: grabbing;
+}
+
+/* Resize handles: 4 edges + 4 corners (JS drags via pointer events - see
+   ChatAssistantDialog.jsx - since the native CSS `resize` property only
+   ever gives a single bottom-right handle). Corners sit on top of the
+   edges at each intersection via source order + matching z-index. */
+.chat-resize-handle {
+    position: absolute;
+    z-index: 2;
+}
+.chat-resize-handle--n,
+.chat-resize-handle--s {
+    left: 10px;
+    right: 10px;
+    height: 6px;
+    cursor: ns-resize;
+}
+.chat-resize-handle--n {
+    top: 0;
+}
+.chat-resize-handle--s {
+    bottom: 0;
+}
+.chat-resize-handle--e,
+.chat-resize-handle--w {
+    top: 10px;
+    bottom: 10px;
+    width: 6px;
+    cursor: ew-resize;
+}
+.chat-resize-handle--e {
+    right: 0;
+}
+.chat-resize-handle--w {
+    left: 0;
+}
+.chat-resize-handle--ne,
+.chat-resize-handle--nw,
+.chat-resize-handle--se,
+.chat-resize-handle--sw {
+    width: 14px;
+    height: 14px;
+    z-index: 3;
+}
+.chat-resize-handle--ne {
+    top: 0;
+    right: 0;
+    cursor: nesw-resize;
+}
+.chat-resize-handle--nw {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+}
+.chat-resize-handle--se {
+    bottom: 0;
+    right: 0;
+    cursor: nwse-resize;
+}
+.chat-resize-handle--sw {
+    bottom: 0;
+    left: 0;
+    cursor: nesw-resize;
 }
 .chat-dialog-title-wrap {
     display: flex;
@@ -2523,33 +4496,238 @@ body::after {
     padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     touch-action: pan-y;
 }
+
+/* One row = one message (as .chat-bubble-col). Positioned left/right via
+   justify-content, no avatar - that repeatedly caused cross-axis alignment
+   issues (floating away from the bubble) without adding much. Consecutive
+   messages from the same sender are "grouped": tighter spacing between
+   them than between a new sender's turn. */
+.chat-row {
+    display: flex;
+    margin-top: 14px;
+    animation: chatRowIn 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.chat-row:first-child {
+    margin-top: 0;
+}
+.chat-row--grouped {
+    margin-top: 4px;
+}
+.chat-row--user {
+    justify-content: flex-end;
+}
+.chat-row--assistant {
+    justify-content: flex-start;
+}
+@keyframes chatRowIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-row {
+        animation: none;
+    }
+}
+
+/* Centered timestamp between message groups (iMessage-style), shown once
+   per group instead of repeated under every bubble. */
+.chat-time-divider {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+    margin: 18px 0 6px;
+}
+.chat-row:first-child .chat-time-divider,
+.chat-time-divider:first-child {
+    margin-top: 0;
+}
+
+.chat-bubble-col {
+    display: flex;
+    flex-direction: column;
+    max-width: 78%;
+    min-width: 0;
+}
+.chat-row--user .chat-bubble-col {
+    align-items: flex-end;
+}
+.chat-row--assistant .chat-bubble-col {
+    align-items: flex-start;
+}
+
 .chat-bubble {
-    max-width: 92%;
-    padding: 10px 12px;
-    border-radius: var(--r-md);
-    font-size: 13px;
-    line-height: 1.45;
+    position: relative;
+    max-width: 100%;
+    padding: 9px 34px 9px 14px;
+    /* iMessage-style "tail": rounder on three corners, tighter on the one
+       nearest the sender's own edge. */
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
     font-family: var(--f-body);
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
+    transition: box-shadow 0.15s;
+}
+.chat-bubble:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+.chat-row--user .chat-bubble {
+    border-top-right-radius: 5px;
+}
+.chat-row--assistant .chat-bubble {
+    border-top-left-radius: 5px;
 }
 .chat-bubble--user {
-    align-self: flex-end;
+    background: var(--green);
+    color: var(--ink);
+}
+.chat-bubble--assistant {
     background: var(--ink-4);
     border: 1px solid var(--line-mid);
     color: var(--text);
 }
-.chat-bubble--assistant {
-    align-self: flex-start;
-    background: var(--purple-dim);
-    border: 1px solid rgba(155, 127, 255, 0.2);
+.chat-bubble--error {
+    background: var(--red-dim);
+    border: 1px solid rgba(255, 59, 92, 0.3);
     color: var(--text);
+}
+/* A proposed write action (add/delete expense, create tag) awaiting the
+   user's explicit approval - see app/services/agent/ on the backend. */
+.chat-bubble--pending {
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--text);
+}
+.chat-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--acid);
+    font-family: var(--f-mono);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-download-btn:hover {
+    background: var(--acid-mid);
+}
+.chat-download-btn svg {
+    flex-shrink: 0;
+}
+
+.chat-risk-badge {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    background: rgba(255, 59, 92, 0.1);
+    border: 1px solid rgba(255, 59, 92, 0.3);
+    color: var(--red);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.chat-risk-badge svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.chat-confirm-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.chat-confirm-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: var(--r-sm);
+    border: none;
+    cursor: pointer;
+    font-family: var(--f-head);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+}
+.chat-confirm-btn--approve {
+    background: var(--acid);
+    color: var(--ink);
+}
+.chat-confirm-btn--approve:hover {
+    box-shadow: 0 0 14px var(--acid-glow);
+}
+.chat-confirm-btn--reject {
+    background: transparent;
+    border: 1px solid var(--line-mid);
+    color: var(--muted);
+}
+.chat-confirm-btn--reject:hover {
+    color: var(--text);
+    border-color: var(--line-str);
+}
+.chat-confirm-decided {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+}
+.chat-bubble-copy {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.15);
+    color: inherit;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s;
+}
+.chat-bubble--assistant .chat-bubble-copy {
+    background: rgba(255, 255, 255, 0.08);
+}
+.chat-bubble:hover .chat-bubble-copy,
+.chat-bubble-copy:focus-visible {
+    opacity: 0.85;
+}
+.chat-bubble-copy:hover {
+    opacity: 1 !important;
 }
 .chat-bubble--buffering {
     display: inline-flex;
@@ -2591,20 +4769,35 @@ body::after {
     padding: 12px 14px max(14px, env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line);
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    /* Top-aligned, not stretched/bottom - the textarea grows downward from
+       a fixed top as you type, so this is the one alignment that keeps the
+       button's top edge matching the input's top border regardless of how
+       tall the input gets, without the button itself stretching tall too. */
+    align-items: flex-start;
+    gap: 8px;
     flex-shrink: 0;
 }
 .chat-dialog-input {
+    flex: 1;
+    min-width: 0;
     width: 100%;
     max-width: 100%;
     resize: none;
+    /* Grown by JS to fit content, capped at ~half the dialog's current
+       height (see autoresize effect in ChatAssistantDialog.jsx, which sets
+       max-height inline since that cap depends on the dialog's own size) -
+       overflow-y:auto takes over as a normal internal scroll past that,
+       instead of growing without bound. */
+    min-height: 44px;
+    overflow-y: auto;
     border-radius: var(--r-sm);
     border: 1px solid var(--line-mid);
     background: var(--ink-3);
     color: var(--text);
     font-family: var(--f-body);
     font-size: 13px;
+    line-height: 1.4;
     padding: 10px 12px;
     outline: none;
     transition: border-color 0.15s;
@@ -2620,30 +4813,87 @@ body::after {
     opacity: 0.55;
 }
 .chat-dialog-send {
-    align-self: flex-end;
-    min-height: 44px;
-    height: auto;
-    padding: 10px 20px;
+    flex-shrink: 0;
+    /* Matches .chat-dialog-input's min-height exactly, so the top (and, in
+       the common single-line state, bottom) edges land flush instead of
+       being a few px off. */
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: var(--r-sm);
     border: none;
     cursor: pointer;
-    font-family: var(--f-head);
-    font-weight: 800;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: linear-gradient(135deg, #9b7fff, #7b5ce5);
-    color: #fff;
+    background: var(--acid);
+    color: var(--ink);
     transition:
         opacity 0.15s,
-        box-shadow 0.18s;
+        box-shadow 0.18s,
+        scale 0.1s;
 }
 .chat-dialog-send:hover:not(:disabled) {
-    box-shadow: 0 4px 18px rgba(155, 127, 255, 0.35);
+    box-shadow: 0 0 16px var(--acid-glow);
+}
+.chat-dialog-send:active:not(:disabled) {
+    scale: 0.92;
 }
 .chat-dialog-send:disabled {
-    opacity: 0.4;
+    background: var(--ink-4);
+    color: var(--faint);
+    opacity: 1;
     cursor: not-allowed;
+}
+.chat-dialog-send--stop {
+    background: var(--red);
+    color: var(--ink);
+}
+.chat-dialog-send--stop:hover {
+    box-shadow: 0 0 16px rgba(255, 59, 92, 0.35);
+}
+.chat-dialog-mic {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-mid);
+    cursor: pointer;
+    background: var(--ink-3);
+    color: var(--text);
+    transition:
+        opacity 0.15s,
+        box-shadow 0.18s,
+        scale 0.1s,
+        background 0.15s,
+        color 0.15s;
+}
+.chat-dialog-mic:hover:not(:disabled) {
+    border-color: var(--acid-mid);
+}
+.chat-dialog-mic:active:not(:disabled) {
+    scale: 0.92;
+}
+.chat-dialog-mic:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.chat-dialog-mic--active {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--ink);
+    animation: chat-mic-pulse 1.4s ease-in-out infinite;
+}
+@keyframes chat-mic-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 45%, transparent);
+    }
+    50% {
+        box-shadow: 0 0 0 7px color-mix(in srgb, var(--red) 0%, transparent);
+    }
 }
 
 .chat-dialog-header .dialog-close {
@@ -2905,6 +5155,25 @@ body::after {
 .auth-top {
     padding: 28px 32px 24px;
     border-bottom: 1px solid var(--line);
+}
+.auth-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 18px;
+    transition: color 0.15s;
+}
+.auth-back:hover {
+    color: var(--text);
 }
 .auth-logo-row {
     display: flex;
@@ -3178,6 +5447,20 @@ body::after {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     animation: slideInRight 0.25s ease;
 }
+.alert-toast--success {
+    background: var(--green-dim);
+    border-color: rgba(0, 240, 160, 0.3);
+}
+.alert-toast--success .alert-icon {
+    background: rgba(0, 240, 160, 0.15);
+    color: var(--green);
+}
+.alert-toast--success .alert-msg {
+    color: var(--green);
+}
+.alert-toast--success .alert-close {
+    color: rgba(0, 240, 160, 0.5);
+}
 .alert-icon {
     width: 30px;
     height: 30px;
@@ -3319,6 +5602,32 @@ body::after {
 .react-datepicker-popper {
     z-index: 9999 !important;
 }
+.analytics-date-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px;
+    border-top: 1px solid var(--line-mid);
+    background: var(--ink-3);
+    border-radius: 0 0 var(--r-md) var(--r-md);
+}
+.analytics-date-preset-btn {
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-4);
+    color: var(--muted);
+    font-family: var(--f-body);
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+.analytics-date-preset-btn:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    background: var(--acid-dim);
+}
 .react-datepicker__triangle {
     display: none !important;
 }
@@ -3348,18 +5657,27 @@ body::after {
 
 /* ── Tablet landscape (≤ 1100px) ── */
 @media (max-width: 1100px) {
+    /* Only .exp-preview-col is hidden at this breakpoint - top-up, spent,
+       and remaining (two separate .exp-remaining-col cells plus the plain
+       spent cell) are all still visible, so the grid needs a track for
+       each of those 3, not 2. The previous 5-track template (68px 1fr 90px
+       90px 44px) was one short, so spent and remaining's values were
+       cramming into the same track and running together. */
     .table-head,
     .expense-row,
     .expense-totals-row {
-        grid-template-columns: 68px 1fr 90px 90px 44px;
+        grid-template-columns: 68px 1fr 90px 90px 90px 44px;
     }
     /* Hide preview column on tablet */
     .exp-preview-col {
         display: none;
     }
     .entry-row {
-        grid-template-columns: 68px 1fr 90px 90px 44px;
+        grid-template-columns: 68px 1fr 90px 90px 90px 44px;
         padding: 0 20px;
+    }
+    .inline-add-entries {
+        --inline-indent: 88px;
     }
 }
 
@@ -3416,44 +5734,70 @@ body::after {
     .filter-chip {
         padding: 5px 10px;
     }
-    .add-expense-btn span.btn-text {
+    .add-expense-btn span.btn-text,
+    .cmd-search-btn span.btn-text {
         display: none;
     }
-    .add-expense-btn {
+    .add-expense-btn,
+    .cmd-search-btn {
         padding: 7px 12px;
     }
 
-    /* Table columns - simplified */
-    .table-head,
-    .expense-row,
-    .expense-totals-row {
-        grid-template-columns: 64px 1fr 90px 90px 40px;
-    }
-    .entry-row {
-        grid-template-columns: 64px 1fr 90px 90px 40px;
-    }
-    .exp-preview-col {
+    /* Switch to the card-based mobile list for the whole narrow range, not
+       just ≤600px - the cramped grid-based desktop row (even with stacked
+       Top-up/Remaining sub-values) never read as well as the dedicated
+       mobile cards once the window got this narrow. */
+    .table-area .table-head {
         display: none;
     }
-    /* Hide remaining col on tablet portrait */
-    .exp-remaining-col {
+    .expense-totals-row {
         display: none;
     }
-    .table-head,
-    .expense-row,
-    .expense-totals-row {
-        grid-template-columns: 64px 1fr 100px 40px;
+    .expense-totals-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        margin: 4px 12px 12px;
+        border-top: 1px solid var(--line);
+        background: transparent;
     }
-    .entry-row {
-        grid-template-columns: 64px 1fr 100px 40px;
+    .expense-totals-mobile__label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--faint);
+        font-family: var(--f-head);
     }
-
-    /* Search panel grid */
-    .search-grid {
-        grid-template-columns: 1fr 1fr;
+    .expense-totals-mobile__vals {
+        display: flex;
+        align-items: center;
+        gap: 14px;
     }
-    .search-panel.open {
-        max-height: 560px;
+    .expense-totals-mobile__topup {
+        font-size: 14px;
+        font-family: var(--f-mono);
+        font-weight: 700;
+        color: var(--green);
+    }
+    .expense-totals-mobile__spent {
+        font-size: 14px;
+        font-family: var(--f-mono);
+        font-weight: 700;
+        color: var(--red);
+    }
+    .expense-row {
+        display: none;
+    }
+    .expense-card {
+        display: block;
+    }
+    .table-area {
+        padding-top: 12px;
+    }
+    .entries-panel {
+        display: none;
     }
 
     /* Summary - 2x2 grid */
@@ -3494,31 +5838,18 @@ body::after {
         display: none;
     }
 
-    .chat-dialog-overlay {
-        align-items: center;
-        justify-content: center;
-        padding: max(10px, calc(env(safe-area-inset-top, 0px) + 8px))
-            max(10px, calc(env(safe-area-inset-right, 0px) + 8px))
-            max(10px, calc(env(safe-area-inset-bottom, 0px) + 8px))
-            max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
-    }
-    .chat-dialog-panel {
-        width: 100%;
-        max-width: none;
-        max-height: calc(
-            100dvh - env(safe-area-inset-top, 0px) -
-                env(safe-area-inset-bottom, 0px) - 20px
-        );
-        height: min(
-            90dvh,
-            calc(
-                100dvh - env(safe-area-inset-top, 0px) -
-                    env(safe-area-inset-bottom, 0px) - 20px
-            )
-        );
-        border-radius: var(--r-lg);
+    /* chat-dialog-overlay/panel sizing & position are fully JS-driven now
+       (computeDefaultRect in ChatAssistantDialog.jsx is itself mobile-aware
+       via isMobileViewport(), sizing it as a modest centered floating
+       window rather than full-screen) - no CSS override needed here.
+       Dragging/resizing stay disabled below this breakpoint regardless
+       (JS also skips starting either gesture here). */
+    .chat-resize-handle {
+        display: none;
     }
     .chat-dialog-header {
+        /* Draggable here too (base .chat-dialog-header already sets
+           cursor: grab) - only resizing stays mobile-disabled. */
         padding: 14px 14px;
     }
     .chat-dialog-title {
@@ -3526,12 +5857,18 @@ body::after {
     }
     .chat-dialog-messages {
         padding: 14px 14px;
-        gap: 10px;
+    }
+    .chat-bubble-col {
+        max-width: 85%;
     }
     .chat-bubble {
-        max-width: 100%;
         font-size: 15px;
-        padding: 12px 14px;
+        padding: 12px 38px 12px 14px;
+    }
+    /* No hover on touch devices - keep it discoverable/tappable instead of
+       permanently invisible. */
+    .chat-bubble-copy {
+        opacity: 1;
     }
     .chat-dialog-footer {
         padding: 12px 12px
@@ -3544,11 +5881,10 @@ body::after {
         padding: 12px 14px;
         min-height: 48px;
     }
-    .chat-dialog-send {
-        align-self: stretch;
-        width: 100%;
-        min-height: 48px;
-        font-size: 13px;
+    .chat-dialog-send,
+    .chat-dialog-mic {
+        width: 48px;
+        height: 48px;
     }
     .topbar-chat-btn {
         width: 44px;
@@ -3569,59 +5905,8 @@ body::after {
         display: flex;
     }
 
-    /* Hide desktop table, show mobile cards */
-    .table-area .table-head {
-        display: none;
-    }
-    /* Hide desktop totals row, show mobile totals card */
-    .expense-totals-row {
-        display: none;
-    }
-    .expense-totals-mobile {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 16px;
-        border-top: 1px solid var(--line-mid);
-        background: var(--ink-2);
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-    }
-    .expense-totals-mobile__label {
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--faint);
-        font-family: var(--f-head);
-    }
-    .expense-totals-mobile__vals {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-    }
-    .expense-totals-mobile__topup {
-        font-size: 14px;
-        font-family: var(--f-mono);
-        font-weight: 700;
-        color: var(--green);
-    }
-    .expense-totals-mobile__spent {
-        font-size: 14px;
-        font-family: var(--f-mono);
-        font-weight: 700;
-        color: var(--red);
-    }
-    .expense-row {
-        display: none;
-    }
-    .expense-card {
-        display: block;
-    }
-    .entries-panel {
-        display: none;
-    }
+    /* Card-based mobile list already switched on at ≤860px above - nothing
+       further to toggle here. */
 
     /* Command bar compact */
     .command-bar {
@@ -3735,13 +6020,6 @@ body::after {
         border-radius: var(--r-md);
     }
 
-    /* Search panel 1 col */
-    .search-grid {
-        grid-template-columns: 1fr;
-    }
-    .search-panel.open {
-        max-height: 700px;
-    }
 }
 
 /* ── Small mobile (≤ 380px) ── */
@@ -3792,4 +6070,1515 @@ body::after {
     display: flex;
     width: 100%;
     justify-content: space-between !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LANDING PAGE
+═══════════════════════════════════════════════════════ */
+.landing-page {
+    /* body/html/#root are pinned to a fixed height with overflow:hidden
+       (see "html"/"body" above) - that's by design for the dashboard's
+       own internally-scrolled layout, but it silently killed normal page
+       scroll here too, since there was no scroll container of its own.
+       This becomes that container: fills the fixed-height shell and
+       scrolls internally. */
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: var(--ink);
+    background-image: radial-gradient(
+            700px circle at 85% -10%,
+            color-mix(in srgb, var(--acid) 8%, transparent),
+            transparent 60%
+        ),
+        radial-gradient(
+            600px circle at -5% 30%,
+            color-mix(in srgb, var(--purple) 10%, transparent),
+            transparent 55%
+        );
+    color: var(--text);
+}
+
+.landing-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 48px;
+    background: color-mix(in srgb, var(--ink) 80%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+    border-bottom: 1px solid var(--line);
+}
+.landing-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.landing-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.landing-theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: var(--ink-3);
+    border: 1px solid var(--line-mid);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, transform 0.15s;
+}
+.landing-theme-toggle:hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    transform: rotate(14deg);
+}
+.landing-nav-signin {
+    background: transparent;
+    border: 1px solid var(--line-mid);
+    border-radius: 999px;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    padding: 9px 18px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.landing-nav-signin:hover {
+    color: var(--text);
+    border-color: var(--line-str);
+}
+.landing-nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--acid);
+    color: var(--ink);
+    border: none;
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: box-shadow 0.18s, transform 0.15s;
+}
+.landing-nav-cta:hover {
+    box-shadow: 0 0 20px var(--acid-glow);
+    transform: translateY(-1px);
+}
+
+.landing-hero {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 72px 48px 96px;
+}
+.landing-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--acid);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: var(--f-head);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+}
+.landing-hero-title {
+    font-family: var(--f-head);
+    font-size: 56px;
+    line-height: 1.04;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    margin-bottom: 22px;
+}
+.landing-hero-title span {
+    color: var(--acid);
+}
+.landing-hero-sub {
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 480px;
+    margin-bottom: 32px;
+}
+.landing-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.landing-hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: linear-gradient(135deg, var(--acid), color-mix(in srgb, var(--acid) 70%, var(--green)));
+    color: var(--ink);
+    border: none;
+    border-radius: 999px;
+    padding: 15px 28px;
+    font-family: var(--f-head);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 10px 28px -8px var(--acid-glow);
+    transition: box-shadow 0.18s, transform 0.15s;
+}
+.landing-hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px -6px var(--acid-glow);
+}
+.landing-hero-secondary {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s;
+}
+.landing-hero-secondary:hover {
+    color: var(--text);
+}
+.landing-hero-trust {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--faint);
+}
+.landing-hero-trust svg {
+    color: var(--green);
+    margin-right: 2px;
+}
+.landing-hero-trust svg:not(:first-child) {
+    margin-left: 14px;
+}
+
+.landing-hero-visual {
+    display: flex;
+    justify-content: center;
+}
+.landing-demo-chat {
+    width: 100%;
+    max-width: 380px;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    animation: landingFloat 6s ease-in-out infinite;
+}
+@keyframes landingFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+.landing-demo-chat-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+}
+.landing-demo-chat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: landingPulse 1.6s ease-in-out infinite;
+}
+@keyframes landingPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+.landing-demo-chat-body {
+    padding: 20px 16px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.landing-demo-bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    animation: landingBubbleIn 0.3s ease both;
+}
+@keyframes landingBubbleIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.landing-demo-bubble--user {
+    align-self: flex-end;
+    background: var(--green);
+    color: var(--ink);
+    border-bottom-right-radius: 4px;
+    font-family: var(--f-mono);
+}
+.landing-demo-bubble--ai {
+    align-self: flex-start;
+    background: var(--ink-3);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+}
+.landing-demo-bubble--typing {
+    display: flex;
+    gap: 4px;
+    padding: 14px;
+}
+.landing-demo-bubble--typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--faint);
+    animation: landingTypingDot 1s ease-in-out infinite;
+}
+.landing-demo-bubble--typing span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.landing-demo-bubble--typing span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+@keyframes landingTypingDot {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
+.landing-section-head {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 48px;
+}
+.landing-eyebrow {
+    display: inline-block;
+    font-family: var(--f-head);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--acid);
+    margin-bottom: 10px;
+}
+.landing-section-head h2 {
+    font-family: var(--f-head);
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.landing-features {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 48px 96px;
+}
+.landing-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+.landing-feature-card {
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-lg);
+    padding: 26px;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.landing-feature-card.is-hovered {
+    transform: translateY(-4px);
+    border-color: var(--acid-mid);
+    box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.5);
+}
+.landing-feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+.landing-feature-icon--acid {
+    background: var(--acid-dim);
+    color: var(--acid);
+    border: 1px solid var(--acid-mid);
+}
+.landing-feature-icon--purple {
+    background: var(--purple-dim);
+    color: var(--purple);
+    border: 1px solid rgba(155, 127, 255, 0.3);
+}
+.landing-feature-icon--green {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(0, 240, 160, 0.3);
+}
+.landing-feature-card h3 {
+    font-family: var(--f-head);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.landing-feature-card p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.landing-analytics-spotlight {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 48px 96px;
+}
+.landing-analytics-copy h2 {
+    font-family: var(--f-head);
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 14px;
+}
+.landing-analytics-copy > p {
+    font-family: var(--f-body);
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 440px;
+    margin-bottom: 20px;
+}
+.landing-analytics-points {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    list-style: none;
+}
+.landing-analytics-points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text);
+}
+.landing-analytics-points svg {
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: var(--acid);
+}
+
+.landing-analytics-visual {
+    display: flex;
+    justify-content: center;
+}
+.landing-demo-analytics {
+    max-width: 420px;
+}
+.landing-demo-analytics-body {
+    padding: 20px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.landing-demo-sparkline {
+    width: 100%;
+    height: 42px;
+    overflow: visible;
+}
+.landing-demo-sparkline polyline {
+    fill: none;
+    stroke: var(--acid);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 320;
+    stroke-dashoffset: 320;
+    animation: landingSparklineDraw 3.6s ease-in-out infinite;
+    filter: drop-shadow(0 0 4px var(--acid-glow));
+}
+@keyframes landingSparklineDraw {
+    0% {
+        stroke-dashoffset: 320;
+    }
+    60%,
+    85% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: -320;
+    }
+}
+.landing-demo-analytics-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.landing-demo-bars {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+    height: 72px;
+}
+.landing-demo-bar {
+    flex: 1;
+    height: var(--h);
+    min-width: 6px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, var(--acid), color-mix(in srgb, var(--acid) 55%, transparent));
+    animation: landingBarRipple 3.2s ease-in-out infinite;
+    transform-origin: bottom;
+}
+@keyframes landingBarRipple {
+    0%,
+    100% {
+        transform: scaleY(0.55);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+.landing-demo-donut {
+    flex-shrink: 0;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--acid) 0deg 130deg,
+        var(--blue) 130deg 220deg,
+        var(--green) 220deg 300deg,
+        var(--purple) 300deg 360deg
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: landingDonutSpin 10s linear infinite;
+}
+@keyframes landingDonutSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.landing-demo-donut-hole {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--ink-2);
+}
+@media (max-width: 860px) {
+    .landing-analytics-spotlight {
+        grid-template-columns: 1fr;
+        gap: 36px;
+    }
+    .landing-analytics-copy > p {
+        max-width: none;
+    }
+}
+
+.landing-steps {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 48px 96px;
+}
+.landing-steps-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 32px;
+}
+.landing-step {
+    position: relative;
+}
+.landing-step-num {
+    font-family: var(--f-mono);
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--ghost);
+    margin-bottom: 8px;
+}
+.landing-step h3 {
+    font-family: var(--f-head);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.landing-step p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.landing-cta {
+    max-width: 680px;
+    margin: 0 auto 96px;
+    padding: 56px 40px;
+    text-align: center;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: 24px;
+}
+.landing-cta-icon {
+    color: var(--acid);
+    margin-bottom: 18px;
+}
+.landing-cta h2 {
+    font-family: var(--f-head);
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+.landing-cta p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+
+.landing-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 40px 24px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+}
+.landing-footer span {
+    font-size: 12px;
+    color: var(--faint);
+}
+
+@media (max-width: 860px) {
+    .landing-nav {
+        padding: 14px 20px;
+    }
+    .landing-hero {
+        grid-template-columns: 1fr;
+        padding: 40px 24px 56px;
+        text-align: center;
+    }
+    .landing-hero-sub {
+        max-width: none;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .landing-hero-actions {
+        justify-content: center;
+    }
+    .landing-hero-trust {
+        justify-content: center;
+    }
+    .landing-hero-title {
+        font-size: 38px;
+    }
+    .landing-features,
+    .landing-steps {
+        padding: 32px 20px 64px;
+    }
+    .landing-cta {
+        margin-left: 20px;
+        margin-right: 20px;
+        padding: 40px 24px;
+    }
+    .landing-nav-signin {
+        display: none;
+    }
+}
+
+/* Mobile inline add: no indent, no card chrome constraints */
+.mobile-inline-add .inline-entry-card {
+    padding: 10px 10px 2px;
+}
+.mobile-inline-add .inline-entry-row {
+    grid-template-columns: 96px 1fr 28px;
+    gap: 8px;
+}
+@media (max-width: 640px) {
+    .inline-add-entries {
+        --inline-indent: 20px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODERN EXPENSE WORKSPACE (command bar + table)
+   Pure visual layer: one coherent surface scale for both themes.
+   Layout/grid columns above are untouched.
+═══════════════════════════════════════════════════════ */
+.main-content {
+    --tb-canvas: var(--ink);
+    --tb-surface: var(--ink-2);
+    --tb-surface-hover: var(--ink-3);
+    --tb-surface-open: rgba(184, 255, 0, 0.035);
+    --tb-sub: rgba(0, 0, 0, 0.22);
+    --tb-border: rgba(255, 255, 255, 0.07);
+    --tb-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --tb-shadow-open: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+body.light .main-content {
+    --tb-canvas: #f3f5fa;
+    --tb-surface: #ffffff;
+    --tb-surface-hover: #f8faff;
+    --tb-surface-open: #fbfdf6;
+    --tb-sub: #f7f9fc;
+    --tb-border: rgba(20, 28, 58, 0.08);
+    --tb-shadow: 0 1px 2px rgba(20, 28, 58, 0.05);
+    --tb-shadow-open: 0 10px 30px rgba(20, 28, 58, 0.09);
+    --text: #1a1f35;
+    --muted: rgba(26, 31, 53, 0.62);
+    --faint: rgba(26, 31, 53, 0.45);
+}
+.main-content {
+    background: var(--tb-canvas);
+}
+
+/* Command bar */
+.command-bar {
+    background: var(--tb-canvas);
+    border-bottom: none;
+    height: 60px;
+    padding: 0 24px;
+}
+.add-expense-btn {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.add-expense-btn:hover {
+    box-shadow: 0 6px 18px var(--acid-glow);
+}
+body.light .add-expense-btn {
+    color: #fff;
+}
+/* first button (search) becomes the quiet secondary */
+.cmd-actions .add-expense-btn:first-child,
+.cmd-actions .add-expense-btn:nth-child(2) {
+    background: var(--tb-surface);
+    color: var(--text);
+    border: 1px solid var(--tb-border);
+    box-shadow: var(--tb-shadow);
+}
+.cmd-actions .add-expense-btn:first-child:hover,
+.cmd-actions .add-expense-btn:nth-child(2):hover {
+    border-color: var(--acid-mid);
+    color: var(--acid);
+    box-shadow: var(--tb-shadow);
+}
+
+@media (min-width: 861px) {
+    .table-area {
+        padding: 0 24px 16px;
+        background: var(--tb-canvas);
+    }
+
+    /* Column header: flat, quiet */
+    .table-head {
+        background: var(--tb-canvas);
+        border-bottom: none;
+        height: 32px;
+    }
+    .th {
+        color: var(--faint);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+    }
+
+    /* Each day = a card */
+    .expense-group {
+        background: var(--tb-surface);
+        border: 1px solid var(--tb-border);
+        border-radius: 12px;
+        box-shadow: var(--tb-shadow);
+        margin-bottom: 8px;
+        overflow: hidden;
+        transition:
+            box-shadow 0.2s,
+            border-color 0.2s;
+    }
+    .expense-group:hover {
+        border-color: var(--line-mid);
+    }
+    .expense-group:has(.expense-row.open) {
+        box-shadow: var(--tb-shadow-open);
+        border-color: var(--acid-mid);
+    }
+    .expense-row {
+        height: 60px;
+    }
+    .expense-row:hover {
+        background: var(--tb-surface-hover);
+    }
+    .expense-row.open {
+        background: var(--tb-surface-open);
+    }
+    .expense-row-accent {
+        top: 12px;
+        bottom: 12px;
+        width: 3px;
+    }
+
+    /* Typography hierarchy */
+    .exp-date-day {
+        font-size: 28px;
+        color: var(--text);
+    }
+    .exp-date-day.active {
+        color: var(--acid);
+    }
+    .exp-date-mon {
+        color: var(--muted);
+    }
+    .exp-date-yr {
+        color: var(--faint);
+    }
+    .exp-meta-bank {
+        color: var(--text);
+        font-size: 12px;
+    }
+    .exp-meta-dot {
+        opacity: 1;
+        box-shadow: 0 0 0 3px var(--acid-dim);
+    }
+    .exp-meta-day {
+        color: var(--muted);
+    }
+    .exp-amt-main {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    /* Entries sub-list */
+    .entries-panel {
+        background: var(--tb-sub);
+        border-top: 1px solid var(--tb-border);
+        padding: 4px 0;
+    }
+    .entry-row {
+        height: 42px;
+        border-bottom: none;
+    }
+    .entry-row:hover {
+        background: var(--tb-surface-hover);
+    }
+    .entry-desc {
+        color: var(--text);
+        font-weight: 500;
+    }
+    .entry-amt-val {
+        font-weight: 600;
+    }
+
+    /* Inline add area blends into the sub-list */
+    .inline-add-entries {
+        background: var(--tb-sub);
+        border-top: 1px dashed var(--tb-border);
+    }
+    .inline-entry-card {
+        background: var(--tb-surface);
+        border-color: var(--tb-border);
+        box-shadow: var(--tb-shadow);
+    }
+    .inline-input {
+        background: var(--tb-sub);
+        border-color: var(--tb-border);
+    }
+    .inline-input:focus {
+        background: var(--tb-surface);
+    }
+    .inline-add-btn {
+        background: var(--tb-surface);
+        border: 1px dashed var(--line-str);
+        color: var(--muted);
+    }
+    body.light .inline-save-btn {
+        color: #fff;
+    }
+
+    /* Totals footer: floating summary pill */
+    .expense-totals-row {
+        background: var(--tb-surface);
+        border: 1px solid var(--tb-border);
+        border-radius: 12px;
+        box-shadow: var(--tb-shadow-open);
+        height: 48px;
+        bottom: 8px;
+    }
+    .expense-totals-label {
+        color: var(--muted);
+    }
+}
+
+/* Mobile cards share the same surface language */
+.expense-card {
+    background: var(--tb-surface);
+    border-color: var(--tb-border);
+    box-shadow: var(--tb-shadow);
+}
+.mobile-entries-panel {
+    background: var(--tb-sub);
+}
+
+/* Neutral, readable inputs/toggle in light mode */
+body.light .entry-type-toggle {
+    background: #fff;
+}
+
+/* ── Hover micro-interactions (desktop, pointer devices) ── */
+@media (min-width: 861px) and (hover: hover) {
+    .expense-group {
+        transition:
+            transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+            box-shadow 0.22s ease,
+            border-color 0.22s ease;
+    }
+    .expense-group:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--tb-shadow-open);
+        border-color: var(--acid-mid);
+    }
+
+    /* green accent bar slides in from the left on hover */
+    .expense-row::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 12px;
+        bottom: 12px;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
+        background: var(--acid);
+        transform: scaleY(0);
+        transform-origin: center;
+        transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .expense-row:hover::before {
+        transform: scaleY(1);
+    }
+
+    /* date + amounts nudge */
+    .exp-date-cell,
+    .exp-amt {
+        transition:
+            transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+            color 0.2s;
+    }
+    .expense-row:hover .exp-date-cell {
+        transform: translateX(4px);
+    }
+    .expense-row:hover .exp-date-day {
+        color: var(--acid);
+    }
+    .expense-row:hover .exp-amt {
+        transform: scale(1.05);
+    }
+    .exp-date-day {
+        transition: color 0.2s;
+    }
+
+    /* chevron lifts into a soft circle */
+    .exp-chev {
+        transition:
+            transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+            background 0.2s,
+            color 0.2s;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .expense-row:hover .exp-chev {
+        background: var(--acid-dim);
+        transform: translateY(2px);
+    }
+    .expense-row:hover .exp-chev.open,
+    .exp-chev.open {
+        transform: rotate(180deg);
+    }
+
+    /* entry rows slide on hover */
+    .entry-desc-wrap {
+        transition: transform 0.2s ease;
+    }
+    .entry-row:hover .entry-desc-wrap {
+        transform: translateX(4px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .expense-group,
+    .expense-row::before,
+    .exp-date-cell,
+    .exp-amt,
+    .exp-chev,
+    .entry-desc-wrap {
+        transition: none !important;
+        transform: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   WORKSPACE: expense list (+ optional live charts on the right)
+   Layout: [filter row] / [list frame | charts] share one height,
+   pagination sits below as a full-width footer.
+═══════════════════════════════════════════════════════ */
+.workspace {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.workspace-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+.workspace-left {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.insights {
+    display: none;
+}
+
+@media (min-width: 861px) {
+    /* Total row always rests at the bottom of the list area (sticky once the list scrolls) */
+    .table-area {
+        display: flex;
+        flex-direction: column;
+    }
+    .table-area > * {
+        flex: none;
+    }
+    .table-area > .expense-totals-row {
+        margin-top: auto;
+    }
+}
+
+/* Filter row */
+.insights-filters {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+    padding: 0 24px 12px;
+}
+.insights-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+}
+.insights-filter-field.grow {
+    flex: 1 1 190px;
+}
+.insights-filter-field .search-field-label {
+    margin: 0;
+}
+.insights-date-input {
+    width: 190px;
+}
+
+@media (min-width: 1281px) {
+    .workspace.split .workspace-body {
+        gap: 16px;
+        padding: 0 24px 12px;
+    }
+    .workspace.split .workspace-left,
+    .workspace.split .insights {
+        flex: 1 1 0;
+    }
+
+    /* The list lives in a tinted frame, same height as the charts column */
+    .workspace.split .table-area {
+        padding: 12px;
+        background: var(--tb-sub, var(--ink-3));
+        border: 1px solid var(--tb-border, var(--line));
+        border-radius: 16px;
+    }
+    .workspace.split .table-head {
+        background: var(--tb-sub, var(--ink-3));
+    }
+
+    /* Narrower list: drop only the empty spacer column, keep Top-up */
+    .workspace.split .table-head,
+    .workspace.split .expense-row,
+    .workspace.split .entry-row,
+    .workspace.split .expense-totals-row {
+        grid-template-columns:
+            minmax(64px, 96px) minmax(0, 1fr) minmax(70px, 96px)
+            minmax(80px, 110px) minmax(90px, 124px) 44px;
+        column-gap: 12px;
+    }
+    .workspace.split .table-head > :nth-child(3),
+    .workspace.split .expense-row > :nth-child(3),
+    .workspace.split .entry-row > :nth-child(3),
+    .workspace.split .expense-totals-row > :nth-child(3) {
+        display: none;
+    }
+    .workspace.split .inline-add-entries {
+        --inline-indent: 116px;
+    }
+
+    .workspace.split .insights {
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+}
+
+/* Stats tiles */
+.insights-tiles {
+    position: relative;
+    flex: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    padding-right: 34px;
+}
+.insights-tile {
+    background: var(--tb-surface, var(--ink-2));
+    border: 1px solid var(--tb-border, var(--line));
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: var(--tb-shadow, none);
+    min-width: 0;
+}
+.insights-tile-k {
+    font-family: var(--f-head);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.insights-tile-v {
+    margin-top: 4px;
+    font-family: var(--f-mono);
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.insights-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--faint);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+.insights-close:hover {
+    color: var(--red);
+    background: var(--red-dim);
+}
+
+/* Chart panels share the column height; the column scrolls only when the window is short */
+.insights-panel {
+    flex: 1 1 0;
+    min-height: 230px;
+    display: flex;
+    flex-direction: column;
+    background: var(--tb-surface, var(--ink-2));
+    border: 1px solid var(--tb-border, var(--line));
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--tb-shadow, none);
+}
+.insights-panel-title {
+    margin: 0;
+    font-family: var(--f-head);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+.insights-panel-sub {
+    margin: 2px 0 10px;
+    font-size: 12px;
+    color: var(--muted);
+}
+.insights-panel-body {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.insights-empty {
+    margin: auto;
+    color: var(--muted);
+    font-size: 13px;
+}
+.insights-donut {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(150px, 220px) 1fr;
+    gap: 20px;
+    align-items: center;
+}
+.insights-donut-chart {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 100%;
+}
+.insights-donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.insights-donut-center strong {
+    font-family: var(--f-mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+}
+.insights-donut-center span {
+    font-size: 10px;
+    color: var(--muted);
+}
+.insights-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 9px;
+    font-size: 13px;
+    max-width: 340px;
+    min-width: 0;
+}
+.insights-legend li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.insights-legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex: none;
+}
+.insights-legend-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.insights-legend b {
+    margin-left: auto;
+    font-family: var(--f-mono);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Analytics split view is desktop-only (>=1281px); smaller windows are list-only */
+@media (max-width: 1280px) {
+    .insights,
+    .insights-filters {
+        display: none !important;
+    }
+}
+
+/* Rows-per-page dropdown: same look as the TagSearchSelect fields */
+.rows-select { position: relative; min-width: 150px; }
+.rows-select-btn {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--ink-3);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--f-body);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.rows-select-btn svg { color: var(--faint); flex: none; transition: transform .2s; }
+.rows-select-btn.open { border-color: var(--acid-mid); box-shadow: 0 0 0 1px var(--acid-mid); }
+.rows-select-btn.open svg { transform: rotate(180deg); }
+.rows-select-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 640;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow: hidden;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-sm);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+.rows-select-menu button {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--f-body);
+    text-align: left;
+    cursor: pointer;
+}
+.rows-select-menu li:last-child button { border-bottom: none; }
+.rows-select-menu button:hover { background: var(--ink-4); }
+.rows-select-menu button.sel { background: var(--acid-dim); color: var(--acid); }
+.rows-select-menu button.sel svg { color: var(--acid); }
+
+/* Filter bar: chips sit on the label line so selecting never changes the
+   row height (no layout shift) */
+.insights-filters .tag-search-select { position: relative; gap: 0; }
+.insights-filters .tag-search-selected {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 3px);
+    left: 84px;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 4px;
+    overflow: hidden;
+}
+.insights-filters .tag-search-chip {
+    flex: 0 1 auto;
+    padding: 1px 5px 1px 7px;
+    font-size: 9px;
+    line-height: 1.5;
+}
+.insights-filter-field { align-self: flex-end; }
+
+/* Split view: keep the Total row solid so rows never show beneath it, and
+   give the list a little more room than the charts on mid-size screens */
+@media (min-width: 1281px) {
+    .workspace.split .table-area {
+        padding-bottom: 0;
+    }
+    .workspace.split .expense-totals-row {
+        bottom: 0;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        box-shadow: 0 12px 0 0 var(--tb-sub, var(--ink-3));
+    }
+}
+@media (min-width: 1281px) and (max-width: 1500px) {
+    .workspace.split .workspace-left { flex: 5 1 0; }
+    .workspace.split .insights { flex: 4 1 0; }
+}
+.insights-filter-field { min-width: 130px; }
+.insights-filter-field.grow { flex: 1 1 140px; }
+.insights-date-input { width: 100%; }
+
+/* Tablet: charts in a popup */
+.insights-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 610;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+}
+.insights-modal {
+    width: 100%;
+    max-width: 860px;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+.insights-modal .insights {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.insights-modal .insights-panel {
+    flex: none;
+    height: 280px;
+}
+.insights-modal .insights-filters {
+    display: flex !important;
+    padding: 0 0 12px;
+}
+.insights-modal .insights-filter-field.grow { flex: 1 1 150px; }
+.insights-modal .insights-filters .tag-search-selected { left: 70px; }
+
+/* Keep the "Search / filter" label visible on tablets and phones too */
+.cmd-actions > .add-expense-btn:first-child span.btn-text {
+    display: inline;
+}
+.cmd-actions > .add-expense-btn:first-child {
+    padding: 0 14px;
+    white-space: nowrap;
+}
+
+/* ≥1400px the date column is 80px wide, so descriptions start at 20 + 80;
+   keep the add form's left edge on that line */
+@media (min-width: 1400px) {
+    .inline-add-entries {
+        --inline-indent: 100px;
+    }
+}
+
+.excluded-tags-hint {
+    margin: 10px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+/* ── ≈1366px screens ── */
+/* Chips never exceed the label line; a lone chip truncates */
+.insights-filters .tag-search-chip { max-width: 100%; min-width: 0; }
+
+/* Top-up amounts (+₹54,000) need a wider column in the split list */
+@media (min-width: 1281px) {
+    .workspace.split .table-head,
+    .workspace.split .expense-row,
+    .workspace.split .entry-row,
+    .workspace.split .expense-totals-row {
+        /* all-fr tracks share the width in proportion (a minmax with a px
+           max would grab its full max first and squeeze Details to nothing) */
+        grid-template-columns:
+            68px minmax(0, 2fr) minmax(92px, 1fr)
+            minmax(76px, 1fr) minmax(88px, 1fr) 36px;
+        column-gap: 8px;
+    }
+}
+
+/* Summary tiles: always one row of four */
+.insights-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.insights-tile { padding: 10px 12px; }
+.insights-tile-v { font-size: clamp(14px, 1.35vw, 19px); }
+
+/* Donut stays inside its panel and never spills onto the next one */
+.insights-donut { grid-template-columns: auto minmax(0, 1fr); }
+.insights-donut-chart {
+    height: 100%;
+    width: auto;
+    max-width: 220px;
+    aspect-ratio: 1;
+    justify-self: center;
+}
+.insights-legend { min-width: 0; }
+
+/* Dark scrollbar for the charts column */
+.insights, .workspace-left .table-area {
+    scrollbar-color: var(--line-mid) transparent;
+}
+
+/* Split view: date column is a fixed 68px, so descriptions start at 20 + 68 */
+@media (min-width: 1281px) {
+    .workspace.split .inline-add-entries {
+        --inline-indent: 88px;
+    }
 }

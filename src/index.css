@@ -8950,3 +8950,31 @@ body.light .entry-type-toggle {
         scroll-padding-right: 14px;
     }
 }
+
+@media (max-width: 600px) {
+    /* Tags show as a small indicator beside the description, not as named chips */
+    .m-entry-main {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+    }
+    .m-tag-ind {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        color: var(--purple);
+        background: color-mix(in srgb, var(--purple) 14%, transparent);
+        border: 1px solid color-mix(in srgb, var(--purple) 30%, transparent);
+    }
+    .m-tag-ind i {
+        font-style: normal;
+        font-family: var(--f-mono);
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+    }
+}

@@ -438,12 +438,13 @@ function PhoneDayCard({ exp, open, onToggle, onEditEntry }) {
               >
                 <span className="m-entry-desc">{item.description}</span>
                 {item.entry_tags?.length > 0 && (
-                  <span className="m-tags">
-                    {item.entry_tags.map((id) => (
-                      <span key={id} className="m-tag">
-                        {tagName(id) || "tag"}
-                      </span>
-                    ))}
+                  <span
+                    className="m-tag-ind"
+                    title={item.entry_tags.map((id) => tagName(id) || "tag").join(", ")}
+                    aria-label={`${item.entry_tags.length} tag${item.entry_tags.length > 1 ? "s" : ""}`}
+                  >
+                    <Tag size={12} aria-hidden="true" />
+                    {item.entry_tags.length > 1 && <i>{item.entry_tags.length}</i>}
                   </span>
                 )}
               </button>

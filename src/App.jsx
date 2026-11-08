@@ -7,6 +7,7 @@ import LandingPage from './components/LandingPage.jsx'
 import Loader from './components/Loader.jsx'
 import AlertToast from './components/AlertToast.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
+import OAuthAuthorize from './components/OAuthAuthorize.jsx'
 
 export default function App() {
   const {
@@ -28,12 +29,19 @@ export default function App() {
     if (isLoggedIn) getInitialData()
   }, [isLoggedIn])
 
+  // Claude's connector sends the browser to /oauth/authorize. There is no
+  // router, so recognise the path: sign in first if needed (the URL stays put),
+  // then show the approval page.
+  const isOAuthAuthorize = window.location.pathname.startsWith('/oauth/authorize')
+
   return (
     <>
       <Loader />
       <AlertToast />
       <ConfirmDialog />
-      {isLoggedIn ? (
+      {isOAuthAuthorize ? (
+        isLoggedIn ? <OAuthAuthorize /> : showLoginPage ? <Login /> : <Register />
+      ) : isLoggedIn ? (
         <Dashboard />
       ) : showLanding ? (
         <LandingPage

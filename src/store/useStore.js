@@ -842,6 +842,7 @@ export const useStore = create((set, get) => ({
   profile: null,
   ingestStatus: null,
   ingestPending: [],
+  claudeConnections: [],
   refreshing: false,
 
   async fetchProfile() {
@@ -944,6 +945,26 @@ export const useStore = create((set, get) => ({
   },
 
   /** Reload the webhook status ("last used") and the "To review" list. */
+  /** Claude connector sessions for Profile > Connected apps. */
+  async fetchClaudeConnections() {
+    try {
+      const r = await axios.get(`${BASE_URL}/oauth/connections`);
+      set({ claudeConnections: r.data || [] });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  async revokeClaudeConnection(id) {
+    try {
+      await axios.delete(`${BASE_URL}/oauth/connections/${id}`);
+      set({ claudeConnections: get().claudeConnections.filter((c) => c.id !== id) });
+      get().pushAlert("Claude can no longer access your account.", "success");
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    }
+  },
+
   async refreshIngest() {
     set({ refreshing: true });
     try {

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
+import BIRDS from "vanta/dist/vanta.birds.min";
 import {
   MessageCircle,
   Mic,
@@ -275,6 +277,43 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
   // applies/removes body.light off this same store value.
   const { isDarkMode, setIsDarkMode } = useStore();
 
+  // Vanta.js flock of birds behind the page. Recreated when the theme flips
+  // so the colours follow it; skipped for reduced-motion users and when
+  // WebGL is unavailable (the plain gradient background stays).
+  const birdsRef = useRef(null);
+  useEffect(() => {
+    const el = birdsRef.current;
+    if (!el || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    let effect;
+    try {
+      effect = BIRDS({
+        el,
+        THREE,
+        mouseControls: false,
+        touchControls: false,
+        gyroControls: false,
+        minHeight: 200,
+        minWidth: 200,
+        scale: 1,
+        scaleMobile: 1,
+        backgroundAlpha: 0,
+        color1: isDarkMode ? 0xb8ff00 : 0x6b8f00,
+        color2: isDarkMode ? 0x9b7fff : 0x7a5af5,
+        colorMode: "variance",
+        quantity: window.innerWidth < 600 ? 3 : 4,
+        birdSize: 1,
+        wingSpan: 26,
+        speedLimit: 4,
+        separation: 20,
+        alignment: 20,
+        cohesion: 20,
+      });
+    } catch {
+      /* no WebGL: keep the static background */
+    }
+    return () => effect?.destroy();
+  }, [isDarkMode]);
+
   // Phones: a sticky "Start tracking free" bar appears once the hero button
   // has scrolled away, and tucks away again at the closing call to action.
   const phone = usePhoneScreen();
@@ -303,6 +342,7 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
 
   return (
     <div className="landing-page">
+      <div className="landing-birds" ref={birdsRef} aria-hidden="true" />
       <nav className="landing-nav">
         <div className="landing-nav-logo">
           <div className="auth-logo-hex">₹</div>

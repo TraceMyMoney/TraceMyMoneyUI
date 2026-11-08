@@ -9558,3 +9558,14 @@ body.light .entry-type-toggle {
         justify-content: flex-start;
     }
 }
+
+/* Vanta birds backdrop: fixed behind every landing section. */
+.landing-page { isolation: isolate; }
+.landing-birds {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.6;
+}
+body.light .landing-birds { opacity: 0.5; }

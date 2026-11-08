@@ -13,6 +13,7 @@ import ChatAssistantDialog from "./ChatAssistantDialog.jsx";
 import AdminDashboard from "./AdminDashboard.jsx";
 import ExpenseInsights from "./ExpenseInsights.jsx";
 import ProfilePage from "./ProfilePage.jsx";
+import RefreshButton from "./RefreshButton.jsx";
 import ExcludedTagsDialog from "./ExcludedTagsDialog.jsx";
 import InsightsFilterBar from "./InsightsFilterBar.jsx";
 import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen.js";
@@ -37,6 +38,9 @@ export default function Dashboard() {
     profileOpen,
     analyticsOpen,
     setAnalyticsOpen,
+    refreshAll,
+    refreshIngest,
+    isLoggedIn,
   } = useStore();
   const wide = useWideScreen();
   const tablet = useTabletScreen();
@@ -71,6 +75,26 @@ export default function Dashboard() {
     setApplyTagEntry(entry);
     setApplyEntryTagVisible(true);
   };
+  // Pull in new expenses (e.g. added by the SMS webhook) when you come back to the tab.
+  useEffect(() => {
+    if (!isLoggedIn) return undefined;
+    let last = Date.now();
+    const onVisible = () => {
+      if (document.visibilityState !== "visible" || Date.now() - last < 20000) return;
+      last = Date.now();
+      const s = useStore.getState();
+      if (s.isAdminDashboardOpen) return;
+      if (s.profileOpen) s.refreshIngest();
+      else s.refreshAll();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [isLoggedIn]);
+
   // Desktop: analytics is on by default when the dashboard opens.
   useEffect(() => {
     if (wide) setAnalyticsOpen(true);
@@ -176,6 +200,9 @@ export default function Dashboard() {
                         <span>＋</span>
                         <span className="btn-text">Add Expense</span>
                       </button>
+                      {/* Last in the DOM so the :nth-child button styling above is untouched;
+                          CSS puts it first visually. */}
+                      <RefreshButton className="cmd-refresh" label="Refresh expenses" onClick={() => refreshAll()} />
                     </div>
                   </div>
                 </>

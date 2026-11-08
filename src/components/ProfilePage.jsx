@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useStore, API_BASE_URL } from "../store/useStore.js";
 import SetupGuideModal from "./SetupGuideModal.jsx";
+import RefreshButton from "./RefreshButton.jsx";
 
 const WEBHOOK_URL = `${API_BASE_URL}/ingest/sms`;
 
@@ -119,6 +120,7 @@ export default function ProfilePage() {
     createIngestToken,
     revokeIngestToken,
     setIngestAutoAdd,
+    refreshIngest,
     ingestPending,
     bankItems,
     confirmIngestPending,
@@ -371,6 +373,11 @@ export default function ProfilePage() {
                 <Inbox size={15} />
                 <span>To review</span>
                 {ingestPending.length > 0 && <span className="review-count">{ingestPending.length}</span>}
+                <RefreshButton
+                  className="review-refresh"
+                  label="Refresh to review list"
+                  onClick={() => refreshIngest()}
+                />
               </div>
               <div className="admin-panel-desc">
                 Transactions from your SMS that need an account chosen, or that you switched off

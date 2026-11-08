@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, SlidersHorizontal, Tag, Plus, X, RotateCcw } from "lucide-react";
 import { useStore, fmtNum } from "../store/useStore.js";
+import RefreshButton from "./RefreshButton.jsx";
 
 /**
  * Phone-only header block: account chips, a balance card for the selected
@@ -40,6 +41,7 @@ export default function MobileTopArea({ open = true, onOpenFilter, onOpenTag }) 
     setCreateBankDialogVisible,
     setPageNumber,
     fetchExpenses,
+    refreshAll,
   } = useStore();
 
   const [keyword, setKeyword] = useState(searchEntryKeyword || "");
@@ -215,6 +217,7 @@ export default function MobileTopArea({ open = true, onOpenFilter, onOpenTag }) 
         <button type="button" className="m-iconbtn" onClick={onOpenTag} aria-label="New tag">
           <Tag size={18} />
         </button>
+        <RefreshButton className="m-iconbtn" label="Refresh expenses" onClick={() => refreshAll()} />
       </div>
 
       {filtersOn && (

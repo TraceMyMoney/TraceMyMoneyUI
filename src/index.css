@@ -9333,3 +9333,57 @@ body.light .entry-type-toggle {
         flex: 1;
     }
 }
+
+/* Refresh button (expense list command bar, phone search row, To review panel) */
+.refresh-btn {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.refresh-btn:hover:not(:disabled) {
+    color: var(--acid);
+    border-color: var(--acid-mid);
+}
+.refresh-btn:active:not(:disabled) {
+    transform: scale(0.92);
+}
+.refresh-btn.is-spinning svg {
+    animation: refresh-spin 0.8s linear infinite;
+}
+@keyframes refresh-spin {
+    to { transform: rotate(360deg); }
+}
+.cmd-actions .cmd-refresh {
+    order: -1;
+}
+.review-refresh {
+    margin-left: auto;
+}
+.m-iconbtn.refresh-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .refresh-btn.is-spinning svg { animation-duration: 2s; }
+}
+
+/* Inside a panel title, icons get a green square tile; the refresh button's icon must stay a plain icon */
+.admin-panel-title .refresh-btn svg {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: inherit;
+}

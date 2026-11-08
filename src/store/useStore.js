@@ -841,6 +841,7 @@ export const useStore = create((set, get) => ({
   profile: null,
   ingestStatus: null,
   ingestPending: [],
+  refreshing: false,
 
   async fetchProfile() {
     try {
@@ -908,6 +909,33 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       set({ ingestStatus: prev });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  /** Reload balances and the expense list (keeping the current filters). */
+  async refreshAll() {
+    if (get().refreshing) return;
+    set({ refreshing: true });
+    try {
+      await Promise.all([get().fetchBanks(), get().fetchExpenses({ silent: true })]);
+    } finally {
+      set({ refreshing: false });
+    }
+  },
+
+  /** Reload the webhook status ("last used") and the "To review" list. */
+  async refreshIngest() {
+    set({ refreshing: true });
+    try {
+      const [t, q] = await Promise.all([
+        axios.get(`${BASE_URL}/ingest/token`),
+        axios.get(`${BASE_URL}/ingest/pending`),
+      ]);
+      set({ ingestStatus: t.data, ingestPending: q.data.transactions || [] });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    } finally {
+      set({ refreshing: false });
     }
   },
 

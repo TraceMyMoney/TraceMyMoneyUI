@@ -10,6 +10,7 @@ import {
   BookOpen,
   Lock,
   Inbox,
+  Plug,
   X,
 } from "lucide-react";
 import { useStore, API_BASE_URL } from "../store/useStore.js";
@@ -17,6 +18,7 @@ import SetupGuideModal from "./SetupGuideModal.jsx";
 import RefreshButton from "./RefreshButton.jsx";
 
 const WEBHOOK_URL = `${API_BASE_URL}/ingest/sms`;
+const MCP_URL = `${API_BASE_URL}/mcp`;
 
 function copyText(text) {
   return navigator.clipboard?.writeText(text).catch(() => {});
@@ -125,6 +127,9 @@ export default function ProfilePage() {
     bankItems,
     confirmIngestPending,
     rejectIngestPending,
+    claudeConnections,
+    fetchClaudeConnections,
+    revokeClaudeConnection,
     setProfileOpen,
     requestConfirm,
   } = useStore();
@@ -139,6 +144,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile();
+    fetchClaudeConnections();
   }, []);
   useEffect(() => {
     if (profile) {
@@ -365,6 +371,50 @@ export default function ProfilePage() {
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Claude connector */}
+            <div className="admin-panel profile-wide">
+              <div className="admin-panel-title">
+                <Plug size={15} />
+                <span>Connected apps</span>
+              </div>
+              <div className="admin-panel-desc">
+                Let Claude read and record your expenses by chat. In Claude open Settings, then
+                Connectors, add a custom connector with the address below and sign in when asked.
+              </div>
+              <CopyBox label="Connector address" value={MCP_URL} />
+              {claudeConnections.length === 0 ? (
+                <div className="admin-dashboard-empty">No apps connected yet.</div>
+              ) : (
+                <div className="review-list">
+                  {claudeConnections.map((c) => (
+                    <div className="review-row connected-row" key={c.id}>
+                      <div className="review-main">
+                        <div className="review-title">{c.client_name}</div>
+                        <div className="review-sub">
+                          Connected {formatWhen(c.created_at)} · last used {formatWhen(c.last_used_at)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="review-dismiss connected-disconnect"
+                        onClick={async () => {
+                          if (
+                            await requestConfirm(
+                              `Disconnect ${c.client_name}? It loses access to your expenses immediately.`,
+                              "Disconnect",
+                            )
+                          )
+                            revokeClaudeConnection(c.id);
+                        }}
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* To review */}

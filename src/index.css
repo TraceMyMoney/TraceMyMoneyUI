@@ -9569,3 +9569,119 @@ body.light .entry-type-toggle {
     opacity: 0.6;
 }
 body.light .landing-birds { opacity: 0.5; }
+
+/* Claude connector approval page + Connected apps rows */
+.oauth-shell {
+    min-height: 100%;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--ink);
+}
+.oauth-card {
+    width: 100%;
+    max-width: 440px;
+    padding: 28px 26px;
+    border-radius: 20px;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-3);
+    color: var(--text);
+}
+.oauth-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+}
+.oauth-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 14px;
+    color: var(--acid);
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+}
+.oauth-title {
+    margin: 0 0 6px;
+    font-family: var(--f-head);
+    font-size: 24px;
+    line-height: 1.15;
+    text-wrap: balance;
+}
+.oauth-sub,
+.oauth-host {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+}
+.oauth-host {
+    font-size: 12.5px;
+    color: var(--faint);
+}
+.oauth-perms {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--ink);
+    font-size: 14px;
+}
+.oauth-perms li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+.oauth-perms svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--acid);
+}
+.oauth-error {
+    margin: 0 0 14px;
+    color: var(--red);
+    font-size: 13.5px;
+}
+.oauth-actions {
+    display: flex;
+    gap: 10px;
+}
+.oauth-btn {
+    flex: 1;
+    height: 46px;
+    border-radius: 12px;
+    border: 1px solid var(--line-mid);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--f-head);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.oauth-btn.primary {
+    border-color: var(--acid);
+    background: var(--acid);
+    color: #0b0d0a;
+}
+.oauth-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.connected-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+.connected-disconnect {
+    width: auto;
+    padding: 0 14px;
+    font-size: 13px;
+}

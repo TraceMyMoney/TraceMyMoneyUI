@@ -9490,3 +9490,71 @@ body.light .entry-type-toggle {
     text-transform: uppercase;
     cursor: pointer;
 }
+
+/* Landing: bank SMS demo */
+.landing-demo-sms-text {
+    max-width: 100%;
+    font-family: var(--f-mono);
+    font-size: 12px;
+}
+.landing-demo-sms-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    align-self: flex-start;
+    font-size: 12px;
+    color: var(--acid);
+    animation: landingBubbleIn 0.3s ease both;
+}
+.landing-demo-expense {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--ink-3);
+    border: 1px solid var(--acid-mid);
+    animation: landingBubbleIn 0.35s ease both;
+}
+.landing-demo-expense div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.landing-demo-expense b {
+    font-size: 14px;
+    color: var(--text);
+}
+.landing-demo-expense span {
+    font-size: 12px;
+    color: var(--muted);
+}
+.landing-demo-expense em {
+    font-style: normal;
+    font-family: var(--f-mono);
+    font-weight: 600;
+}
+.landing-demo-expense em.neg { color: var(--red); }
+.landing-demo-expense em.pos { color: var(--green); }
+@media (min-width: 861px) {
+    /* demo on the left, text on the right, so it alternates with the sections around it */
+    .landing-sms-spotlight .landing-analytics-visual {
+        order: -1;
+    }
+}
+
+/* Landing (desktop): demo cards sit flush with the content edges, so they line up
+   with the feature grid instead of floating in the middle of their column. */
+@media (min-width: 861px) {
+    .landing-hero-visual {
+        justify-content: flex-end;
+    }
+    .landing-analytics-visual {
+        justify-content: flex-end;
+    }
+    .landing-sms-spotlight .landing-analytics-visual {
+        justify-content: flex-start;
+    }
+}

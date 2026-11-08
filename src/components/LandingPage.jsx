@@ -12,6 +12,8 @@ import {
   Sparkles,
   Sun,
   Moon,
+  MessageSquareText,
+  BellRing,
 } from "lucide-react";
 import { useStore } from "../store/useStore.js";
 import { usePhoneScreen } from "../useWideScreen.js";
@@ -60,10 +62,53 @@ const FEATURES = [
     desc: "Organize spending with your own tags and instantly filter, search, or export by any of them.",
   },
   {
+    icon: MessageSquareText,
+    color: "acid",
+    title: "Bank SMS, added by itself",
+    desc: "Forward your bank's debit and credit alerts and each one becomes an expense on the right account and day, with the balance updated.",
+  },
+  {
+    icon: BellRing,
+    color: "purple",
+    title: "Nothing slips through",
+    desc: "If an SMS doesn't say which account it belongs to, it waits for you, and the app tells you the moment you open it.",
+  },
+  {
     icon: ShieldCheck,
     color: "green",
     title: "Private by default",
     desc: "A one-tap privacy mode hides every amount on screen, and your data never trains anyone else's model.",
+  },
+];
+
+const SMS_POINTS = [
+  "Forward bank SMS from your iPhone with a one-time Shortcut, no app to install",
+  "AI reads the amount, the merchant and the account, and adds it to that day",
+  "A new day gets a new expense, a day you already have just gets another entry",
+  "Anything it can't place waits for you, and you get an alert when you open the app",
+];
+
+const SMS_DEMO = [
+  {
+    sms: "Dear UPI user A/C X1234 debited by 250.00 on date 06Nov26 trf to Cafe Mocha",
+    merchant: "Cafe Mocha",
+    amount: "- ₹250",
+    bank: "SBI",
+    kind: "neg",
+  },
+  {
+    sms: "Credit Alert! Rs.12,000.00 credited to HDFC Bank A/c XX8497 on 07-11-26 from VPA rent@oksbi",
+    merchant: "Rent",
+    amount: "+ ₹12,000",
+    bank: "HDFC",
+    kind: "pos",
+  },
+  {
+    sms: "Rs.1,230.00 spent on your SBI Credit Card ending 5678 at BIG BAZAAR on 08/11/26",
+    merchant: "Big Bazaar",
+    amount: "- ₹1,230",
+    bank: "SBI Credit Card",
+    kind: "neg",
   },
 ];
 
@@ -88,7 +133,7 @@ const STEPS = [
   {
     n: "02",
     title: "Log expenses your way",
-    desc: "Type it, say it, or use the quick-add form - whatever's fastest in the moment.",
+    desc: "Type it, say it, forward your bank SMS, or use the quick-add form - whatever's fastest in the moment.",
   },
   {
     n: "03",
@@ -133,6 +178,53 @@ function TypingDemo() {
             <span />
             <span />
             <span />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SmsDemo() {
+  const [index, setIndex] = useState(0);
+  const [phase, setPhase] = useState("sms"); // "sms" -> "reading" -> "added"
+
+  useEffect(() => {
+    const durations = { sms: 1500, reading: 1100, added: 2800 };
+    const id = setTimeout(() => {
+      if (phase === "sms") setPhase("reading");
+      else if (phase === "reading") setPhase("added");
+      else {
+        setPhase("sms");
+        setIndex((i) => (i + 1) % SMS_DEMO.length);
+      }
+    }, durations[phase]);
+    return () => clearTimeout(id);
+  }, [phase]);
+
+  const item = SMS_DEMO[index];
+  return (
+    <div className="landing-demo-chat landing-demo-sms">
+      <div className="landing-demo-chat-head">
+        <div className="landing-demo-chat-dot" />
+        <span>Bank SMS</span>
+      </div>
+      <div className="landing-demo-chat-body">
+        <div className="landing-demo-bubble landing-demo-bubble--ai landing-demo-sms-text" key={`s${index}`}>
+          {item.sms}
+        </div>
+        {phase === "reading" && (
+          <div className="landing-demo-sms-status">
+            <Sparkles size={13} /> Reading the message…
+          </div>
+        )}
+        {phase === "added" && (
+          <div className="landing-demo-expense" key={`e${index}`}>
+            <div>
+              <b>{item.merchant}</b>
+              <span>Added to {item.bank}</span>
+            </div>
+            <em className={item.kind}>{item.amount}</em>
           </div>
         )}
       </div>
@@ -298,6 +390,29 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="landing-analytics-spotlight landing-sms-spotlight">
+        <div className="landing-analytics-copy">
+          <span className="landing-eyebrow">New - Automation</span>
+          <h2>Your bank SMS become expenses on their own</h2>
+          <p>
+            Set it up once and every debit and credit alert from your bank lands in the right
+            account without you typing a thing. You only step in when it can't tell which account
+            a message belongs to.
+          </p>
+          <ul className="landing-analytics-points">
+            {SMS_POINTS.map((point) => (
+              <li key={point}>
+                <Check size={14} />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="landing-analytics-visual">
+          <SmsDemo />
         </div>
       </section>
 

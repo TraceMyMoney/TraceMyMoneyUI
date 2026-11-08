@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "../store/useStore.js";
+import { usePhoneScreen } from "../useWideScreen.js";
 import {
   ShieldCheck,
   Search,
@@ -86,8 +87,38 @@ const ADMIN_USERS_PAGE_SIZES = [5, 10, 15, 20, 50];
 
 function UsersPagination() {
   const { adminUsersTotal, adminUsersPage, adminUsersPageSize, setAdminUsersPage } = useStore();
+  const phone = usePhoneScreen();
   const totalPages = Math.max(1, Math.ceil(adminUsersTotal / adminUsersPageSize));
   if (!adminUsersTotal || totalPages <= 1) return null;
+
+  if (phone) {
+    return (
+      <div className="admin-pagination admin-pagination--phone">
+        <button
+          type="button"
+          className="admin-pg-btn admin-pg-btn--nav"
+          disabled={adminUsersPage <= 1}
+          onClick={() => setAdminUsersPage(adminUsersPage - 1)}
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <div className="admin-pg-compact">
+          <b>Page {adminUsersPage} of {totalPages}</b>
+          <span>{adminUsersTotal} users</span>
+        </div>
+        <button
+          type="button"
+          className="admin-pg-btn admin-pg-btn--nav"
+          disabled={adminUsersPage >= totalPages}
+          onClick={() => setAdminUsersPage(adminUsersPage + 1)}
+          aria-label="Next page"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    );
+  }
 
   const getRange = () => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -161,6 +192,7 @@ function UsersTab() {
     setUserIsAdmin,
     setUserDisabled,
   } = useStore();
+  const phone = usePhoneScreen();
   const [query, setQuery] = useState("");
   const skipNextDebounce = useRef(true);
 
@@ -222,10 +254,10 @@ function UsersTab() {
               </div>
               <input
                 className="d-input-field"
-                placeholder="Search by username or email..."
+                placeholder={phone ? "Search users" : "Search by username or email..."}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                autoFocus
+                autoFocus={!phone}
               />
               {query && (
                 <button
@@ -246,6 +278,56 @@ function UsersTab() {
         ) : adminUsers.length === 0 ? (
           <div className="admin-dashboard-empty">
             {query ? `No users match "${query}".` : "No users found."}
+          </div>
+        ) : phone ? (
+          <div className="admin-ucards">
+            {adminUsers.map((u) => (
+              <div className={`admin-ucard${u.is_disabled ? " is-disabled" : ""}`} key={u.id}>
+                <div className="admin-ucard-top">
+                  <div className="admin-user-av">{u.username.charAt(0).toUpperCase()}</div>
+                  <div className="admin-ucard-id">
+                    <div className="admin-user-name">{u.username}</div>
+                    <div className="admin-user-email">{u.email}</div>
+                  </div>
+                  <span className="admin-ucard-date">{formatDate(u.created_at)}</span>
+                </div>
+                <div className="admin-ucard-tiles">
+                  <button
+                    type="button"
+                    className={`admin-tile${u.is_admin ? " on" : ""}`}
+                    onClick={() => setUserIsAdmin(u.id, !u.is_admin)}
+                    aria-pressed={u.is_admin}
+                  >
+                    <span className="admin-tile-cap">Admin</span>
+                    <span className={`admin-toggle${u.is_admin ? " on" : ""}`}>
+                      <span className="admin-toggle-knob" />
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-tile${u.chatbot_enabled ? " on" : ""}`}
+                    onClick={() => setUserChatbotAccess(u.id, !u.chatbot_enabled)}
+                    aria-pressed={u.chatbot_enabled}
+                  >
+                    <span className="admin-tile-cap">AI chatbot</span>
+                    <span className={`admin-toggle${u.chatbot_enabled ? " on" : ""}`}>
+                      <span className="admin-toggle-knob" />
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-tile admin-tile--danger${u.is_disabled ? " on" : ""}`}
+                    onClick={() => setUserDisabled(u.id, !u.is_disabled)}
+                    aria-pressed={u.is_disabled}
+                  >
+                    <span className="admin-tile-cap">Disabled</span>
+                    <span className={`admin-toggle admin-toggle--danger${u.is_disabled ? " on" : ""}`}>
+                      <span className="admin-toggle-knob" />
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="admin-user-table admin-user-table--wide">

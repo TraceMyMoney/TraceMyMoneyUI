@@ -8634,3 +8634,319 @@ body.light .entry-type-toggle {
         min-height: 46px;
     }
 }
+
+@media (max-width: 600px) {
+    .topbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+    }
+    .topbar-collapse {
+        flex: none;
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        border: 1px solid var(--line-mid);
+        background: var(--ink-3);
+        color: var(--muted);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .topbar-collapse:active {
+        transform: scale(0.92);
+    }
+    .topbar-collapse svg {
+        transition: transform 0.28s;
+    }
+    .topbar-collapse.is-open {
+        color: var(--acid);
+        border-color: var(--acid-mid);
+        background: var(--acid-dim);
+    }
+    .topbar-collapse.is-open svg {
+        transform: rotate(180deg);
+    }
+
+    /* Collapsible accounts / balance / search block */
+    .m-top {
+        display: grid;
+        grid-template-rows: 1fr;
+        gap: 0;
+        transition: grid-template-rows 0.28s ease, padding 0.28s ease;
+    }
+    .m-top-inner {
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 3px;
+    }
+    .m-top.collapsed {
+        grid-template-rows: 0fr;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    .m-top.collapsed .m-top-inner {
+        visibility: hidden;
+        padding-top: 0;
+        transition: visibility 0s 0.28s;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .m-top, .topbar-collapse svg { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN DASHBOARD · PHONE (≤ 600px)
+═══════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+    /* header + tabs */
+    .admin-page-header {
+        padding: 14px 16px;
+        gap: 12px;
+    }
+    .admin-page-header .dialog-sub {
+        display: none;
+    }
+    .admin-page-header .dialog-icon {
+        width: 40px;
+        height: 40px;
+        flex: none;
+    }
+    .admin-page-header .dialog-title {
+        font-size: 20px;
+    }
+    .admin-tabs {
+        padding: 10px 14px;
+        gap: 6px;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+    }
+    .admin-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .admin-tab-btn {
+        flex: none;
+        height: 38px;
+        padding: 0 14px;
+        font-size: 14px;
+        scroll-snap-align: start;
+        white-space: nowrap;
+    }
+    .admin-page-content .admin-dashboard-body {
+        padding: 14px 14px 32px;
+        gap: 14px;
+    }
+    .admin-panel {
+        padding: 16px;
+        border-radius: 18px;
+        min-width: 0;
+    }
+    .admin-panel-row {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .admin-panel-row > div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* users: controls stack, rows become cards */
+    .admin-panel-row:has(.admin-users-controls) {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .admin-users-controls {
+        flex-direction: row-reverse;
+        gap: 8px;
+        width: 100%;
+    }
+    .admin-users-controls .admin-search-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+    .admin-users-controls .d-input-field,
+    .admin-key-input,
+    .admin-form-field > .d-input-field {
+        font-size: 16px;
+    }
+    .admin-ucards {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 6px;
+    }
+    .admin-ucard {
+        padding: 12px;
+        border-radius: 16px;
+        background: var(--ink-3);
+        border: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: border-color 0.2s, opacity 0.2s;
+    }
+    .admin-ucard.is-disabled {
+        border-color: color-mix(in srgb, var(--red) 40%, var(--line));
+    }
+    .admin-ucard.is-disabled .admin-ucard-top {
+        opacity: 0.6;
+    }
+    .admin-ucard-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+    .admin-ucard-top .admin-user-av {
+        width: 40px;
+        height: 40px;
+        flex: none;
+    }
+    .admin-ucard-id {
+        flex: 1;
+        min-width: 0;
+    }
+    .admin-ucard-id .admin-user-name,
+    .admin-ucard-id .admin-user-email {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .admin-ucard-date {
+        flex: none;
+        align-self: flex-start;
+        font-family: var(--f-mono);
+        font-size: 11px;
+        color: var(--faint);
+    }
+    .admin-ucard-tiles {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .admin-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 6px;
+        border-radius: 12px;
+        background: var(--ink-2);
+        border: 1px solid var(--line);
+        color: var(--muted);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.15s, border-color 0.2s, background 0.2s;
+    }
+    .admin-tile:active {
+        transform: scale(0.96);
+    }
+    .admin-tile.on {
+        border-color: var(--acid-mid);
+        background: var(--acid-dim);
+        color: var(--text);
+    }
+    .admin-tile--danger.on {
+        border-color: color-mix(in srgb, var(--red) 45%, transparent);
+        background: var(--red-dim);
+    }
+    .admin-tile-cap {
+        font-family: var(--f-head);
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+    .admin-tile .admin-toggle {
+        pointer-events: none;
+    }
+    .admin-pagination--phone {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .admin-pagination--phone .admin-pg-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+    }
+    .admin-pg-compact {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1.25;
+    }
+    .admin-pg-compact b {
+        font-family: var(--f-head);
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text);
+    }
+    .admin-pg-compact span {
+        font-family: var(--f-mono);
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+    /* AI tab: one column that fits the screen (was overflowing sideways) */
+    .admin-ai-columns {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+    .admin-ai-form {
+        max-width: none;
+    }
+    .admin-form-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .admin-ai-save {
+        width: 100%;
+        justify-content: center;
+    }
+    .admin-keys-list--flat .admin-key-row {
+        flex-wrap: wrap;
+        gap: 10px 12px;
+        padding: 12px 4px;
+    }
+    .admin-key-identity {
+        flex: 1;
+        width: auto;
+        min-width: 0;
+    }
+    .admin-key-row-input {
+        flex: 1 1 100%;
+    }
+
+    /* flags + usage */
+    .admin-flag-row {
+        gap: 14px;
+    }
+    .admin-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .admin-stat-tile:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+    .admin-usage-message {
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 600px) {
+    /* keep the first tab off the screen edge when the tab row snaps */
+    .admin-tabs {
+        scroll-padding-left: 14px;
+        scroll-padding-right: 14px;
+    }
+}

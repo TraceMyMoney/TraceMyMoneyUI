@@ -46,6 +46,24 @@ export default function Dashboard() {
   const [tagFilter, setTagFilter] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [excludedOpen, setExcludedOpen] = useState(false);
+  // Phones: the accounts / balance / search block can be tucked away from the
+  // dropdown beside the logo. Remembered between visits.
+  const [topOpen, setTopOpen] = useState(() => {
+    try {
+      return localStorage.getItem("smm_top_open") !== "0";
+    } catch {
+      return true;
+    }
+  });
+  const toggleTop = () =>
+    setTopOpen((v) => {
+      try {
+        localStorage.setItem("smm_top_open", v ? "0" : "1");
+      } catch {
+        /* storage blocked: still works for this visit */
+      }
+      return !v;
+    });
 
   const handleEditEntry = (entry) => {
     setApplyTagEntry(entry);
@@ -102,6 +120,8 @@ export default function Dashboard() {
         onOpenChat={openChat}
         onOpenAdmin={() => setAdminDashboardOpen(true)}
         onOpenExcludedTags={() => setExcludedOpen(true)}
+        topOpen={topOpen}
+        onToggleTop={toggleTop}
       />
 
       <div className="body-layout">
@@ -122,6 +142,7 @@ export default function Dashboard() {
             <>
               {phone ? (
                 <MobileTopArea
+                  open={topOpen}
                   onOpenFilter={() => setSearchOpen((v) => !v)}
                   onOpenTag={() => setTagDialogOpen(true)}
                 />
@@ -193,6 +214,7 @@ export default function Dashboard() {
       )}
 
       {/* Mobile floating FAB — bottom right, only on mobile */}
+      {!isAdminDashboardOpen && (
       <button
         className="mobile-fab"
         onClick={() => setDrawerOpen(true)}
@@ -201,6 +223,7 @@ export default function Dashboard() {
         <Plus size={20} strokeWidth={2.6} aria-hidden="true" />
         <span>Add</span>
       </button>
+      )}
 
       {/* Overlays */}
       <AddExpenseDrawer

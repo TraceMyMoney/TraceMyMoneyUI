@@ -14,7 +14,7 @@ import {
   Filter,
 } from "lucide-react";
 
-export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExcludedTags }) {
+export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExcludedTags, topOpen = true, onToggleTop }) {
   const {
     userName,
     isDarkMode,
@@ -71,15 +71,29 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
       )}
 
       <div className="my__flex">
-        <div
-          className="topbar-logo"
-          onClick={() => window.location.reload()}
-          style={{ marginLeft: 8, marginRight: 0 }}
-        >
-          <div className="topbar-logo-hex">₹</div>
-          <div className="topbar-logo-text">
-            Stalk<span>My</span>Money
+        <div className="topbar-brand">
+          <div
+            className="topbar-logo"
+            onClick={() => window.location.reload()}
+            style={{ marginLeft: 8, marginRight: 0 }}
+          >
+            <div className="topbar-logo-hex">₹</div>
+            <div className="topbar-logo-text">
+              Stalk<span>My</span>Money
+            </div>
           </div>
+          {/* Phones: dropdown that shows / hides the accounts, balance and search block */}
+          {phone && (
+            <button
+              type="button"
+              className={`topbar-collapse${topOpen ? " is-open" : ""}`}
+              onClick={onToggleTop}
+              aria-expanded={topOpen}
+              aria-label={topOpen ? "Hide accounts and search" : "Show accounts and search"}
+            >
+              <ChevronDown size={18} />
+            </button>
+          )}
         </div>
 
         <div className="topbar-controls">

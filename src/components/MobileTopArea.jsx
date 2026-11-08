@@ -18,7 +18,7 @@ const buzz = () => {
   }
 };
 
-export default function MobileTopArea({ onOpenFilter, onOpenTag }) {
+export default function MobileTopArea({ open = true, onOpenFilter, onOpenTag }) {
   const {
     banksList,
     currentSelectedBankId,
@@ -121,7 +121,12 @@ export default function MobileTopArea({ onOpenFilter, onOpenTag }) {
   };
 
   return (
-    <section className="m-top" aria-label="Accounts and search">
+    <section
+      className={`m-top${open ? "" : " collapsed"}`}
+      aria-label="Accounts and search"
+      aria-hidden={!open}
+    >
+      <div className="m-top-inner">
       <div className="m-rail" ref={railRef} role="tablist" aria-label="Accounts">
         {banksList.map((bank, i) => {
           const on = bank.bankId === currentSelectedBankId;
@@ -220,6 +225,7 @@ export default function MobileTopArea({ onOpenFilter, onOpenTag }) {
           </button>
         </div>
       )}
+      </div>
     </section>
   );
 }

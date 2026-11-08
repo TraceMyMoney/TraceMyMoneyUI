@@ -307,8 +307,8 @@ export default function ProfilePage() {
               </div>
               <div className="admin-panel-desc">
                 Forward bank SMS from your iPhone to this account. When the SMS names one of your
-                accounts it is added to your expenses automatically; anything unclear waits in the
-                review list below.
+                accounts it is added automatically (appended to that day's expense if there is one,
+                otherwise a new one is created). If it names none, it waits in the review list below.
               </div>
 
               <div className="profile-status">
@@ -342,7 +342,7 @@ export default function ProfilePage() {
                     <b>Add automatically</b>
                     <small>
                       When the SMS names one of your accounts (like SBI), it goes straight into your
-                      expenses. Anything unclear waits below.
+                      expenses. If it names none, it waits in the review list below.
                     </small>
                   </span>
                   <span className={`admin-toggle${ingestStatus.auto_add ? " on" : ""}`}>

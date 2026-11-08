@@ -298,8 +298,9 @@ export const useStore = create((set, get) => ({
   setIsDarkMode: (v) => set({ isDarkMode: v }),
   setPrivacyMode: (v) => set({ privacyMode: v }),
 
-  pushAlert(msg, type = "error") {
-    set((s) => ({ showAlert: true, alertMessages: [...s.alertMessages, { msg, type }] }));
+  // `action` (optional) adds a button to the toast, e.g. { label: "Review", to: "profile" }.
+  pushAlert(msg, type = "error", action = null) {
+    set((s) => ({ showAlert: true, alertMessages: [...s.alertMessages, { msg, type, action }] }));
   },
 
   /** Custom replacement for window.confirm() - await it, resolves to
@@ -909,6 +910,25 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       set({ ingestStatus: prev });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  /** On page load: if SMS-automation transactions are waiting for review, say so. */
+  async notifyPendingIngest() {
+    try {
+      const r = await axios.get(`${BASE_URL}/ingest/pending`);
+      const list = r.data.transactions || [];
+      set({ ingestPending: list });
+      if (list.length) {
+        const n = list.length;
+        get().pushAlert(
+          `${n} expense${n > 1 ? "s" : ""} from your SMS automation ${n > 1 ? "are" : "is"} waiting for your review.`,
+          "info",
+          { label: "Review", to: "profile" },
+        );
+      }
+    } catch {
+      /* quiet: an older server without this endpoint, or offline - nothing to announce */
     }
   },
 

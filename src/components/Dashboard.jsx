@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useStore } from "../store/useStore.js";
 import Topbar from "./Topbar.jsx";
 import Sidebar from "./Sidebar.jsx";
@@ -40,6 +40,7 @@ export default function Dashboard() {
     setAnalyticsOpen,
     refreshAll,
     refreshIngest,
+    notifyPendingIngest,
     isLoggedIn,
   } = useStore();
   const wide = useWideScreen();
@@ -75,6 +76,14 @@ export default function Dashboard() {
     setApplyTagEntry(entry);
     setApplyEntryTagVisible(true);
   };
+  // Every time the dashboard loads: announce SMS-automation expenses waiting for review.
+  const pendingNoticeDone = useRef(false);
+  useEffect(() => {
+    if (!isLoggedIn || pendingNoticeDone.current) return;
+    pendingNoticeDone.current = true;
+    notifyPendingIngest();
+  }, [isLoggedIn]);
+
   // Pull in new expenses (e.g. added by the SMS webhook) when you come back to the tab.
   useEffect(() => {
     if (!isLoggedIn) return undefined;

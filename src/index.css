@@ -9387,3 +9387,39 @@ body.light .entry-type-toggle {
     background: none;
     color: inherit;
 }
+
+/* Info toast (e.g. "N expenses waiting for review") with an action button */
+.alert-toast--info {
+    background: var(--acid-dim);
+    border-color: var(--acid-mid);
+}
+.alert-toast--info .alert-icon {
+    width: 22px;
+    height: 22px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--acid);
+    color: var(--ink);
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 700;
+}
+.alert-toast--info .alert-msg {
+    color: var(--text);
+}
+.alert-action {
+    flex: none;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--acid);
+    color: var(--ink);
+    font-family: var(--f-head);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+}

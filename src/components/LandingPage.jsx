@@ -289,8 +289,8 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
       effect = BIRDS({
         el,
         THREE,
-        mouseControls: false,
-        touchControls: false,
+        mouseControls: true,
+        touchControls: true,
         gyroControls: false,
         minHeight: 200,
         minWidth: 200,

@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useStore } from '../store/useStore.js'
+import { usePhoneScreen } from '../useWideScreen.js'
 
 export default function Login() {
   const { loginUser, setLoginPageStatus, setShowLanding } = useStore()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
+  const phone = usePhoneScreen() // no autofocus on phones: it pops the keyboard before the screen is even seen
   const submit = () => { if (username && password) loginUser({ username, password }) }
   return (
     <div className="auth-shell">
@@ -30,15 +32,15 @@ export default function Login() {
             <label className="auth-field-label">Username</label>
             <div className="auth-input-wrap">
               <div className="auth-input-icon">@</div>
-              <input className="auth-input" placeholder="your_username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} autoFocus />
+              <input className="auth-input" placeholder="your_username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} autoFocus={!phone} autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" />
             </div>
           </div>
           <div>
             <label className="auth-field-label">Password</label>
             <div className="auth-input-wrap">
               <div className="auth-input-icon">🔒</div>
-              <input className="auth-input" type={showPw ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
-              <button className="auth-toggle" onClick={() => setShowPw(v => !v)}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+              <input className="auth-input" type={showPw ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} autoComplete="current-password" enterKeyHint="go" />
+              <button type="button" className="auth-toggle" aria-label={showPw ? 'Hide password' : 'Show password'} onClick={() => setShowPw(v => !v)}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
             </div>
           </div>
           <button className="auth-submit" disabled={!username || !password} onClick={submit}>

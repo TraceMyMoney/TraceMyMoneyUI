@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import useWideScreen, { useTabletScreen } from "../useWideScreen.js";
+import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen.js";
 import {
   Eye,
   EyeOff,
@@ -34,6 +34,7 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
   // sidebar there, this only reorganizes the desktop row).
   const wide = useWideScreen();
   const tablet = useTabletScreen();
+  const phone = usePhoneScreen();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -57,13 +58,17 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
     <header className="topbar">
       <div className="topbar-glow" />
 
-      <button
-        className="topbar-menu-btn"
-        onClick={onMenuClick}
-        aria-label="Menu"
-      >
-        ☰
-      </button>
+      {/* Phones have no side menu: accounts live in the chip row and the
+          settings live in the avatar dropdown on the right. */}
+      {!phone && (
+        <button
+          className="topbar-menu-btn"
+          onClick={onMenuClick}
+          aria-label="Menu"
+        >
+          ☰
+        </button>
+      )}
 
       <div className="my__flex">
         <div

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MessageCircle,
   Mic,
@@ -14,6 +14,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useStore } from "../store/useStore.js";
+import { usePhoneScreen } from "../useWideScreen.js";
 
 // Cycled in the hero's mock chat bubble - a quick, concrete demo of what
 // "just talk to it" actually looks like, without needing a live backend
@@ -182,6 +183,32 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
   // applies/removes body.light off this same store value.
   const { isDarkMode, setIsDarkMode } = useStore();
 
+  // Phones: a sticky "Start tracking free" bar appears once the hero button
+  // has scrolled away, and tucks away again at the closing call to action.
+  const phone = usePhoneScreen();
+  const heroCtaRef = useRef(null);
+  const closingRef = useRef(null);
+  const [heroGone, setHeroGone] = useState(false);
+  const [closingVisible, setClosingVisible] = useState(false);
+  useEffect(() => {
+    if (!phone || !("IntersectionObserver" in window)) return undefined;
+    const root = heroCtaRef.current?.closest(".landing-page") || null;
+    const hero = new IntersectionObserver(
+      ([e]) => setHeroGone(!e.isIntersecting && e.boundingClientRect.top < 0),
+      { root, threshold: 0 },
+    );
+    const closing = new IntersectionObserver(
+      ([e]) => setClosingVisible(e.isIntersecting),
+      { root, threshold: 0.2 },
+    );
+    if (heroCtaRef.current) hero.observe(heroCtaRef.current);
+    if (closingRef.current) closing.observe(closingRef.current);
+    return () => {
+      hero.disconnect();
+      closing.disconnect();
+    };
+  }, [phone]);
+
   return (
     <div className="landing-page">
       <nav className="landing-nav">
@@ -226,7 +253,12 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
             chat window.
           </p>
           <div className="landing-hero-actions">
-            <button type="button" className="landing-hero-cta" onClick={onGetStarted}>
+            <button
+              type="button"
+              className="landing-hero-cta"
+              ref={heroCtaRef}
+              onClick={onGetStarted}
+            >
               Start tracking free <ArrowRight size={16} />
             </button>
             <button type="button" className="landing-hero-secondary" onClick={onSignIn}>
@@ -307,7 +339,7 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
         </div>
       </section>
 
-      <section className="landing-cta">
+      <section className="landing-cta" ref={closingRef}>
         <Wallet size={26} className="landing-cta-icon" />
         <h2>Ready to stop guessing where your money went?</h2>
         <p>Create your free account and log your first expense in the next 60 seconds.</p>
@@ -325,6 +357,20 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
         </div>
         <span>A conversational way to track every rupee.</span>
       </footer>
+
+      {phone && (
+        <div
+          className={`landing-sticky${heroGone && !closingVisible ? " show" : ""}`}
+          aria-hidden={!(heroGone && !closingVisible)}
+        >
+          <button type="button" className="landing-sticky-main" onClick={onGetStarted}>
+            Start tracking free <ArrowRight size={16} />
+          </button>
+          <button type="button" className="landing-sticky-alt" onClick={onSignIn}>
+            Sign in
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -35,7 +35,7 @@ export default function Register() {
               <label className="auth-field-label">{f.label}</label>
               <div className="auth-input-wrap">
                 <div className="auth-input-icon">{f.icon}</div>
-                <input className="auth-input" type={f.type} placeholder={f.ph} value={form[f.k]} onChange={up(f.k)} />
+                <input className="auth-input" type={f.type} placeholder={f.ph} value={form[f.k]} onChange={up(f.k)} autoComplete={f.k === 'email' ? 'email' : 'username'} autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode={f.k === 'email' ? 'email' : 'text'} enterKeyHint="next" />
               </div>
             </div>
           ))}
@@ -43,15 +43,15 @@ export default function Register() {
             <label className="auth-field-label">Password</label>
             <div className="auth-input-wrap">
               <div className="auth-input-icon">🔒</div>
-              <input className="auth-input" type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.password} onChange={up('password')} />
-              <button className="auth-toggle" onClick={() => setShowPw(v => !v)}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+              <input className="auth-input" type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.password} onChange={up('password')} autoComplete="new-password" enterKeyHint="next" />
+              <button type="button" className="auth-toggle" aria-label={showPw ? 'Hide password' : 'Show password'} onClick={() => setShowPw(v => !v)}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
             </div>
           </div>
           <div>
             <label className="auth-field-label">Confirm Password</label>
             <div className={`auth-input-wrap${mismatch ? ' error' : ''}`}>
               <div className="auth-input-icon">✓</div>
-              <input className="auth-input" type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.confirm} onChange={up('confirm')} onKeyDown={e => e.key === 'Enter' && submit()} />
+              <input className="auth-input" type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.confirm} onChange={up('confirm')} onKeyDown={e => e.key === 'Enter' && submit()} autoComplete="new-password" enterKeyHint="go" />
             </div>
             {mismatch && <div className="auth-error-msg">Passwords don't match</div>}
           </div>

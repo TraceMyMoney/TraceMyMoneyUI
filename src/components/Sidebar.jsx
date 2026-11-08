@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useStore, fmtNum } from "../store/useStore.js";
-import useWideScreen, { usePhoneScreen } from "../useWideScreen.js";
-import { Eye, EyeOff, LogOut, Sun, Moon, ShieldCheck, Filter } from "lucide-react";
+import useWideScreen from "../useWideScreen.js";
+import { Eye, EyeOff, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 
 const COLORS = [
   "var(--acid)",
@@ -17,7 +17,6 @@ export default function Sidebar({
   activeTagFilter,
   onTagFilter,
   onOpenAdmin,
-  onOpenExcludedTags,
 }) {
   const {
     banksList,
@@ -35,19 +34,11 @@ export default function Sidebar({
     reorderBanks,
     requestConfirm,
     setAnalyticsOpen,
-    currentSelectedBankId,
   } = useStore();
   const wide = useWideScreen();
-  const phone = usePhoneScreen();
 
   const [activeIdx, setActiveIdx] = useState(0);
 
-  // The phone account chips change the selected account without going
-  // through this list, so follow the store to keep the highlight right.
-  useEffect(() => {
-    const i = banksList.findIndex((b) => b.bankId === currentSelectedBankId);
-    if (i >= 0) setActiveIdx(i);
-  }, [currentSelectedBankId, banksList]);
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -342,19 +333,6 @@ export default function Sidebar({
             {privacyMode ? <EyeOff size={15} /> : <Eye size={15} />}
             <span>{privacyMode ? "Show Amounts" : "Hide Amounts"}</span>
           </button>
-          {phone && (
-            <button
-              className="sidebar-ctrl-btn"
-              onClick={() => {
-                onOpenExcludedTags?.();
-                onClose?.();
-              }}
-              title="Default excluded tags"
-            >
-              <Filter size={15} />
-              <span>Default Excluded Tags</span>
-            </button>
-          )}
           {isAdmin && (
             <button
               className="sidebar-ctrl-btn"

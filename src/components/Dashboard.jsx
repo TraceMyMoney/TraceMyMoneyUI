@@ -105,14 +105,15 @@ export default function Dashboard() {
       />
 
       <div className="body-layout">
-        <Sidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          activeTagFilter={tagFilter}
-          onTagFilter={setTagFilter}
-          onOpenAdmin={() => setAdminDashboardOpen(true)}
-          onOpenExcludedTags={() => setExcludedOpen(true)}
-        />
+        {!phone && (
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            activeTagFilter={tagFilter}
+            onTagFilter={setTagFilter}
+            onOpenAdmin={() => setAdminDashboardOpen(true)}
+          />
+        )}
 
         <main className="main-content">
           {isAdminDashboardOpen ? (

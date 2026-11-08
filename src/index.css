@@ -8218,3 +8218,419 @@ body.light .entry-type-toggle {
         box-shadow: none;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LANDING PAGE · PHONE (≤ 600px)
+   Tablet and desktop keep their existing landing layout.
+═══════════════════════════════════════════════════════════════ */
+.landing-sticky {
+    display: none;
+}
+@media (max-width: 600px) {
+    /* nav */
+    .landing-nav {
+        padding: 10px 14px;
+        padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    }
+    .landing-nav-logo {
+        gap: 8px;
+        min-width: 0;
+    }
+    .landing-nav .auth-logo-hex {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+        flex: none;
+    }
+    .landing-nav .auth-logo-name {
+        font-size: 18px;
+        white-space: nowrap;
+    }
+    .landing-nav-actions {
+        gap: 8px;
+        flex: none;
+    }
+    .landing-theme-toggle {
+        width: 36px;
+        height: 36px;
+    }
+    .landing-nav-cta {
+        height: 38px;
+        padding: 0 14px;
+        font-size: 14px;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+    }
+
+    /* hero */
+    .landing-hero {
+        padding: 28px 18px 36px;
+        gap: 28px;
+    }
+    .landing-hero-badge {
+        font-size: 10.5px;
+        margin-bottom: 16px;
+    }
+    .landing-hero-title {
+        font-size: 40px;
+        margin-bottom: 16px;
+    }
+    .landing-hero-sub {
+        font-size: 15.5px;
+        line-height: 1.55;
+        margin-bottom: 24px;
+    }
+    .landing-hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+    .landing-hero-cta {
+        width: 100%;
+        height: 54px;
+        justify-content: center;
+    }
+    .landing-hero-secondary {
+        align-self: center;
+        padding: 10px 6px;
+    }
+    .landing-hero-trust {
+        gap: 4px 6px;
+        font-size: 12px;
+    }
+    .landing-demo-chat {
+        max-width: 100%;
+    }
+    .landing-demo-chat-body {
+        min-height: 190px;
+    }
+
+    /* features: compact icon + text rows instead of tall cards */
+    .landing-section-head {
+        margin-bottom: 22px;
+    }
+    .landing-section-head h2 {
+        font-size: 26px;
+    }
+    .landing-features {
+        padding: 24px 16px 40px;
+    }
+    .landing-features-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .landing-feature-card {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        column-gap: 14px;
+        row-gap: 3px;
+        align-items: start;
+        padding: 16px;
+        border-radius: 16px;
+    }
+    .landing-feature-icon {
+        grid-row: 1 / 3;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+    }
+    .landing-feature-card h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+    .landing-feature-card p {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.5;
+    }
+
+    /* analytics: same side gutter as every other section */
+    .landing-analytics-spotlight {
+        padding: 0 18px 48px;
+        gap: 24px;
+    }
+    .landing-analytics-copy h2 {
+        font-size: 24px;
+    }
+    .landing-demo-analytics {
+        max-width: 100%;
+    }
+
+    /* steps: a vertical timeline */
+    .landing-steps {
+        padding: 24px 18px 40px;
+    }
+    .landing-steps-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .landing-step {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        column-gap: 14px;
+        row-gap: 2px;
+        padding-bottom: 22px;
+    }
+    .landing-step:not(:last-child)::before {
+        content: "";
+        position: absolute;
+        left: 21px;
+        top: 48px;
+        bottom: 4px;
+        width: 2px;
+        background: linear-gradient(var(--acid-mid), transparent);
+    }
+    .landing-step-num {
+        grid-row: 1 / 3;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        font-size: 14px;
+        color: var(--acid);
+        background: var(--acid-dim);
+        border: 1px solid var(--acid-mid);
+    }
+    .landing-step h3 {
+        margin: 0;
+        padding-top: 10px;
+        font-size: 16px;
+    }
+    .landing-step p {
+        margin: 0;
+        font-size: 13.5px;
+    }
+
+    /* closing call to action + footer */
+    .landing-cta {
+        margin: 0 16px 28px;
+        padding: 32px 20px;
+        border-radius: 20px;
+    }
+    .landing-cta h2 {
+        font-size: 22px;
+    }
+    .landing-footer {
+        padding: 28px 18px calc(96px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* sticky bar */
+    .landing-sticky {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 30;
+        display: flex;
+        gap: 10px;
+        padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+        background: color-mix(in srgb, var(--ink) 88%, transparent);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-top: 1px solid var(--line);
+        transform: translateY(110%);
+        transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .landing-sticky.show {
+        transform: none;
+    }
+    .landing-sticky-main {
+        flex: 1;
+        height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 0;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--acid), color-mix(in srgb, var(--acid) 70%, var(--green)));
+        color: var(--ink);
+        font-family: var(--f-head);
+        font-weight: 800;
+        font-size: 16px;
+    }
+    .landing-sticky-alt {
+        flex: none;
+        height: 48px;
+        padding: 0 18px;
+        border-radius: 999px;
+        border: 1px solid var(--line-mid);
+        background: transparent;
+        color: var(--text);
+        font-family: var(--f-head);
+        font-weight: 700;
+        font-size: 15px;
+    }
+    .landing-sticky-main:active,
+    .landing-sticky-alt:active {
+        transform: scale(0.96);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .landing-sticky { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN / SIGN UP · PHONE (≤ 600px)
+   The boxed desktop card becomes a full-screen page with big, rounded,
+   thumb-friendly fields. Tablet and desktop keep the card.
+═══════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+    .auth-shell {
+        align-items: flex-start;
+        padding: 0;
+    }
+    .auth-glow {
+        width: 520px;
+        height: 520px;
+        top: 18%;
+    }
+    .auth-grid-bg {
+        mask-image: radial-gradient(ellipse 90% 45% at 50% 18%, black 20%, transparent 100%);
+    }
+    .auth-panel {
+        max-width: none;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        background: transparent;
+        border: 0 !important;
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+    .auth-scanlines {
+        display: none;
+    }
+    .auth-top {
+        padding: 18px 22px 8px;
+        border-bottom: 0;
+    }
+    .auth-back {
+        height: 40px;
+        padding: 0 14px 0 10px;
+        margin: 0 0 22px -4px;
+        border-radius: 999px;
+        background: var(--ink-2);
+        border: 1px solid var(--line-mid);
+        font-size: 13px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .auth-back:active {
+        transform: scale(0.95);
+    }
+    .auth-logo-row {
+        margin-bottom: 26px;
+    }
+    .auth-heading {
+        font-size: 46px;
+        white-space: nowrap;
+        margin-bottom: 8px;
+    }
+    .auth-heading-accent {
+        display: inline;
+        margin-left: 0.22em;
+    }
+    .auth-sub {
+        font-size: 15px;
+        line-height: 1.45;
+    }
+    .auth-fields {
+        flex: 1;
+        padding: 22px 22px 12px;
+        gap: 16px;
+    }
+    .auth-field-label {
+        font-size: 11px;
+        margin-bottom: 7px;
+        color: var(--muted);
+    }
+    .auth-input-wrap {
+        border-radius: 14px;
+        background: var(--ink-2);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .auth-input-wrap:focus-within {
+        box-shadow: 0 0 0 4px var(--acid-dim);
+    }
+    .auth-input-icon {
+        width: 48px;
+    }
+    .auth-input {
+        height: 54px;
+        font-size: 16px; /* 16px stops iOS zooming on focus */
+        padding-right: 8px;
+    }
+    .auth-toggle {
+        width: 52px;
+        height: 54px;
+        padding: 0;
+        display: grid;
+        place-items: center;
+    }
+    .auth-error-msg {
+        font-size: 12px;
+        margin-top: 6px;
+    }
+    .auth-submit {
+        height: 56px;
+        margin-top: 8px;
+        border-radius: 999px;
+        font-size: 18px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .auth-submit:active:not(:disabled) {
+        transform: scale(0.97);
+    }
+    .auth-submit-arrow {
+        border-radius: 50%;
+    }
+    .auth-bottom {
+        padding: 14px 22px calc(22px + env(safe-area-inset-bottom, 0px));
+        border-top: 0;
+    }
+    .auth-switch {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Back stays at the very top; the logo and form start ~100px down */
+    .auth-back {
+        margin-bottom: 42px;
+    }
+    /* Short phones: let the screen scroll instead of clipping the form */
+    .auth-shell {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+}
+
+@media (max-width: 600px) {
+    /* The avatar dropdown replaces the side menu on phones */
+    .topbar-user-menu.topbar-desktop-only {
+        display: block;
+    }
+    .topbar-user-chip {
+        display: flex;
+        height: 40px;
+        padding: 3px 8px 3px 3px;
+        border-radius: 999px;
+        gap: 4px;
+    }
+    .topbar-user-name {
+        display: none;
+    }
+    .topbar-controls {
+        gap: 8px;
+    }
+    .topbar-user-dropdown {
+        min-width: 220px;
+        padding: 8px;
+        border-radius: 16px;
+    }
+    .topbar-dropdown-item {
+        min-height: 46px;
+    }
+}

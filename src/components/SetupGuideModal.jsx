@@ -100,7 +100,7 @@ export default function SetupGuideModal({ open, onClose, webhookUrl, token, hasT
     {
       title: "Run it silently",
       body: (
-        <p>Tap Next, choose <b>Run Immediately</b>, turn <b>Notify When Run</b> off, and tap Done. New bank SMS now appear in your review list.</p>
+        <p>Tap Next, choose <b>Run Immediately</b>, turn <b>Notify When Run</b> off, and tap Done. New bank SMS are added to your expenses (or wait in your review list on the Profile page).</p>
       ),
     },
   ];

@@ -9,6 +9,8 @@ import {
   Trash2,
   BookOpen,
   Lock,
+  Inbox,
+  X,
 } from "lucide-react";
 import { useStore, API_BASE_URL } from "../store/useStore.js";
 import SetupGuideModal from "./SetupGuideModal.jsx";
@@ -43,6 +45,61 @@ function CopyBox({ value, label }) {
   );
 }
 
+function ReviewRow({ item, banks, onAdd, onDismiss }) {
+  const [bankId, setBankId] = useState(item.bank_id || "");
+  const [busy, setBusy] = useState(false);
+  const debit = item.type === "debit";
+  return (
+    <div className="review-row">
+      <div className="review-main">
+        <div className="review-title">{item.description || item.merchant || "Transaction"}</div>
+        <div className="review-sub">
+          {item.date}
+          {item.account_hint ? ` · A/C ${item.account_hint}` : ""}
+        </div>
+      </div>
+      <div className={`review-amt ${debit ? "neg" : "pos"}`}>
+        {debit ? "" : "+"}₹{Number(item.amount).toLocaleString("en-IN")}
+      </div>
+      <select
+        className="d-input-field review-bank"
+        value={bankId}
+        onChange={(e) => setBankId(e.target.value)}
+        aria-label="Account"
+      >
+        <option value="">Choose account…</option>
+        {banks.map((b) => (
+          <option key={b.value} value={b.value}>
+            {b.title}
+          </option>
+        ))}
+      </select>
+      <div className="review-actions">
+        <button
+          type="button"
+          className="review-add"
+          disabled={!bankId || busy}
+          onClick={async () => {
+            setBusy(true);
+            await onAdd(item.id, bankId);
+            setBusy(false);
+          }}
+        >
+          <Check size={15} /> Add
+        </button>
+        <button
+          type="button"
+          className="review-dismiss"
+          aria-label="Dismiss"
+          onClick={() => onDismiss(item.id)}
+        >
+          <X size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function formatWhen(iso) {
   if (!iso) return "never";
   try {
@@ -61,6 +118,11 @@ export default function ProfilePage() {
     changePassword,
     createIngestToken,
     revokeIngestToken,
+    setIngestAutoAdd,
+    ingestPending,
+    bankItems,
+    confirmIngestPending,
+    rejectIngestPending,
     setProfileOpen,
     requestConfirm,
   } = useStore();
@@ -242,8 +304,9 @@ export default function ProfilePage() {
                 <span>SMS auto-capture</span>
               </div>
               <div className="admin-panel-desc">
-                Forward bank SMS from your iPhone to this account. Each transaction waits in your
-                review list, so nothing is added without your confirmation.
+                Forward bank SMS from your iPhone to this account. When the SMS names one of your
+                accounts it is added to your expenses automatically; anything unclear waits in the
+                review list below.
               </div>
 
               <div className="profile-status">
@@ -266,6 +329,26 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              {ingestStatus?.configured && (
+                <button
+                  type="button"
+                  className="profile-switch"
+                  onClick={() => setIngestAutoAdd(!ingestStatus.auto_add)}
+                  aria-pressed={!!ingestStatus.auto_add}
+                >
+                  <span>
+                    <b>Add automatically</b>
+                    <small>
+                      When the SMS names one of your accounts (like SBI), it goes straight into your
+                      expenses. Anything unclear waits below.
+                    </small>
+                  </span>
+                  <span className={`admin-toggle${ingestStatus.auto_add ? " on" : ""}`}>
+                    <span className="admin-toggle-knob" />
+                  </span>
+                </button>
+              )}
+
               <div className="profile-actions">
                 <button type="button" className="d-btn d-btn-primary" onClick={generate}>
                   <KeyRound size={15} />
@@ -280,6 +363,34 @@ export default function ProfilePage() {
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* To review */}
+            <div className="admin-panel profile-wide">
+              <div className="admin-panel-title">
+                <Inbox size={15} />
+                <span>To review</span>
+                {ingestPending.length > 0 && <span className="review-count">{ingestPending.length}</span>}
+              </div>
+              <div className="admin-panel-desc">
+                Transactions from your SMS that need an account chosen, or that you switched off
+                auto-add for.
+              </div>
+              {ingestPending.length === 0 ? (
+                <div className="admin-dashboard-empty">Nothing waiting. New bank SMS show up here.</div>
+              ) : (
+                <div className="review-list">
+                  {ingestPending.map((item) => (
+                    <ReviewRow
+                      key={item.id}
+                      item={item}
+                      banks={bankItems}
+                      onAdd={confirmIngestPending}
+                      onDismiss={rejectIngestPending}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

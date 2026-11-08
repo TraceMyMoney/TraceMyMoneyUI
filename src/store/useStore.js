@@ -840,14 +840,20 @@ export const useStore = create((set, get) => ({
     set(v ? { profileOpen: true, isAdminDashboardOpen: false } : { profileOpen: false }),
   profile: null,
   ingestStatus: null,
+  ingestPending: [],
 
   async fetchProfile() {
     try {
-      const [p, t] = await Promise.all([
+      const [p, t, q] = await Promise.all([
         axios.get(`${BASE_URL}/profile/`),
         axios.get(`${BASE_URL}/ingest/token`),
+        axios.get(`${BASE_URL}/ingest/pending`),
       ]);
-      set({ profile: p.data, ingestStatus: t.data });
+      set({
+        profile: p.data,
+        ingestStatus: t.data,
+        ingestPending: q.data.transactions || [],
+      });
     } catch (err) {
       get().pushAlert(handleError(err));
     }
@@ -891,6 +897,54 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       get().pushAlert(handleError(err));
       return null;
+    }
+  },
+
+  async setIngestAutoAdd(enabled) {
+    const prev = get().ingestStatus;
+    set({ ingestStatus: { ...prev, auto_add: enabled } });
+    try {
+      await axios.patch(`${BASE_URL}/ingest/settings`, { auto_add: enabled });
+    } catch (err) {
+      set({ ingestStatus: prev });
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  async fetchIngestPending() {
+    try {
+      const r = await axios.get(`${BASE_URL}/ingest/pending`);
+      set({ ingestPending: r.data.transactions || [] });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  /** Add one waiting SMS transaction to the chosen account's expenses. */
+  async confirmIngestPending(id, bankId) {
+    try {
+      await axios.post(`${BASE_URL}/ingest/pending/${id}/confirm`, {
+        bank_id: bankId || null,
+      });
+      get().pushAlert("Added to your expenses.", "success");
+      await get().fetchIngestPending();
+      get().fetchBanks();
+      get().fetchExpenses({ silent: true });
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    }
+  },
+
+  async rejectIngestPending(id) {
+    try {
+      await axios.delete(`${BASE_URL}/ingest/pending/${id}`);
+      await get().fetchIngestPending();
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
     }
   },
 

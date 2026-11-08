@@ -8978,3 +8978,232 @@ body.light .entry-type-toggle {
         line-height: 1;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PROFILE PAGE + SMS SETUP GUIDE
+   (reuses the admin page header / panel styles)
+═══════════════════════════════════════════════════════════════ */
+/* Centred: Account and Password side by side, SMS auto-capture full width below */
+.admin-page-content .admin-dashboard-body.profile-body {
+    max-width: 980px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 20px;
+}
+.profile-body .profile-wide {
+    grid-column: 1 / -1;
+}
+@media (max-width: 860px) {
+    .admin-page-content .admin-dashboard-body.profile-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+.profile-form {
+    max-width: none;
+}
+.profile-save {
+    align-self: flex-start;
+    flex: none;
+    padding: 12px 22px;
+}
+.profile-error {
+    color: var(--red);
+    font-size: 12px;
+}
+.profile-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 14px;
+    font-size: 14px;
+    color: var(--muted);
+}
+.profile-status b {
+    color: var(--text);
+    font-weight: 600;
+}
+.profile-dot {
+    width: 9px;
+    height: 9px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--faint);
+}
+.profile-dot.on {
+    background: var(--green);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 20%, transparent);
+}
+.profile-copybox {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+.profile-copylabel {
+    font-family: var(--f-head);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+.profile-copyrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 12px;
+    border-radius: 12px;
+    background: var(--ink-3);
+    border: 1px solid var(--line-mid);
+}
+.profile-copyrow code {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--f-mono);
+    font-size: 13px;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+.profile-copybtn {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 10px;
+    background: var(--acid-dim);
+    color: var(--acid);
+    cursor: pointer;
+}
+.profile-newtoken {
+    padding: 12px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--acid-mid);
+    background: var(--acid-dim);
+}
+.profile-newtoken .profile-copybox {
+    margin-bottom: 8px;
+}
+.profile-newtoken p {
+    font-size: 12.5px;
+    color: var(--muted);
+}
+.profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.profile-actions .d-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+}
+.profile-revoke {
+    color: var(--red);
+    border-color: color-mix(in srgb, var(--red) 40%, transparent);
+}
+
+/* setup guide modal */
+.guide-panel {
+    max-width: 520px;
+}
+.guide-steps {
+    list-style: none;
+    margin: 0;
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+.guide-steps li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+.guide-steps li p {
+    margin: 0 0 6px;
+}
+.guide-num {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--acid-dim);
+    border: 1px solid var(--acid-mid);
+    color: var(--acid);
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 700;
+}
+.guide-title {
+    margin-bottom: 4px;
+    font-family: var(--f-head);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+}
+.guide-steps b {
+    color: var(--text);
+    font-weight: 600;
+}
+.guide-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.guide-row > span:first-child {
+    min-width: 40px;
+    font-size: 12px;
+    color: var(--faint);
+}
+.guide-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-3);
+    color: var(--acid);
+    cursor: pointer;
+    text-align: left;
+}
+.guide-chip code {
+    font-family: var(--f-mono);
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+}
+.guide-note {
+    font-size: 12.5px;
+    color: var(--faint);
+}
+@media (max-width: 600px) {
+    .guide-steps {
+        padding: 16px 16px;
+    }
+    .profile-form {
+        max-width: none;
+    }
+    .profile-save {
+        width: 100%;
+    }
+    .profile-actions .d-btn {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+}

@@ -12,6 +12,7 @@ import ApplyTagsDialog from "./ApplyTagsDialog.jsx";
 import ChatAssistantDialog from "./ChatAssistantDialog.jsx";
 import AdminDashboard from "./AdminDashboard.jsx";
 import ExpenseInsights from "./ExpenseInsights.jsx";
+import ProfilePage from "./ProfilePage.jsx";
 import ExcludedTagsDialog from "./ExcludedTagsDialog.jsx";
 import InsightsFilterBar from "./InsightsFilterBar.jsx";
 import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen.js";
@@ -33,6 +34,7 @@ export default function Dashboard() {
     chatbotEnabled,
     setAdminDashboardOpen,
     isAdminDashboardOpen,
+    profileOpen,
     analyticsOpen,
     setAnalyticsOpen,
   } = useStore();
@@ -138,6 +140,8 @@ export default function Dashboard() {
         <main className="main-content">
           {isAdminDashboardOpen ? (
             <AdminDashboard />
+          ) : profileOpen ? (
+            <ProfilePage />
           ) : (
             <>
               {phone ? (
@@ -214,7 +218,7 @@ export default function Dashboard() {
       )}
 
       {/* Mobile floating FAB — bottom right, only on mobile */}
-      {!isAdminDashboardOpen && (
+      {!isAdminDashboardOpen && !profileOpen && (
       <button
         className="mobile-fab"
         onClick={() => setDrawerOpen(true)}

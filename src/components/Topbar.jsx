@@ -12,6 +12,7 @@ import {
   ChevronDown,
   BarChart3,
   Filter,
+  User,
 } from "lucide-react";
 
 export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExcludedTags, topOpen = true, onToggleTop }) {
@@ -25,6 +26,7 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
     logoutUser,
     analyticsOpen,
     setAnalyticsOpen,
+    setProfileOpen,
     pushAlert,
   } = useStore();
   // Dark mode / privacy / admin / logout used to each be their own icon
@@ -129,6 +131,18 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
 
             {menuOpen && (
               <div className="topbar-user-dropdown" role="menu">
+                <button
+                  type="button"
+                  className="topbar-dropdown-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setProfileOpen(true);
+                    setMenuOpen(false);
+                  }}
+                >
+                  <User size={16} />
+                  Profile
+                </button>
                 <button
                   type="button"
                   className="topbar-dropdown-item"

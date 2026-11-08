@@ -10,6 +10,7 @@ const BASE_URL =
   (import.meta.env.DEV
     ? `http://${window.location.hostname}:5000`
     : "https://api.stalk-my-money.in/");
+export const API_BASE_URL = BASE_URL.replace(/\/+$/, "");
 const ALL = "all";
 const ALL_PAGE_SIZE = 10000; // API caps per_page at 10000
 const ACCESS_TOKEN_KEY = "access_token";
@@ -830,7 +831,80 @@ export const useStore = create((set, get) => ({
   // ── Admin dashboard - the backend also enforces admin-only on both of
   // these (403s a non-admin), this is just so the UI itself is only ever
   // shown/usable for admins. ──
-  setAdminDashboardOpen: (v) => set({ isAdminDashboardOpen: v }),
+  setAdminDashboardOpen: (v) =>
+    set(v ? { isAdminDashboardOpen: true, profileOpen: false } : { isAdminDashboardOpen: false }),
+
+  // ── Profile page (account details, password, SMS auto-capture token) ──
+  profileOpen: false,
+  setProfileOpen: (v) =>
+    set(v ? { profileOpen: true, isAdminDashboardOpen: false } : { profileOpen: false }),
+  profile: null,
+  ingestStatus: null,
+
+  async fetchProfile() {
+    try {
+      const [p, t] = await Promise.all([
+        axios.get(`${BASE_URL}/profile/`),
+        axios.get(`${BASE_URL}/ingest/token`),
+      ]);
+      set({ profile: p.data, ingestStatus: t.data });
+    } catch (err) {
+      get().pushAlert(handleError(err));
+    }
+  },
+
+  async updateProfile(payload) {
+    try {
+      const r = await axios.patch(`${BASE_URL}/profile/`, payload);
+      // The username lives inside the login token, so swap in the fresh one.
+      saveTokens({ token: r.data.token, refresh_token: r.data.refresh_token });
+      set({
+        profile: { username: r.data.username, email: r.data.email, created_at: r.data.created_at },
+        userName: r.data.username,
+      });
+      get().pushAlert("Profile updated.", "success");
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    }
+  },
+
+  async changePassword(current_password, new_password) {
+    try {
+      await axios.post(`${BASE_URL}/profile/password`, { current_password, new_password });
+      get().pushAlert("Password changed.", "success");
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    }
+  },
+
+  /** Create or replace the SMS webhook token. Resolves to the token (shown once). */
+  async createIngestToken() {
+    try {
+      const r = await axios.post(`${BASE_URL}/ingest/token`);
+      const t = await axios.get(`${BASE_URL}/ingest/token`);
+      set({ ingestStatus: t.data });
+      return r.data.token;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return null;
+    }
+  },
+
+  async revokeIngestToken() {
+    try {
+      await axios.delete(`${BASE_URL}/ingest/token`);
+      set({ ingestStatus: { configured: false, created_at: null, last_used_at: null } });
+      get().pushAlert("Webhook token revoked.", "success");
+      return true;
+    } catch (err) {
+      get().pushAlert(handleError(err));
+      return false;
+    }
+  },
 
   async fetchAdminUsers(overrides = {}) {
     const page = overrides.page ?? get().adminUsersPage;

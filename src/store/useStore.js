@@ -1145,10 +1145,12 @@ export const useStore = create((set, get) => ({
   },
 
   /** Add one waiting SMS transaction to the chosen account's expenses. */
-  async confirmIngestPending(id, bankId) {
+  async confirmIngestPending(id, bankId, description, entryTags) {
     try {
       await axios.post(`${BASE_URL}/ingest/pending/${id}/confirm`, {
         bank_id: bankId || null,
+        description: description || null,
+        entry_tags: entryTags || [],
       });
       get().pushAlert("Added to your expenses.", "success");
       await get().fetchIngestPending();

@@ -9277,6 +9277,14 @@ body.light .entry-type-toggle {
     font-size: 11.5px;
     color: var(--faint);
 }
+.review-desc {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+}
+.review-tags {
+    grid-column: 1 / -1;
+}
 .review-amt {
     font-family: var(--f-mono);
     font-weight: 600;
@@ -9285,7 +9293,54 @@ body.light .entry-type-toggle {
 .review-amt.pos { color: var(--green); }
 .review-bank {
     width: 100%;
-    padding: 9px 10px;
+}
+.acct-select-btn {
+    width: 100%;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line-mid);
+    background: var(--ink-2);
+    color: var(--text);
+    font-family: var(--f-body);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.acct-select-btn:hover {
+    border-color: var(--acid-mid);
+}
+.acct-select-btn:focus-visible,
+.acct-select-btn.open {
+    outline: none;
+    border-color: var(--acid);
+    box-shadow: 0 0 0 3px var(--acid-dim);
+}
+.acct-select-btn.empty .acct-select-text {
+    color: var(--faint);
+}
+.acct-select-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.acct-select-chevron {
+    flex: none;
+    color: var(--muted);
+    transition: transform 0.15s;
+}
+.acct-select-btn.open .acct-select-chevron {
+    transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+    .acct-select-btn,
+    .acct-select-chevron {
+        transition: none;
+    }
 }
 .review-actions {
     display: flex;

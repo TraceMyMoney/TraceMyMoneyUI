@@ -2,6 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Branches (start of every fix or feature)
+
+Before changing any code, create a new branch from an up-to-date `master`:
+
+```bash
+git fetch origin && git switch -c <BRANCH-NAME> origin/master
+```
+
+Name format: `FRONTEND-<TYPE>-<short-title>`, where `TYPE` is `BUG` or `FEATURE` and the title is a short lowercase hyphenated
+phrase (a problem statement for a bug). Examples: `FRONTEND-BUG-sidebar-tag-list-not-refreshing`,
+`FRONTEND-FEATURE-tags-manager-dialog`. If the work also touches the API repo, use the same title there with the `BACKEND-` prefix.
+
+- If the working tree has uncommitted changes, do not switch silently: tell the user and ask what to do.
+- Creating the branch is expected; committing and pushing are still left to the user (see below).
+- Work that is only docs or config on a branch the user already named: keep using that branch.
+
 ## Commit messages (every session)
 
 After every fix, feature, refactor, doc or config change, end the reply with exactly one line:

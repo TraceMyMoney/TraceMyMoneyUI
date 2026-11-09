@@ -1,14 +1,16 @@
 import React, { useState } from 'react'
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useStore } from '../store/useStore.js'
+import { VerifyNotice } from './EmailActions.jsx'
 export default function Register() {
-  const { registerUser, setLoginPageStatus, setShowLanding } = useStore()
+  const { registerUser, setLoginPageStatus, setShowLanding, verifyNotice } = useStore()
   const [form, setForm] = useState({ username:'', email:'', password:'', confirm:'' })
   const [showPw, setShowPw] = useState(false)
   const up = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
   const mismatch = form.confirm && form.password !== form.confirm
   const ok = form.username && form.email && form.password && form.password === form.confirm
   const submit = () => { if (ok) registerUser({ username: form.username, email: form.email, password: form.password }) }
+  if (verifyNotice) return <VerifyNotice />
   return (
     <div className="auth-shell">
       <div className="auth-grid-bg" />

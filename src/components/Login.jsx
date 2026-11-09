@@ -4,7 +4,8 @@ import { useStore } from '../store/useStore.js'
 import { usePhoneScreen } from '../useWideScreen.js'
 
 export default function Login() {
-  const { loginUser, setLoginPageStatus, setShowLanding } = useStore()
+  const { loginUser, setLoginPageStatus, setShowLanding, needsEmailVerification, resendVerification } = useStore()
+  const [resendEmail, setResendEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -43,6 +44,20 @@ export default function Login() {
               <button type="button" className="auth-toggle" aria-label={showPw ? 'Hide password' : 'Show password'} onClick={() => setShowPw(v => !v)}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
             </div>
           </div>
+          <div className="auth-forgot-row">
+            <a className="auth-switch-link" href="/forgot-password">Forgot password?</a>
+          </div>
+          {needsEmailVerification && (
+            <div className="auth-note">
+              <div className="auth-note-title">Confirm your email first</div>
+              <div className="auth-note-text">We sent you a link when you signed up. Lost it? Enter your email and we'll send a new one.</div>
+              <div className="auth-input-wrap">
+                <div className="auth-input-icon">✉</div>
+                <input className="auth-input" type="email" placeholder="you@example.com" value={resendEmail} onChange={e => setResendEmail(e.target.value)} autoComplete="email" autoCapitalize="none" spellCheck={false} inputMode="email" />
+              </div>
+              <button type="button" className="auth-note-btn" disabled={!resendEmail} onClick={() => resendVerification(resendEmail)}>Resend confirmation email</button>
+            </div>
+          )}
           <button className="auth-submit" disabled={!username || !password} onClick={submit}>
             Sign In <div className="auth-submit-arrow">→</div>
           </button>

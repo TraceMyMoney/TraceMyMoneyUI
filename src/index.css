@@ -9685,3 +9685,24 @@ body.light .landing-birds { opacity: 0.5; }
     padding: 0 14px;
     font-size: 13px;
 }
+
+/* ── Email flows (verify / forgot / reset) ── */
+.auth-forgot-row { display: flex; justify-content: flex-end; margin-top: -6px; }
+.auth-forgot-row .auth-switch-link { font-size: 12px; text-decoration: none; }
+.auth-note {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px; border-radius: 10px;
+  border: 1px solid rgba(184, 255, 0, 0.25); background: rgba(184, 255, 0, 0.05);
+}
+.auth-note-title { font-weight: 700; font-size: 13px; color: var(--acid); letter-spacing: 0.3px; }
+.auth-note-text { font-size: 12.5px; line-height: 1.5; color: var(--text-dim, #9a9aa2); }
+.auth-note-btn {
+  background: transparent; color: var(--acid); border: 1px solid var(--acid);
+  border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.auth-note-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.auth-status { align-items: center; text-align: center; gap: 14px; }
+.auth-status-icon { color: var(--acid); display: flex; }
+.auth-status-title { font-size: 28px; }
+.auth-status .auth-sub { max-width: 320px; overflow-wrap: anywhere; }
+.auth-status .auth-submit, .auth-status .auth-note-btn { width: 100%; }

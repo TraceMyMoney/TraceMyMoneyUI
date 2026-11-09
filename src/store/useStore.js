@@ -204,6 +204,10 @@ export const useStore = create((set, get) => ({
   // state
   userName: null,
   isLoggedIn: false,
+  // After signup: { email } -> the "check your email" screen replaces the form.
+  verifyNotice: null,
+  // Set when login is refused because the email isn't confirmed yet.
+  needsEmailVerification: false,
   isAdmin: false,
   // Whether the AI chatbot is enabled for THIS user - a per-user
   // entitlement an admin grants/revokes from the admin dashboard (see
@@ -273,6 +277,7 @@ export const useStore = create((set, get) => ({
   // ── setters ──────────────────────────────────────────────
   setUserName: (v) => set({ userName: v }),
   setLoggedInStatus: (v) => set({ isLoggedIn: v }),
+  setVerifyNotice: (v) => set({ verifyNotice: v }),
   setIsAdmin: (v) => set({ isAdmin: v }),
   setChatbotAccess: (v) => set({ chatbotEnabled: v }),
   setLoginPageStatus: (v) => set({ showLoginPage: v }),
@@ -762,7 +767,12 @@ export const useStore = create((set, get) => ({
       });
       window.location.reload();
     } catch (err) {
-      set({ showLoader: false });
+      const detail = err?.response?.data?.detail;
+      set({
+        showLoader: false,
+        needsEmailVerification:
+          err?.response?.status === 403 && typeof detail === "string" && detail.startsWith("Email not verified"),
+      });
       get().pushAlert(handleError(err));
     }
   },
@@ -770,11 +780,62 @@ export const useStore = create((set, get) => ({
   async registerUser(data) {
     set({ showLoader: true });
     try {
-      const r = await axios.post(`${BASE_URL}/register`, data);
-      if (r.status === 200) window.location.reload();
+      await axios.post(`${BASE_URL}/register`, data);
+      // The account exists but must be confirmed by email before login.
+      set({ showLoader: false, verifyNotice: { email: data.email } });
     } catch (err) {
       set({ showLoader: false });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  /** The email actions below all return true/false so the page can react. */
+  async resendVerification(email) {
+    set({ showLoader: true });
+    try {
+      await axios.post(`${BASE_URL}/resend-verification`, { email });
+      set({ showLoader: false });
+      get().pushAlert("If that email is registered, a new confirmation link is on its way.", "success");
+      return true;
+    } catch (err) {
+      set({ showLoader: false });
+      get().pushAlert(handleError(err));
+      return false;
+    }
+  },
+
+  async verifyEmailToken(token) {
+    try {
+      await axios.post(`${BASE_URL}/verify-email`, { token });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async forgotPassword(email) {
+    set({ showLoader: true });
+    try {
+      await axios.post(`${BASE_URL}/forgot-password`, { email });
+      set({ showLoader: false });
+      return true;
+    } catch (err) {
+      set({ showLoader: false });
+      get().pushAlert(handleError(err));
+      return false;
+    }
+  },
+
+  async resetPassword(token, password) {
+    set({ showLoader: true });
+    try {
+      await axios.post(`${BASE_URL}/reset-password`, { token, password });
+      set({ showLoader: false });
+      return true;
+    } catch (err) {
+      set({ showLoader: false });
+      get().pushAlert(handleError(err));
+      return false;
     }
   },
 

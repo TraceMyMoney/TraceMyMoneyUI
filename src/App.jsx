@@ -8,6 +8,7 @@ import Loader from './components/Loader.jsx'
 import AlertToast from './components/AlertToast.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import OAuthAuthorize from './components/OAuthAuthorize.jsx'
+import { VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage } from './components/EmailActions.jsx'
 
 export default function App() {
   const {
@@ -34,12 +35,18 @@ export default function App() {
   // then show the approval page.
   const isOAuthAuthorize = window.location.pathname.startsWith('/oauth/authorize')
 
+  // Links from our emails land on these paths (also path-based, no router).
+  const path = window.location.pathname.replace(/\/+$/, '')
+  const EmailPage = { '/verify-email': VerifyEmailPage, '/forgot-password': ForgotPasswordPage, '/reset-password': ResetPasswordPage }[path]
+
   return (
     <>
       <Loader />
       <AlertToast />
       <ConfirmDialog />
-      {isOAuthAuthorize ? (
+      {EmailPage ? (
+        <EmailPage />
+      ) : isOAuthAuthorize ? (
         isLoggedIn ? <OAuthAuthorize /> : showLoginPage ? <Login /> : <Register />
       ) : isLoggedIn ? (
         <Dashboard />

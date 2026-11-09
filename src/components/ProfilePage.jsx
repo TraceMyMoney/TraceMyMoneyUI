@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import TagSearchSelect from "./TagSearchSelect.jsx";
+import AccountSelect from "./AccountSelect.jsx";
 import {
   User,
   KeyRound,
@@ -48,14 +50,24 @@ function CopyBox({ value, label }) {
   );
 }
 
-function ReviewRow({ item, banks, onAdd, onDismiss }) {
+function ReviewRow({ item, banks, tags, onAdd, onDismiss }) {
   const [bankId, setBankId] = useState(item.bank_id || "");
+  const [description, setDescription] = useState(item.description || "");
+  const [entryTags, setEntryTags] = useState([]);
   const [busy, setBusy] = useState(false);
   const debit = item.type === "debit";
   return (
     <div className="review-row">
       <div className="review-main">
-        <div className="review-title">{item.description || item.merchant || "Transaction"}</div>
+        <input
+          type="text"
+          className="d-input-field review-desc"
+          value={description}
+          maxLength={200}
+          placeholder={item.merchant || "Description"}
+          onChange={(e) => setDescription(e.target.value)}
+          aria-label="Description"
+        />
         <div className="review-sub">
           {item.date}
           {item.account_hint ? ` · A/C ${item.account_hint}` : ""}
@@ -64,19 +76,14 @@ function ReviewRow({ item, banks, onAdd, onDismiss }) {
       <div className={`review-amt ${debit ? "neg" : "pos"}`}>
         {debit ? "" : "+"}₹{Number(item.amount).toLocaleString("en-IN")}
       </div>
-      <select
-        className="d-input-field review-bank"
-        value={bankId}
-        onChange={(e) => setBankId(e.target.value)}
-        aria-label="Account"
-      >
-        <option value="">Choose account…</option>
-        {banks.map((b) => (
-          <option key={b.value} value={b.value}>
-            {b.title}
-          </option>
-        ))}
-      </select>
+      <div className="review-bank">
+        <AccountSelect
+          options={banks}
+          value={bankId}
+          onChange={setBankId}
+          ariaLabel="Account"
+        />
+      </div>
       <div className="review-actions">
         <button
           type="button"
@@ -84,7 +91,13 @@ function ReviewRow({ item, banks, onAdd, onDismiss }) {
           disabled={!bankId || busy}
           onClick={async () => {
             setBusy(true);
-            await onAdd(item.id, bankId);
+            const edited = description.trim();
+            await onAdd(
+              item.id,
+              bankId,
+              edited && edited !== (item.description || "") ? edited : null,
+              entryTags,
+            );
             setBusy(false);
           }}
         >
@@ -99,6 +112,11 @@ function ReviewRow({ item, banks, onAdd, onDismiss }) {
           <X size={15} />
         </button>
       </div>
+      {tags.length > 0 && (
+        <div className="review-tags">
+          <TagSearchSelect tags={tags} selected={entryTags} onChange={setEntryTags} />
+        </div>
+      )}
     </div>
   );
 }
@@ -125,6 +143,7 @@ export default function ProfilePage() {
     refreshIngest,
     ingestPending,
     bankItems,
+    entryTags,
     confirmIngestPending,
     rejectIngestPending,
     claudeConnections,
@@ -442,6 +461,7 @@ export default function ProfilePage() {
                       key={item.id}
                       item={item}
                       banks={bankItems}
+                      tags={entryTags}
                       onAdd={confirmIngestPending}
                       onDismiss={rejectIngestPending}
                     />

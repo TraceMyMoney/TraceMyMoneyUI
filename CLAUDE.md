@@ -22,8 +22,9 @@ phrase (a problem statement for a bug). Examples: `FRONTEND-BUG-sidebar-tag-list
 
 After every fix, feature, refactor, doc or config change, end the reply with exactly one line:
 `[FRONTEND] - <commit message>` (plain words, present tense, about 10 words, for example
-`[FRONTEND] - Add MCP address box to the dashboard`). Never run `git commit` or push unless asked; the user
-commits and pushes themselves. If a task also changed the API, add a `[BACKEND] - <commit message>` line.
+`[FRONTEND] - Add MCP address box to the dashboard`). **Never `git push`, ever** (pushing to `master` deploys). Only run
+`git commit` when the user explicitly asks, and then stage only your own changes by path (never `git add -A`). Otherwise the user
+commits themselves. If a task also changed the API, add a `[BACKEND] - <commit message>` line.
 
 ## How to work with the user
 

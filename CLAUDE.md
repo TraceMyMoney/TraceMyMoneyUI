@@ -35,6 +35,10 @@ commits and pushes themselves. If a task also changed the API, add a `[BACKEND] 
 - If a request is unclear, ask one short question instead of guessing.
 - Phone changes must leave tablet and desktop unchanged (phone-only code is gated on `usePhoneScreen`).
 
+## Where specs, plans and skills go
+
+For frontend-heavy work, keep the `SPEC.md`, `PLAN.md` and skills in **this repo's** `.claude/` folder: `.claude/plans/<feature>/SPEC.md`, `.claude/plans/<feature>/PLAN.md` and `.claude/skills/<name>/SKILL.md`. Never put them in a root `.claude/` folder: the project root holds only `CLAUDE.md`. If the work is mostly backend, the files go in `TraceMyMoneyAPI/.claude/` instead (existing plans and skills are there). A feature that touches both lives in the repo where most of its steps are (one plan, not two). Create the folders if they do not exist.
+
 ## Your role and UX principles
 
 Whenever you work on this UI, act as a senior principal frontend and UX engineer who knows what end users want:

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useStore } from '../store/useStore.js'
+import VantaBirds from './VantaBirds.jsx'
 import { usePhoneScreen } from '../useWideScreen.js'
 
 export default function Login() {
@@ -15,6 +16,7 @@ export default function Login() {
     <div className="auth-shell">
       <div className="auth-grid-bg" />
       <div className="auth-glow" />
+      <VantaBirds />
       <div className="auth-panel">
         <div className="auth-scanlines" />
         <div className="auth-top">

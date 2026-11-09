@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../store/useStore.js";
 import { usePhoneScreen } from "../useWideScreen.js";
+import McpBox from "./McpBox.jsx";
 
 // Cycled in the hero's mock chat bubble - a quick, concrete demo of what
 // "just talk to it" actually looks like, without needing a live backend
@@ -406,6 +407,10 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
           <TypingDemo />
         </div>
       </header>
+
+      <div className="landing-mcp-strip">
+        <McpBox glory />
+      </div>
 
       <section className="landing-features">
         <div className="landing-section-head">

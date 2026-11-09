@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useStore } from '../store/useStore.js'
 import { VerifyNotice } from './EmailActions.jsx'
+import VantaBirds from './VantaBirds.jsx'
 export default function Register() {
   const { registerUser, setLoginPageStatus, setShowLanding, verifyNotice } = useStore()
   const [form, setForm] = useState({ username:'', email:'', password:'', confirm:'' })
@@ -15,6 +16,7 @@ export default function Register() {
     <div className="auth-shell">
       <div className="auth-grid-bg" />
       <div className="auth-glow" style={{ background: 'radial-gradient(circle, rgba(77,170,255,0.05) 0%, transparent 70%)' }} />
+      <VantaBirds />
       <div className="auth-panel" style={{ borderColor: 'rgba(77,170,255,0.15)' }}>
         <div className="auth-scanlines" />
         <div className="auth-top">

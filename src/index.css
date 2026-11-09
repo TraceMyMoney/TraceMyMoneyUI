@@ -9706,3 +9706,205 @@ body.light .landing-birds { opacity: 0.5; }
 .auth-status-title { font-size: 28px; }
 .auth-status .auth-sub { max-width: 320px; overflow-wrap: anywhere; }
 .auth-status .auth-submit, .auth-status .auth-note-btn { width: 100%; }
+
+/* Dashboard: small MCP address box (desktop/tablet command bar) */
+.command-bar .mcp-box {
+    margin-right: auto;
+}
+.mcp-box {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    height: 36px;
+    padding: 0 6px 0 12px;
+    border-radius: 999px;
+    background: var(--tb-surface, var(--ink-2));
+    border: 1px solid var(--tb-border, var(--line-mid));
+    font-size: 12px;
+    color: var(--text);
+}
+.mcp-box-icon {
+    color: var(--acid);
+    flex-shrink: 0;
+}
+.mcp-box-label {
+    font-family: var(--f-head);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+.mcp-box-url {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.mcp-box-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+.mcp-box-btn:hover {
+    color: var(--acid);
+    background: color-mix(in srgb, var(--acid) 12%, transparent);
+}
+.mcp-box-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 50;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-lg, 12px);
+    box-shadow: 0 18px 48px -12px rgba(0, 0, 0, 0.5);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    white-space: normal;
+}
+.mcp-box-pop ol {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.mcp-box-pop span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.mcp-box-row {
+    padding: 8px 12px 0;
+}
+.mcp-box-row .mcp-box {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+}
+.mcp-box-row .mcp-box-url {
+    flex: 1;
+}
+
+/* Landing: MCP address box, visible to logged-out visitors under the nav */
+.landing-mcp-strip {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    padding: 8px 16px 0;
+}
+.landing-mcp-strip .mcp-box {
+    max-width: 100%;
+}
+
+/* Vanta birds behind login / register */
+.auth-birds {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.6;
+}
+body.light .auth-birds { opacity: 0.5; }
+
+/* MCP box "glory": travelling gradient ring, breathing glow, shimmer sweep */
+@property --mcp-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+.mcp-box--glory {
+    isolation: isolate;
+    border-color: transparent;
+    background: transparent;
+    height: 44px;
+    padding: 0 8px 0 16px;
+    font-size: 13px;
+    animation: mcpGlow 3.2s ease-in-out infinite, mcpFloat 5s ease-in-out infinite;
+}
+.mcp-box--glory::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: -2;
+    border-radius: inherit;
+    background: conic-gradient(
+        from var(--mcp-angle),
+        var(--acid),
+        var(--purple),
+        transparent 35%,
+        var(--green),
+        var(--acid)
+    );
+    animation: mcpSpin 3.6s linear infinite;
+}
+.mcp-box--glory::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+        linear-gradient(
+            105deg,
+            transparent 40%,
+            color-mix(in srgb, var(--acid) 22%, transparent) 50%,
+            transparent 60%
+        )
+        0 0 / 250% 100% no-repeat,
+        var(--ink-2);
+    animation: mcpShimmer 3.2s ease-in-out infinite;
+}
+.mcp-box--glory .mcp-box-icon {
+    animation: mcpPulse 1.8s ease-in-out infinite;
+}
+.mcp-box--glory .mcp-box-label {
+    color: var(--acid);
+}
+@keyframes mcpSpin {
+    to {
+        --mcp-angle: 360deg;
+    }
+}
+@keyframes mcpGlow {
+    0%, 100% { box-shadow: 0 0 14px -4px var(--acid-glow); }
+    50% { box-shadow: 0 0 34px 0 var(--acid-glow); }
+}
+@keyframes mcpFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+@keyframes mcpShimmer {
+    0% { background-position: 130% 0, 0 0; }
+    60%, 100% { background-position: -30% 0, 0 0; }
+}
+@keyframes mcpPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .mcp-box--glory,
+    .mcp-box--glory::before,
+    .mcp-box--glory::after,
+    .mcp-box--glory .mcp-box-icon {
+        animation: none;
+    }
+}

@@ -9908,3 +9908,396 @@ body.light .auth-birds { opacity: 0.5; }
         animation: none;
     }
 }
+
+/* ═══════════════════════════════════════════════════════
+   MANAGE TAGS DIALOG (ManageTagsDialog.jsx)
+   Built on .dialog-overlay / .dialog-panel, which already become a bottom
+   sheet on phones. Only variables, no hard-coded colors.
+═══════════════════════════════════════════════════════ */
+.tm-panel {
+    max-width: 520px;
+    /* Fixed height: typing, filtering or opening a confirm never resizes the window. */
+    height: min(640px, calc(100vh - 48px));
+    max-height: none;
+}
+.tm-panel button:focus-visible {
+    outline: 2px solid var(--acid);
+    outline-offset: 2px;
+}
+.tm-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+/* The search/add box stays fixed at the top; only .tm-scroll (the list) scrolls. */
+.tm-top {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--ink-2);
+}
+.tm-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 20px 14px;
+}
+.tm-label {
+    font-family: var(--f-head);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.tm-add-row {
+    display: flex;
+    gap: 8px;
+}
+.tm-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    background: var(--ink-3);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-family: var(--f-body);
+    font-size: 15px;
+    font-weight: 500;
+    outline: none;
+    caret-color: var(--acid);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tm-input::placeholder {
+    color: var(--faint);
+    font-weight: 400;
+}
+.tm-input:focus {
+    border-color: var(--acid);
+    box-shadow: 0 0 0 3px var(--acid-mid);
+}
+.tm-input--error,
+.tm-input--error:focus {
+    border-color: var(--red);
+}
+.tm-input--error:focus {
+    box-shadow: 0 0 0 3px var(--red-dim);
+}
+.tm-btn {
+    flex: none;
+    height: 44px;
+    padding: 0 18px;
+    box-sizing: border-box;
+    border-radius: var(--r-md);
+    border: 1px solid transparent;
+    background: transparent;
+    font-family: var(--f-head);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: box-shadow 0.15s, color 0.15s, border-color 0.15s;
+}
+.tm-btn--primary {
+    background: var(--acid);
+    color: var(--ink);
+}
+.tm-btn--primary:hover:not(:disabled) {
+    box-shadow: 0 0 18px var(--acid-glow);
+}
+.tm-btn--ghost {
+    color: var(--muted);
+    padding: 0 12px;
+}
+.tm-btn--ghost:hover {
+    color: var(--text);
+}
+.tm-btn--outline {
+    border-color: var(--line-str);
+    color: var(--text);
+}
+.tm-btn--outline:hover {
+    border-color: var(--text);
+}
+.tm-btn--danger {
+    background: var(--red);
+    color: var(--ink);
+}
+.tm-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.tm-note {
+    font-size: 13px;
+    line-height: 1.4;
+}
+/* No hint or error showing: take no space at all under the input. */
+.tm-note:empty {
+    display: none;
+}
+.tm-hint {
+    font-size: 13px;
+    color: var(--muted);
+}
+.tm-hint strong {
+    color: var(--text);
+}
+.tm-notice {
+    color: var(--green);
+}
+.tm-error {
+    font-size: 13px;
+    color: var(--red);
+}
+.tm-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.tm-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 52px;
+    padding: 0 4px 0 10px;
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-md);
+    background: var(--ink-3);
+}
+.tm-row-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.tm-chip {
+    padding: 5px 12px;
+    border-radius: 99px;
+    background: var(--purple-dim);
+    color: var(--purple);
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+.tm-count {
+    margin-left: auto;
+    font-family: var(--f-mono);
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.tm-iconbtn {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--r-md);
+    color: var(--muted);
+    cursor: pointer;
+}
+.tm-iconbtn:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--ink-4);
+}
+.tm-iconbtn--danger {
+    color: var(--red);
+}
+.tm-iconbtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.tm-row-error {
+    flex-basis: 100%;
+    padding: 0 8px 8px;
+}
+.tm-row--edit {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 10px;
+    min-height: 0;
+    padding: 10px;
+    background: var(--ink-3);
+    border: 1px solid var(--acid);
+}
+.tm-row--edit .tm-input {
+    background: var(--ink);
+    border-color: var(--line-str);
+}
+.tm-row--edit .tm-input:focus {
+    border-color: var(--acid);
+}
+.tm-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.tm-edit-msg {
+    grid-column: 1 / -1;
+    min-height: 18px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+.tm-row--confirm {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 12px;
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+}
+.tm-confirm-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+}
+.tm-confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+.tm-nomatch {
+    font-size: 14px;
+    color: var(--muted);
+}
+.tm-addrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 14px;
+    background: transparent;
+    border: 1px dashed var(--acid);
+    border-radius: var(--r-md);
+    color: var(--acid);
+    font-family: var(--f-body);
+    font-size: 15px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+.tm-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 0 8px;
+}
+.tm-empty-title {
+    font-family: var(--f-head);
+    font-size: 20px;
+    font-weight: 800;
+}
+.tm-empty-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+.tm-starters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.tm-starter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 16px;
+    background: var(--purple-dim);
+    border: 1px dashed var(--purple);
+    border-radius: 99px;
+    color: var(--purple);
+    font-family: var(--f-body);
+    font-size: 15px;
+    cursor: pointer;
+}
+.tm-starter:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.tm-skeletons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 6px;
+}
+.tm-skel {
+    height: 44px;
+    border-radius: var(--r-md);
+    background: var(--ink-3);
+}
+.tm-foot {
+    flex-shrink: 0;
+    padding: 12px 20px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--muted);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .tm-skel {
+        animation: tmPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes tmPulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+}
+@media (max-width: 600px) {
+    /* 16px inputs stop iOS zooming in; the rename Save/Cancel stack under the field. */
+    .tm-input {
+        font-size: 16px;
+        height: 48px;
+    }
+    .tm-add-row .tm-btn {
+        height: 48px;
+    }
+    .tm-row--edit {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .tm-edit-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .tm-edit-actions .tm-btn--ghost {
+        border-color: var(--line-str);
+        color: var(--text);
+    }
+    .tm-confirm-actions .tm-btn {
+        flex: 1;
+    }
+    /* Bottom sheet like the draft: fills the screen below a small gap at the top. */
+    .tm-panel {
+        height: calc(100dvh - 56px);
+        max-height: none;
+    }
+    .tm-foot {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+}

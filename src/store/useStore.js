@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import axios from "axios";
+import { mapApiTags, normalizeTagName } from "../utils/tags.js";
 
 // In dev, default to whatever host the page itself was loaded from (works
 // for localhost, a LAN IP, etc. - including from a phone on the same
@@ -122,6 +123,21 @@ function setupAxiosAuthInterceptor() {
       }
     },
   );
+}
+
+// Plain-language message for the Manage tags dialog. Never throws (handleError
+// can, on errors that have no response).
+function tagErrorMessage(err) {
+  try {
+    const status = err?.response?.status;
+    if (status === 404) return "That tag no longer exists. Close this window and open it again.";
+    if (status === 422) return "A tag name must be 1 to 50 characters.";
+    const msg = handleError(err);
+    if (typeof msg === "string" && msg) return msg;
+  } catch {
+    /* fall through */
+  }
+  return "Could not reach the server. Check your connection and try again.";
 }
 
 function handleError(err) {
@@ -422,10 +438,7 @@ export const useStore = create((set, get) => ({
       await Promise.all([
         get().fetchExpenses({ silent: true }),
         axios.get(`${BASE_URL}/entry-tags/`).then((r) => {
-          const tags = (r.data?.entry_tags || [])
-            .map((e) => ({ title: e.name, value: e.id }))
-            .sort((a, b) => a.title.localeCompare(b.title));
-          set({ entryTags: tags });
+          set({ entryTags: mapApiTags(r.data?.entry_tags) });
         }),
       ]);
     } catch (err) {
@@ -503,9 +516,7 @@ export const useStore = create((set, get) => ({
         const { expenses, topup, nonTopup, total } = get()._parseExpenses(
           expRes.data || [],
         );
-        const tags = (tagRes.data?.entry_tags || [])
-          .map((e) => ({ title: e.name, value: e.id }))
-          .sort((a, b) => a.title.localeCompare(b.title));
+        const tags = mapApiTags(tagRes.data?.entry_tags);
         set({
           filteredExpensesList: expenses,
           currentTotalOfTopupExpenses: topup,
@@ -707,6 +718,89 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       set({ showLoader: false });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  // ── Manage tags dialog ───────────────────────────────────
+  // These three return { ok: true, ... } or { ok: false, error } and never
+  // touch the global loader or toast: the dialog shows errors inline next to
+  // the input so the user keeps what they typed.
+
+  async fetchEntryTags() {
+    try {
+      const r = await axios.get(`${BASE_URL}/entry-tags/`);
+      set({ entryTags: mapApiTags(r.data?.entry_tags) });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: tagErrorMessage(err) };
+    }
+  },
+
+  /** Add a tag. The server saves it capitalized; we refresh the list so the
+   * saved name and counts are exactly what the API holds. */
+  async addTag(name) {
+    try {
+      const r = await axios.post(`${BASE_URL}/entry-tags/create`, { name });
+      await get().fetchEntryTags();
+      return { ok: true, name: r.data?.name ?? normalizeTagName(name), id: r.data?.tag_id };
+    } catch (err) {
+      return { ok: false, error: tagErrorMessage(err) };
+    }
+  },
+
+  /** Rename a tag. The list updates at once (optimistic) and rolls back if the
+   * server refuses (for example the name is taken). Expense rows are reloaded
+   * quietly so they show the new name. */
+  async renameTag(id, newName) {
+    const prev = get().entryTags;
+    const shown = normalizeTagName(newName);
+    set({
+      entryTags: mapApiTags(
+        prev.map((t) => ({ name: t.value === id ? shown : t.title, id: t.value, entry_count: t.count })),
+      ),
+    });
+    try {
+      const r = await axios.patch(`${BASE_URL}/entry-tags/${id}`, { name: newName });
+      const saved = r.data?.tag;
+      if (saved) {
+        set((s) => ({
+          entryTags: mapApiTags(
+            s.entryTags.map((t) =>
+              t.value === id
+                ? { name: saved.name, id, entry_count: saved.entry_count }
+                : { name: t.title, id: t.value, entry_count: t.count },
+            ),
+          ),
+        }));
+      }
+      get().fetchExpenses({ silent: true });
+      return { ok: true, name: saved?.name ?? shown };
+    } catch (err) {
+      set({ entryTags: prev });
+      return { ok: false, error: tagErrorMessage(err) };
+    }
+  },
+
+  /** Delete a tag. The list updates at once and rolls back on failure. On
+   * success the tag is also dropped from the search filters and the
+   * default-excluded list (the server already cleaned its saved copy), and
+   * expense rows are reloaded quietly because they just lost the tag. */
+  async deleteTag(id) {
+    const prev = get().entryTags;
+    set({ entryTags: prev.filter((t) => t.value !== id) });
+    try {
+      const r = await axios.delete(`${BASE_URL}/entry-tags/${id}`);
+      const without = (list) => (list || []).filter((x) => x !== id);
+      set((s) => ({
+        searchSelectedTags: without(s.searchSelectedTags),
+        searchExcludeTags: without(s.searchExcludeTags),
+        defaultExcludedTags: without(s.defaultExcludedTags),
+      }));
+      get().fetchExpenses({ silent: true });
+      return { ok: true, untagged: r.data?.entries_untagged ?? 0 };
+    } catch (err) {
+      set({ entryTags: prev });
+      return { ok: false, error: tagErrorMessage(err) };
     }
   },
 

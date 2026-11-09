@@ -214,7 +214,7 @@ export default function MobileTopArea({ open = true, onOpenFilter, onOpenTag }) 
           <SlidersHorizontal size={18} />
           {filtersOn && <i className="m-dot" />}
         </button>
-        <button type="button" className="m-iconbtn" onClick={onOpenTag} aria-label="New tag">
+        <button type="button" className="m-iconbtn" onClick={onOpenTag} aria-label="Manage tags">
           <Tag size={18} />
         </button>
         <RefreshButton className="m-iconbtn" label="Refresh expenses" onClick={() => refreshAll()} />

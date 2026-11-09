@@ -2,12 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Branches (start of every fix or feature)
+
+Before changing any code, create a new branch from an up-to-date `master`:
+
+```bash
+git fetch origin && git switch -c <BRANCH-NAME> origin/master
+```
+
+Name format: `FRONTEND-<TYPE>-<short-title>`, where `TYPE` is `BUG` or `FEATURE` and the title is a short lowercase hyphenated
+phrase (a problem statement for a bug). Examples: `FRONTEND-BUG-sidebar-tag-list-not-refreshing`,
+`FRONTEND-FEATURE-tags-manager-dialog`. If the work also touches the API repo, use the same title there with the `BACKEND-` prefix.
+
+- If the working tree has uncommitted changes, do not switch silently: tell the user and ask what to do.
+- Creating the branch is expected; committing and pushing are still left to the user (see below).
+- Work that is only docs or config on a branch the user already named: keep using that branch.
+
 ## Commit messages (every session)
 
 After every fix, feature, refactor, doc or config change, end the reply with exactly one line:
 `[FRONTEND] - <commit message>` (plain words, present tense, about 10 words, for example
-`[FRONTEND] - Add MCP address box to the dashboard`). Never run `git commit` or push unless asked; the user
-commits and pushes themselves. If a task also changed the API, add a `[BACKEND] - <commit message>` line.
+`[FRONTEND] - Add MCP address box to the dashboard`). **Never `git push`, ever** (pushing to `master` deploys). Only run
+`git commit` when the user explicitly asks, and then stage only your own changes by path (never `git add -A`). Otherwise the user
+commits themselves. If a task also changed the API, add a `[BACKEND] - <commit message>` line.
 
 ## How to work with the user
 
@@ -18,6 +35,25 @@ commits and pushes themselves. If a task also changed the API, add a `[BACKEND] 
 - Server (EC2/AWS) problems: give a few commands at a time, say what each one does, and wait for the output before the next step. Warn before anything that deletes data (`down -v`, removing volumes).
 - If a request is unclear, ask one short question instead of guessing.
 - Phone changes must leave tablet and desktop unchanged (phone-only code is gated on `usePhoneScreen`).
+
+## Where specs, plans and skills go
+
+For frontend-heavy work, keep the `SPEC.md`, `PLAN.md` and skills in **this repo's** `.claude/` folder: `.claude/plans/<feature>/SPEC.md`, `.claude/plans/<feature>/PLAN.md` and `.claude/skills/<name>/SKILL.md`. Never put them in a root `.claude/` folder: the project root holds only `CLAUDE.md`. If the work is mostly backend, the files go in `TraceMyMoneyAPI/.claude/` instead (existing plans and skills are there). A feature that touches both lives in the repo where most of its steps are (one plan, not two). Create the folders if they do not exist.
+
+## Design drafts: the approved Artifact is the law (STRICT, NO EXCEPTIONS)
+
+**Step 1: draft before code.** For any new or changed screen, dialog, section or flow, make a visual draft (an Artifact) first: the existing page around it, on desktop, tablet and phone, in dark and light mode, with every state (empty, loading, error, filled, hover/focus). Show the click path and count the taps. Wait for the user to say "proceed". No UI code before that. Tiny changes (a text or color fix, a bug fix, a spacing tweak) need no draft.
+
+**Step 2: once a draft is approved, build EXACTLY what it shows.** The approved Artifact is the specification. It is not inspiration, and you must not rely on memory of it or on a summary.
+
+- **Record it.** Put the Artifact URL and the approval (date, what changed) in the plan, as the first line of the UI steps.
+- **Re-read it before every UI step.** At the start of each UI step, read the Artifact again (`Artifact` action `read` on its URL, and read the artboard files). Never build from memory or from your own earlier description of it.
+- **Make a checklist from it** before writing code: every element, its text (exact wording), order, spacing, sizes, colors (CSS variables the draft uses), icons, states and behavior, for each breakpoint. Put the checklist in the plan or say it in your reply.
+- **Match it element by element:** same layout, same hierarchy, same labels and copy, same placement, same states, same number of taps. Do not "improve", reorder, rename, restyle, add or drop anything.
+- **Verify against it after building.** Run the app and compare each screen with the draft at phone, tablet and desktop width, in dark and light mode (screenshots are best). Tick off the checklist and list any difference. Say what you could not check.
+- **Any difference needs the user's approval first.** If the draft cannot be built as drawn (technical limit, existing component, missing data), stop and ask, explaining the problem and your proposed alternative. Do not decide it yourself, and do not silently substitute something close. If you believe the design itself is wrong, say so and ask. Do not quietly fix it.
+- **A design change goes back through the draft:** update the Artifact, get approval, then change the code. Never change the code first and leave the draft out of date.
+- **At the end of the task, report** "Matches the approved draft: yes", or the list of approved differences. Never claim a match you did not check.
 
 ## Your role and UX principles
 

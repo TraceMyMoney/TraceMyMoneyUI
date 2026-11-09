@@ -7,7 +7,7 @@ import ExpenseTable from "./ExpenseTable.jsx";
 import Pagination from "./Pagination.jsx";
 import AddExpenseDrawer from "./AddExpenseDrawer.jsx";
 import CreateBankDialog from "./CreateBankDialog.jsx";
-import CreateTagDialog from "./CreateTagDialog.jsx";
+import ManageTagsDialog from "./ManageTagsDialog.jsx";
 import ApplyTagsDialog from "./ApplyTagsDialog.jsx";
 import ChatAssistantDialog from "./ChatAssistantDialog.jsx";
 import AdminDashboard from "./AdminDashboard.jsx";
@@ -207,7 +207,7 @@ export default function Dashboard() {
                         onClick={() => setTagDialogOpen(true)}
                         className="add-expense-btn"
                       >
-                        + Tag
+                        Tags
                       </button>
                       <button
                         className="add-expense-btn"
@@ -278,7 +278,7 @@ export default function Dashboard() {
         onClose={() => setDrawerOpen(false)}
       />
       <CreateBankDialog />
-      <CreateTagDialog
+      <ManageTagsDialog
         open={tagDialogOpen}
         onClose={() => setTagDialogOpen(false)}
       />

@@ -19,7 +19,6 @@ import InsightsFilterBar from "./InsightsFilterBar.jsx";
 import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen.js";
 import MobileTopArea from "./MobileTopArea.jsx";
 import { Plus } from "lucide-react";
-import McpBox from "./McpBox.jsx";
 
 function isTypingInField(el) {
   if (!el || !el.tagName) return false;
@@ -180,9 +179,6 @@ export default function Dashboard() {
             <>
               {phone ? (
                 <>
-                  <div className="mcp-box-row">
-                    <McpBox />
-                  </div>
                   <MobileTopArea
                     open={topOpen}
                     onOpenFilter={() => setSearchOpen((v) => !v)}
@@ -193,7 +189,6 @@ export default function Dashboard() {
                 <>
                   {/* Command Bar */}
                   <div className="command-bar">
-                    <McpBox />
                     <div className="cmd-actions">
                       <button
                         type="button"

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import McpDialog from "./McpDialog.jsx";
 import { useStore, fmtNum } from "../store/useStore.js";
 import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen.js";
 import {
@@ -13,6 +14,7 @@ import {
   BarChart3,
   Filter,
   User,
+  Plug,
 } from "lucide-react";
 
 export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExcludedTags, topOpen = true, onToggleTop }) {
@@ -38,6 +40,7 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
   const tablet = useTabletScreen();
   const phone = usePhoneScreen();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mcpOpen, setMcpOpen] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -192,6 +195,18 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
                   <Filter size={16} />
                   Default excluded tags
                 </button>
+                <button
+                  type="button"
+                  className="topbar-dropdown-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setMcpOpen(true);
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Plug size={16} />
+                  MCP connector
+                </button>
                 {isAdmin && (
                   <button
                     type="button"
@@ -221,6 +236,7 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
           </div>
         </div>
       </div>
+      <McpDialog open={mcpOpen} onClose={() => setMcpOpen(false)} />
     </header>
   );
 }

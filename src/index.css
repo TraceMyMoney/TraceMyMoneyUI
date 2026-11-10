@@ -9763,8 +9763,8 @@ body.light .landing-birds { opacity: 0.5; }
 .auth-status .auth-submit, .auth-status .auth-note-btn { width: 100%; }
 
 /* Dashboard: small MCP address box (desktop/tablet command bar) */
-.command-bar .mcp-box {
-    margin-right: auto;
+.command-bar .cmd-actions {
+    margin-left: auto;
 }
 .mcp-box {
     position: relative;
@@ -10355,4 +10355,52 @@ body.light .auth-birds { opacity: 0.5; }
     .tm-foot {
         padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     }
+}
+
+/* MCP connector dialog (opened from the profile dropdown) */
+.mcp-dialog .dialog-header {
+    position: relative;
+}
+.mcp-dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+.mcp-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 20px 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    overflow-y: auto;
+}
+.mcp-dialog-url {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 12px;
+    border-radius: 10px;
+    background: var(--ink);
+    border: 1px solid var(--line-str, var(--line-mid));
+}
+.mcp-dialog-url code {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+.mcp-dialog-body ol {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.mcp-dialog-body span {
+    font-size: 12px;
+    color: var(--muted);
 }

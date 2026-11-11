@@ -20,6 +20,7 @@ export default function Sidebar({
 }) {
   const {
     banksList,
+    currentSelectedBankId,
     privacyMode,
     isDarkMode,
     isAdmin,
@@ -38,6 +39,12 @@ export default function Sidebar({
   const wide = useWideScreen();
 
   const [activeIdx, setActiveIdx] = useState(0);
+
+  // Keep the highlighted account in step with the store (keyboard shortcuts J / K change it).
+  useEffect(() => {
+    const i = banksList.findIndex((b) => b.bankId === currentSelectedBankId);
+    if (i >= 0) setActiveIdx(i);
+  }, [currentSelectedBankId, banksList]);
 
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [isDragging, setIsDragging] = useState(false);

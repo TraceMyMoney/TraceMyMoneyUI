@@ -4,6 +4,7 @@ import DatePicker from "react-datepicker";
 import { Sparkles } from "lucide-react";
 import { useStore, filterValidExpenses } from "../store/useStore.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
+import { usePhoneScreen } from "../useWideScreen.js";
 
 // Same dynamic dev-mode fallback as useStore.js/ChatAssistantDialog.jsx.
 const BASE_URL = (
@@ -23,6 +24,7 @@ export default function AddExpenseDrawer({ open, onClose }) {
     setExpenseEntryCreationDate,
     submitExpense,
   } = useStore();
+  const phone = usePhoneScreen(); // no autofocus on phones: it pops the keyboard before the drawer is seen
   const [date, setDate] = useState(new Date());
   const [entries, setEntries] = useState([
     { amount: "", description: "", tags: [], type: "debit" },
@@ -147,7 +149,16 @@ export default function AddExpenseDrawer({ open, onClose }) {
   return (
     <>
       <div className="drawer-overlay" onClick={onClose} />
-      <div className="drawer">
+      <div
+        className="drawer"
+        onKeyDown={(e) => {
+          // Ctrl/Cmd + Enter submits from any field.
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            submit();
+          }
+        }}
+      >
         <div className="drawer-header">
           <div className="drawer-title">
             Add <span>Expense</span>
@@ -205,7 +216,15 @@ export default function AddExpenseDrawer({ open, onClose }) {
                       type="number"
                       placeholder="Amount"
                       value={en.amount}
+                      autoFocus={!phone && i === entries.length - 1}
                       onChange={(e) => updateEntry(i, "amount", e.target.value)}
+                      onKeyDown={(e) => {
+                        // Enter moves on to the description of the same entry.
+                        if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+                          e.preventDefault();
+                          e.currentTarget.closest(".d-entry-row")?.querySelector(".desc")?.focus();
+                        }
+                      }}
                     />
                     <input
                       className="d-entry-input desc"
@@ -216,8 +235,16 @@ export default function AddExpenseDrawer({ open, onClose }) {
                         updateEntry(i, "description", v);
                         fetchTagSuggestion(i, v);
                       }}
+                      onKeyDown={(e) => {
+                        // Enter in the description submits (Tab goes on to the tags instead).
+                        if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+                          e.preventDefault();
+                          submit();
+                        }
+                      }}
                     />
                     <button
+                      tabIndex={-1}
                       className="d-entry-del"
                       onClick={() => removeEntry(i)}
                     >
@@ -263,6 +290,7 @@ export default function AddExpenseDrawer({ open, onClose }) {
           </button>
           <button className="d-btn d-btn-primary" onClick={submit}>
             Submit →
+            <kbd className="kb-hint" aria-hidden="true">Ctrl ↵</kbd>
           </button>
         </div>
       </div>

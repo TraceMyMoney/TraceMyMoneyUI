@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import DatePicker from "react-datepicker";
 import { useStore } from "../store/useStore.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
+import { usePhoneScreen } from "../useWideScreen.js";
 
 const PAGE_SIZES = [5, 10, 15, 20, "ALL"];
 
@@ -26,6 +27,7 @@ export default function SearchPanel({ open, onClose }) {
     fetchExpenses,
   } = useStore();
 
+  const phone = usePhoneScreen(); // no autofocus on phones: it pops the keyboard
   const [keyword, setKeyword] = useState("");
   const [dateRange, setDateRange] = useState([null, null]);
   const [start, end] = dateRange;
@@ -113,6 +115,7 @@ export default function SearchPanel({ open, onClose }) {
               <div className="search-input-wrap">
                 <input
                   className="search-input"
+                  autoFocus={!phone}
                   placeholder="Search descriptions..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}

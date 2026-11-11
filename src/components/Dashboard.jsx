@@ -18,7 +18,21 @@ import ExcludedTagsDialog from "./ExcludedTagsDialog.jsx";
 import InsightsFilterBar from "./InsightsFilterBar.jsx";
 import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen.js";
 import MobileTopArea from "./MobileTopArea.jsx";
+import ShortcutsDialog from "./ShortcutsDialog.jsx";
+import useKeyboardShortcuts from "../hooks/useKeyboardShortcuts.js";
+import { flattenCursorItems, stepCursor } from "../utils/kbCursor.js";
+import { keyHint } from "../utils/shortcuts.js";
 import { Plus } from "lucide-react";
+
+// A small key hint on a button (hidden on touch screens by CSS).
+const Kbd = ({ id }) => <kbd className="kb-hint" aria-hidden="true">{keyHint(id)}</kbd>;
+
+// Short corner message when a shortcut has nothing to act on. Skips an exact repeat.
+function hint(msg) {
+  const { alertMessages, pushAlert } = useStore.getState();
+  if (alertMessages.some((m) => m?.msg === msg)) return;
+  pushAlert(msg, "hint");
+}
 
 function isTypingInField(el) {
   if (!el || !el.tagName) return false;
@@ -103,6 +117,102 @@ export default function Dashboard() {
       window.removeEventListener("focus", onVisible);
     };
   }, [isLoggedIn]);
+
+  // ── Keyboard shortcuts (tablet and desktop; the list lives in utils/shortcuts.js) ──
+  const shortcutHandlers = {
+    addExpense: () => setDrawerOpen(true),
+    search: () => setSearchOpen(true),
+    chat: () => chatbotEnabled && setChatOpen(true),
+    newBank: () => useStore.getState().setCreateBankDialogVisible(true),
+    manageTags: () => setTagDialogOpen(true),
+    refresh: () => useStore.getState().refreshAll(),
+    theme: () => {
+      const st = useStore.getState();
+      st.updateUserPreferences({ is_dark_mode: !st.isDarkMode });
+    },
+    sidebar: () => {
+      if (window.innerWidth <= 860) setSidebarOpen((v) => !v);
+      else hint("The sidebar is always visible on this screen");
+    },
+    help: () => {
+      const st = useStore.getState();
+      // Never stack the cheat-sheet on top of another dialog.
+      if (!st.shortcutsOpen && document.querySelector(".dialog-overlay, .drawer-overlay, .chat-dialog-overlay, .insights-modal-backdrop")) return;
+      st.setShortcutsOpen(!st.shortcutsOpen);
+    },
+    openLatest: () => {
+      const st = useStore.getState();
+      const latest = st.filteredExpensesList[0];
+      if (!latest) return hint("No expenses to open yet. Press E to add one");
+      document.activeElement?.blur?.();
+      st.openExpense(latest.id);
+      st.setKbCursor({ expId: latest.id, eeId: null });
+    },
+    next: () => moveCursor(1),
+    prev: () => moveCursor(-1),
+    toggleRow: () => {
+      const st = useStore.getState();
+      if (!st.kbCursor) return hint("Press N to highlight an expense first");
+      // On an entry, Enter edits it; on a day row it expands or collapses the day.
+      if (st.kbCursor.eeId) return editHighlightedEntry();
+      st.toggleExpenseOpen(st.kbCursor.expId);
+    },
+    editEntry: () => editHighlightedEntry(),
+    nextBank: () => moveBank(1),
+    prevBank: () => moveBank(-1),
+    prevPage: () => changePage(-1),
+    nextPage: () => changePage(1),
+    escape: () => {
+      const st = useStore.getState();
+      if (st.shortcutsOpen) return st.setShortcutsOpen(false) || true;
+      // These dialogs have no Esc handling of their own.
+      if (st.confirmState) return st.resolveConfirm(false) || true;
+      if (st.isCreateBankDialogVisible) return st.setCreateBankDialogVisible(false) || true;
+      if (st.isApplyEntryTagVisible) return st.setApplyEntryTagVisible(false) || true;
+      if (drawerOpen) return setDrawerOpen(false) || true;
+      if (searchOpen) return setSearchOpen(false) || true;
+      // Another dialog (tags, chat, confirm...) closes itself on Esc.
+      if (document.querySelector(".dialog-overlay, .chat-dialog-overlay, .insights-modal-backdrop")) return false;
+      if (st.kbCursor) return st.setKbCursor(null) || true;
+      return false;
+    },
+  };
+  function editHighlightedEntry() {
+    const st = useStore.getState();
+    const c = st.kbCursor;
+    const exp = c && st.filteredExpensesList.find((x) => x.id === c.expId);
+    const entry = exp && c.eeId && (exp.expenses || []).find((e) => e.ee_id === c.eeId);
+    if (!entry) return hint("Highlight an entry first: Enter to expand a day, then N");
+    handleEditEntry({ ...entry, expenseId: exp.id });
+  }
+  function moveBank(dir) {
+    const st = useStore.getState();
+    const banks = st.banksList;
+    if (banks.length < 2) return hint("You have only one account");
+    const at = banks.findIndex((b) => b.bankId === st.currentSelectedBankId);
+    const next = banks[(at + dir + banks.length) % banks.length];
+    st.setKbCursor(null);
+    st.fetchFilteredExpensesList(next);
+  }
+  function moveCursor(dir) {
+    // A focused button would otherwise keep Enter for itself.
+    document.activeElement?.blur?.();
+    const st = useStore.getState();
+    const items = flattenCursorItems(st.filteredExpensesList, st.openExpenseIds);
+    if (!items.length) return hint("No expenses to move through");
+    st.setKbCursor(stepCursor(items, st.kbCursor, dir));
+  }
+  function changePage(dir) {
+    const st = useStore.getState();
+    const ps = st.pageSize === "all" ? st.currentTotalExpenses : Number(st.pageSize);
+    const totalPages = Math.max(1, Math.ceil(st.currentTotalExpenses / (ps || 1)));
+    const target = st.pageNumber + dir;
+    if (target < 1 || target > totalPages)
+      return hint(dir < 0 ? "You are on the first page" : "You are on the last page");
+    st.setPageNumber(target);
+    st.fetchExpenses();
+  }
+  useKeyboardShortcuts(!phone && isLoggedIn && !isAdminDashboardOpen && !profileOpen, shortcutHandlers);
 
   // Desktop: analytics is on by default when the dashboard opens.
   useEffect(() => {
@@ -197,12 +307,14 @@ export default function Dashboard() {
                       >
                         <span>⌕</span>
                         <span className="btn-text">Search / filter</span>
+                        <Kbd id="search" />
                       </button>
                       <button
                         onClick={() => setTagDialogOpen(true)}
                         className="add-expense-btn"
                       >
                         Tags
+                        <Kbd id="manageTags" />
                       </button>
                       <button
                         className="add-expense-btn"
@@ -210,10 +322,11 @@ export default function Dashboard() {
                       >
                         <span>＋</span>
                         <span className="btn-text">Add Expense</span>
+                        <Kbd id="addExpense" />
                       </button>
                       {/* Last in the DOM so the :nth-child button styling above is untouched;
                           CSS puts it first visually. */}
-                      <RefreshButton className="cmd-refresh" label="Refresh expenses" onClick={() => refreshAll()} />
+                      <RefreshButton className="cmd-refresh" label="Refresh expenses (R)" onClick={() => refreshAll()} />
                     </div>
                   </div>
                 </>
@@ -278,6 +391,7 @@ export default function Dashboard() {
         onClose={() => setTagDialogOpen(false)}
       />
       <ApplyTagsDialog />
+      <ShortcutsDialog />
       {chatbotEnabled && (
         <>
           <ChatAssistantDialog open={chatOpen} onClose={closeChat} />

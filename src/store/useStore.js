@@ -254,6 +254,12 @@ export const useStore = create((set, get) => ({
   // ConfirmDialog, replacing native window.confirm() everywhere.
   confirmState: null,
 
+  // Keyboard shortcuts: which day rows are expanded, the highlighted row/entry
+  // ({ expId, eeId|null } or null) and whether the cheat-sheet is open.
+  openExpenseIds: [],
+  kbCursor: null,
+  shortcutsOpen: false,
+
   banksList: [],
   bankItems: [],
   banksDisplayOrder: [],
@@ -318,6 +324,16 @@ export const useStore = create((set, get) => ({
   setExpenseEntryCreationDate: (v) => set({ expenseEntryCreationDate: v }),
   setIsDarkMode: (v) => set({ isDarkMode: v }),
   setPrivacyMode: (v) => set({ privacyMode: v }),
+  toggleExpenseOpen: (id) =>
+    set((s) => ({
+      openExpenseIds: s.openExpenseIds.includes(id)
+        ? s.openExpenseIds.filter((x) => x !== id)
+        : [...s.openExpenseIds, id],
+    })),
+  openExpense: (id) =>
+    set((s) => (s.openExpenseIds.includes(id) ? s : { openExpenseIds: [...s.openExpenseIds, id] })),
+  setKbCursor: (v) => set({ kbCursor: v }),
+  setShortcutsOpen: (v) => set({ shortcutsOpen: v }),
 
   // `action` (optional) adds a button to the toast, e.g. { label: "Review", to: "profile" }.
   pushAlert(msg, type = "error", action = null) {

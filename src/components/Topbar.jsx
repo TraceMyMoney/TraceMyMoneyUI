@@ -15,6 +15,7 @@ import {
   Filter,
   User,
   Plug,
+  Keyboard,
 } from "lucide-react";
 
 export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExcludedTags, topOpen = true, onToggleTop }) {
@@ -25,6 +26,7 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
     chatbotEnabled,
     isAdmin,
     updateUserPreferences,
+    setShortcutsOpen,
     logoutUser,
     analyticsOpen,
     setAnalyticsOpen,
@@ -110,7 +112,7 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
               type="button"
               className="icon-btn topbar-chat-btn"
               onClick={() => onOpenChat?.()}
-              title="Chat assistant"
+              title="Chat assistant (C)"
               aria-label="Open chat assistant"
             >
               <MessageCircle size={18} />
@@ -207,6 +209,20 @@ export default function Topbar({ onMenuClick, onOpenChat, onOpenAdmin, onOpenExc
                   <Plug size={16} />
                   MCP connector
                 </button>
+                {!phone && (
+                  <button
+                    type="button"
+                    className="topbar-dropdown-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setShortcutsOpen(true);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <Keyboard size={16} />
+                    Keyboard shortcuts
+                  </button>
+                )}
                 {isAdmin && (
                   <button
                     type="button"

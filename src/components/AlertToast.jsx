@@ -47,7 +47,7 @@ export default function AlertToast() {
             const type = typeOf(item)
             return (
               <div key={i} className={`alert-toast alert-toast--${type}`}>
-                <div className="alert-icon">{type === 'success' ? '✓' : '⚠'}</div>
+                <div className="alert-icon">{type === 'success' ? '✓' : type === 'hint' ? 'i' : '⚠'}</div>
                 <span className="alert-msg">{msg}</span>
                 <button className="alert-close" onClick={clear}>×</button>
               </div>

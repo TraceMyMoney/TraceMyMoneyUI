@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useStore, fmtNum, filterValidExpenses } from "../store/useStore.js";
 import { Trash2, Tag, ChevronDown } from "lucide-react";
 import { usePhoneScreen } from "../useWideScreen.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
+import { sameCursor } from "../utils/kbCursor.js";
 
 const MONTHS = [
   "Jan",
@@ -126,17 +127,23 @@ function InlineAddEntries({ expenseId, mini }) {
 }
 
 /* ── Desktop table row ── */
-function DesktopRow({ exp, open, onToggle, onEditEntry }) {
+function DesktopRow({ exp, open, onToggle, onEditEntry, cursor }) {
   const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm } =
     useStore();
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
   const yr = (exp.created_at || "").slice(6, 10);
   const [hovEnt, setHovEnt] = useState(null);
+  const isRowActive = sameCursor(cursor, { expId: exp.id, eeId: null });
 
   return (
     <div className="expense-group">
-      <div className={`expense-row${open ? " open" : ""}`} onClick={onToggle}>
+      <div
+        className={`expense-row${open ? " open" : ""}${isRowActive ? " kb-active" : ""}`}
+        onClick={onToggle}
+        data-kb-active={isRowActive ? "true" : undefined}
+        aria-current={isRowActive ? "true" : undefined}
+      >
         {open && <div className="expense-row-accent" />}
         {/* Date */}
         <div className="exp-date-cell">
@@ -206,7 +213,9 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
           {(exp.expenses || []).map((item) => (
             <div
               key={item.ee_id}
-              className="entry-row"
+              className={`entry-row${sameCursor(cursor, { expId: exp.id, eeId: item.ee_id }) ? " kb-active" : ""}`}
+              data-kb-active={sameCursor(cursor, { expId: exp.id, eeId: item.ee_id }) ? "true" : undefined}
+              aria-current={sameCursor(cursor, { expId: exp.id, eeId: item.ee_id }) ? "true" : undefined}
               onMouseEnter={() => setHovEnt(item.ee_id)}
               onMouseLeave={() => setHovEnt(null)}
             >
@@ -265,15 +274,21 @@ function DesktopRow({ exp, open, onToggle, onEditEntry }) {
 }
 
 /* ── Mobile card ── */
-function MobileCard({ exp, open, onToggle, onEditEntry }) {
+function MobileCard({ exp, open, onToggle, onEditEntry, cursor }) {
   const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm } =
     useStore();
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
   const yr = (exp.created_at || "").slice(6, 10);
+  const isRowActive = sameCursor(cursor, { expId: exp.id, eeId: null });
 
   return (
-    <div className={`expense-card${open ? " open" : ""}`} onClick={onToggle}>
+    <div
+      className={`expense-card${open ? " open" : ""}${isRowActive ? " kb-active" : ""}`}
+      onClick={onToggle}
+      data-kb-active={isRowActive ? "true" : undefined}
+      aria-current={isRowActive ? "true" : undefined}
+    >
       <div className="expense-card-top">
         <div className="expense-card-date">
           <div className="expense-card-day">{day}</div>
@@ -338,7 +353,12 @@ function MobileCard({ exp, open, onToggle, onEditEntry }) {
           onClick={(e) => e.stopPropagation()}
         >
           {(exp.expenses || []).map((item) => (
-            <div key={item.ee_id} className="mobile-entry-item">
+            <div
+              key={item.ee_id}
+              className={`mobile-entry-item${sameCursor(cursor, { expId: exp.id, eeId: item.ee_id }) ? " kb-active" : ""}`}
+              data-kb-active={sameCursor(cursor, { expId: exp.id, eeId: item.ee_id }) ? "true" : undefined}
+              aria-current={sameCursor(cursor, { expId: exp.id, eeId: item.ee_id }) ? "true" : undefined}
+            >
               {/* Description + tag icon — flex row so icon sits inline */}
               <div
                 className="mobile-entry-desc-wrap"
@@ -484,7 +504,14 @@ function PhoneDayCard({ exp, open, onToggle, onEditEntry }) {
 
 /* ── Main component ── */
 export default function ExpenseTable({ onEditEntry }) {
-  const { filteredExpensesList, privacyMode } = useStore();
+  const {
+    filteredExpensesList,
+    privacyMode,
+    openExpenseIds,
+    toggleExpenseOpen,
+    kbCursor,
+    setKbCursor,
+  } = useStore();
   const phone = usePhoneScreen();
 
   // Compute totals from only the currently visible page
@@ -496,14 +523,36 @@ export default function ExpenseTable({ onEditEntry }) {
     (sum, exp) => sum + Math.abs(exp.topup_expense_total || 0),
     0,
   );
-  const [openRows, setOpenRows] = useState(new Set());
+  const openRows = new Set(openExpenseIds);
 
-  const toggle = (id) =>
-    setOpenRows((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  const toggle = (id) => {
+    toggleExpenseOpen(id);
+    // A mouse click also moves the keyboard highlight, so N / P carry on from here.
+    if (!phone) setKbCursor({ expId: id, eeId: null });
+  };
+
+  // Keyboard highlight: drop it when its row is gone (page change, search, delete);
+  // fall back to the day row when a highlighted entry is gone or its day was collapsed.
+  useEffect(() => {
+    if (!kbCursor) return;
+    const exp = filteredExpensesList.find((x) => x.id === kbCursor.expId);
+    if (!exp) setKbCursor(null);
+    else if (
+      kbCursor.eeId &&
+      (!openExpenseIds.includes(exp.id) || !(exp.expenses || []).some((e) => e.ee_id === kbCursor.eeId))
+    )
+      setKbCursor({ expId: exp.id, eeId: null });
+  }, [filteredExpensesList, openExpenseIds, kbCursor, setKbCursor]);
+
+  // Keep the highlighted row in view (both layouts are in the DOM; only the visible one counts).
+  useEffect(() => {
+    if (!kbCursor) return;
+    const nodes = document.querySelectorAll('[data-kb-active="true"]');
+    const el = Array.from(nodes).find((n) => n.offsetParent !== null);
+    if (!el) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [kbCursor]);
 
   if (!filteredExpensesList.length)
     return (
@@ -558,6 +607,7 @@ export default function ExpenseTable({ onEditEntry }) {
             open={openRows.has(exp.id)}
             onToggle={() => toggle(exp.id)}
             onEditEntry={onEditEntry}
+            cursor={kbCursor}
           />
           {/* Mobile card — CSS shows/hides via media query */}
           <MobileCard
@@ -565,6 +615,7 @@ export default function ExpenseTable({ onEditEntry }) {
             open={openRows.has(exp.id)}
             onToggle={() => toggle(exp.id)}
             onEditEntry={onEditEntry}
+            cursor={kbCursor}
           />
         </React.Fragment>
       ))}

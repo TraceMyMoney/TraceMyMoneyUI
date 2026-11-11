@@ -9444,11 +9444,13 @@ body.light .entry-type-toggle {
 }
 
 /* Info toast (e.g. "N expenses waiting for review") with an action button */
-.alert-toast--info {
+.alert-toast--info,
+.alert-toast--hint {
     background: var(--acid-dim);
     border-color: var(--acid-mid);
 }
-.alert-toast--info .alert-icon {
+.alert-toast--info .alert-icon,
+.alert-toast--hint .alert-icon {
     width: 22px;
     height: 22px;
     flex: none;
@@ -9461,7 +9463,8 @@ body.light .entry-type-toggle {
     font-size: 13px;
     font-weight: 700;
 }
-.alert-toast--info .alert-msg {
+.alert-toast--info .alert-msg,
+.alert-toast--hint .alert-msg {
     color: var(--text);
 }
 .alert-action {
@@ -10403,4 +10406,97 @@ body.light .auth-birds { opacity: 0.5; }
 .mcp-dialog-body span {
     font-size: 12px;
     color: var(--muted);
+}
+
+/* ── Keyboard shortcuts ── */
+.kb-hint {
+    margin-left: 8px;
+    padding: 1px 6px;
+    border: 1px solid var(--line-mid);
+    border-radius: 4px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--muted);
+    background: transparent;
+    opacity: 0.8;
+}
+/* No physical keyboard expected on touch screens: hide the hints there. */
+@media (hover: none), (pointer: coarse) {
+    .kb-hint {
+        display: none;
+    }
+}
+
+/* The highlighted row or entry (N / P / O). */
+.expense-row.kb-active,
+.entry-row.kb-active,
+.expense-card.kb-active,
+.mobile-entry-item.kb-active {
+    outline: 2px solid var(--acid);
+    outline-offset: -2px;
+    background: var(--acid-dim);
+}
+
+.shortcuts-panel {
+    max-width: 640px;
+}
+.shortcuts-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 28px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.shortcuts-group-title {
+    margin: 0 0 8px;
+    font-family: var(--f-head);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.shortcuts-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.shortcuts-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--f-body);
+    font-size: 14px;
+    color: var(--text);
+}
+.shortcuts-keys {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+}
+.shortcuts-then {
+    font-size: 11px;
+    color: var(--faint);
+}
+.kb-key {
+    min-width: 24px;
+    padding: 2px 7px;
+    border: 1px solid var(--line-mid);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--ink-3);
+    font-family: var(--f-mono);
+    font-size: 12px;
+    text-align: center;
+    color: var(--acid);
+}
+@media (max-width: 760px) {
+    .shortcuts-body {
+        grid-template-columns: 1fr;
+    }
 }

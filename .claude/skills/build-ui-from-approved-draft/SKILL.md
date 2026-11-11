@@ -45,3 +45,10 @@ This skill is the working recipe.
 - **When the user says they cannot see it,** check the screen width, the logged-in state and a stale dev
   server or old build before changing code.
 - **Do not rely on a README or summary of the design.** The Artifact itself is the source.
+- **If the user waives the draft** ("skip the artifact, implement directly"): that is their call and it
+  overrides the draft-first rule for that feature only. Write it in the plan (date and what was agreed),
+  build, then bring the current UI Artifact up to date (skill `update-ui-design-artifact`) so it never
+  lags behind the app. Report "no approved draft (waived)" instead of "matches the approved draft".
+- **A feature the user will test by hand finds the gaps you did not think of.** Before saying "done" on
+  any new dialog or flow, walk the whole keyboard and mouse path once in your head: open, fill, submit,
+  cancel, Esc, and what is focused afterwards.

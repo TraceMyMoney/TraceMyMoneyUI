@@ -55,6 +55,10 @@ For frontend-heavy work, keep the `SPEC.md`, `PLAN.md` and skills in **this repo
 - **A design change goes back through the draft:** update the Artifact, get approval, then change the code. Never change the code first and leave the draft out of date.
 - **At the end of the task, report** "Matches the approved draft: yes", or the list of approved differences. Never claim a match you did not check.
 
+## Current UI design Artifact
+
+Visual reference of the current screens (desktop, tablet, phone, dialogs, profile, admin, chat, landing, auth; dark and light): https://claude.ai/artifact/4fJEw8qNEHU6PkDiTYfJdR. Read it (Artifact action `read`) before designing a change to an existing screen, and update it when a screen changes. It shows what exists today and is not an approved draft for new work; new drafts still follow the rules above.
+
 ## Your role and UX principles
 
 Whenever you work on this UI, act as a senior principal frontend and UX engineer who knows what end users want:

@@ -183,6 +183,12 @@ export function filterValidExpenses(list) {
     );
 }
 
+/** True when the whole day's spending (`day_total`, all accounts) is more than
+ * the user's daily limit. Exactly equal to the limit is not crossed. */
+export function isLimitCrossed(exp, limit) {
+  return limit != null && Number(exp?.day_total) > Number(limit);
+}
+
 export function fmtNum(v, privacy = false) {
   if (privacy) return "••••";
   if (v == null) return "0";
@@ -276,6 +282,7 @@ export const useStore = create((set, get) => ({
 
   searchExcludeTags: [], // effective exclusion (starts as the user default)
   defaultExcludedTags: [], // saved in user preferences
+  dailyExpenseLimit: null, // saved in user preferences (rupees; null = no limit)
   // Phone quick-search: an empty Accounts filter means "the account selected
   // on screen" (same rule the desktop analytics view uses).
   searchScopeToCurrentBank: false,
@@ -423,6 +430,10 @@ export const useStore = create((set, get) => ({
           banksDisplayOrder: displayOrder,
           defaultExcludedTags:
             prefs.default_excluded_tags ?? get().defaultExcludedTags,
+          dailyExpenseLimit:
+            prefs.daily_expense_limit === undefined
+              ? get().dailyExpenseLimit
+              : prefs.daily_expense_limit,
         });
       }
 
@@ -510,6 +521,7 @@ export const useStore = create((set, get) => ({
         isDarkMode: dark,
         privacyMode: privacy,
         defaultExcludedTags: defaultExcluded,
+        dailyExpenseLimit: prefs?.daily_expense_limit ?? null,
         searchExcludeTags: defaultExcluded,
       });
 
@@ -962,6 +974,24 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       set({ defaultExcludedTags: prev, searchExcludeTags: prev });
       get().pushAlert(handleError(err));
+    }
+  },
+
+  /** Save the daily expense limit (rupees). `null` clears it. Rows turn red as
+   * soon as the value changes, because the list only compares `day_total` with it.
+   * Resolves to true on success, false on failure (the old value is restored). */
+  async setDailyExpenseLimit(value) {
+    const prev = get().dailyExpenseLimit;
+    set({ dailyExpenseLimit: value });
+    try {
+      await axios.patch(`${BASE_URL}/user-preferences/update`, {
+        daily_expense_limit: value,
+      });
+      return true;
+    } catch (err) {
+      set({ dailyExpenseLimit: prev });
+      get().pushAlert(handleError(err));
+      return false;
     }
   },
 

@@ -13,6 +13,7 @@ import {
   Lock,
   Inbox,
   Plug,
+  IndianRupee,
   X,
 } from "lucide-react";
 import { useStore, API_BASE_URL } from "../store/useStore.js";
@@ -151,6 +152,8 @@ export default function ProfilePage() {
     revokeClaudeConnection,
     setProfileOpen,
     requestConfirm,
+    dailyExpenseLimit,
+    setDailyExpenseLimit,
   } = useStore();
 
   const [username, setUsername] = useState("");
@@ -160,6 +163,33 @@ export default function ProfilePage() {
   const [savingPw, setSavingPw] = useState(false);
   const [newToken, setNewToken] = useState(null); // plaintext, shown once
   const [guideOpen, setGuideOpen] = useState(false);
+  const [limitText, setLimitText] = useState("");
+  const [savingLimit, setSavingLimit] = useState(false);
+
+  // Keep the input in step with the saved limit (also when it is cleared).
+  useEffect(() => {
+    setLimitText(dailyExpenseLimit == null ? "" : String(dailyExpenseLimit));
+  }, [dailyExpenseLimit]);
+
+  const limitTrim = limitText.trim();
+  const limitNum = Number(limitTrim);
+  const limitValid =
+    limitTrim === "" ||
+    (/^\d+(\.\d{1,2})?$/.test(limitTrim) && limitNum > 0 && limitNum <= 10000000);
+  const limitChanged = limitTrim !== (dailyExpenseLimit == null ? "" : String(dailyExpenseLimit));
+
+  const saveLimit = async (e) => {
+    e.preventDefault();
+    if (!limitValid || limitTrim === "") return;
+    setSavingLimit(true);
+    await setDailyExpenseLimit(limitNum);
+    setSavingLimit(false);
+  };
+  const clearLimit = async () => {
+    setSavingLimit(true);
+    await setDailyExpenseLimit(null);
+    setSavingLimit(false);
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -322,6 +352,51 @@ export default function ProfilePage() {
                   {savingPw ? "Saving…" : "Change password"}
                 </button>
               </form>
+            </div>
+
+            {/* Daily expense limit */}
+            <div className="admin-panel profile-wide">
+              <div className="admin-panel-title">
+                <IndianRupee size={15} />
+                <span>Daily expense limit</span>
+              </div>
+              <div className="admin-panel-desc">
+                Days where your total spending goes above this amount are marked red. Leave empty
+                for no limit.
+              </div>
+              <form className="limit-form" onSubmit={saveLimit}>
+                <label className="limit-input-wrap" data-invalid={!limitValid || undefined}>
+                  <span className="limit-input-prefix" aria-hidden="true">₹</span>
+                  <input
+                    className="limit-input"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="No limit"
+                    aria-label="Daily expense limit in rupees"
+                    aria-invalid={!limitValid}
+                    value={limitText}
+                    onChange={(e) => setLimitText(e.target.value)}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="d-btn d-btn-primary"
+                  disabled={!limitValid || limitTrim === "" || !limitChanged || savingLimit}
+                >
+                  {savingLimit ? "Saving…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  className="d-btn d-btn-ghost"
+                  disabled={dailyExpenseLimit == null || savingLimit}
+                  onClick={clearLimit}
+                >
+                  Clear
+                </button>
+              </form>
+              {!limitValid && (
+                <small className="profile-error">Enter an amount greater than 0 (up to 2 decimals).</small>
+              )}
             </div>
 
             {/* Auto-capture */}

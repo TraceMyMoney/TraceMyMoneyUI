@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useStore, fmtNum, filterValidExpenses } from "../store/useStore.js";
-import { Trash2, Tag, ChevronDown } from "lucide-react";
+import { useStore, fmtNum, filterValidExpenses, isLimitCrossed } from "../store/useStore.js";
+import { Trash2, Tag, ChevronDown, AlertTriangle, IndianRupee } from "lucide-react";
 import { usePhoneScreen } from "../useWideScreen.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
 import { sameCursor } from "../utils/kbCursor.js";
@@ -20,6 +20,37 @@ const MONTHS = [
   "Dec",
 ];
 const monthName = (m) => MONTHS[parseInt(m, 10) - 1] || "";
+
+/* ── Daily limit: red badge, over-the-limit note and the limit chip ── */
+function LimitBadge() {
+  return (
+    <span className="limit-badge">
+      <AlertTriangle size={13} aria-hidden="true" />
+      Limit crossed
+    </span>
+  );
+}
+
+function LimitNote({ exp, limit, privacy, short }) {
+  const money = (n) => (privacy ? "••••" : `₹${fmtNum(n)}`);
+  return (
+    <div className="limit-note">
+      {short
+        ? `${money(exp.day_total - limit)} over your daily limit`
+        : `On this day you spent ${money(exp.day_total)} across all accounts. That is ${money(exp.day_total - limit)} over your ${money(limit)} limit.`}
+    </div>
+  );
+}
+
+function LimitChip({ limit, privacy }) {
+  return (
+    <div className="limit-chip">
+      <IndianRupee size={14} aria-hidden="true" />
+      <span>Daily limit</span>
+      <b>{privacy ? "••••" : `₹${fmtNum(limit)}`}</b>
+    </div>
+  );
+}
 
 /* ── Inline add entries (shared desktop + mobile) ── */
 function InlineAddEntries({ expenseId, mini }) {
@@ -128,8 +159,9 @@ function InlineAddEntries({ expenseId, mini }) {
 
 /* ── Desktop table row ── */
 function DesktopRow({ exp, open, onToggle, onEditEntry, cursor }) {
-  const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm } =
+  const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm, dailyExpenseLimit } =
     useStore();
+  const crossed = isLimitCrossed(exp, dailyExpenseLimit);
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
   const yr = (exp.created_at || "").slice(6, 10);
@@ -139,7 +171,7 @@ function DesktopRow({ exp, open, onToggle, onEditEntry, cursor }) {
   return (
     <div className="expense-group">
       <div
-        className={`expense-row${open ? " open" : ""}${isRowActive ? " kb-active" : ""}`}
+        className={`expense-row${open ? " open" : ""}${isRowActive ? " kb-active" : ""}${crossed ? " limit-crossed" : ""}`}
         onClick={onToggle}
         data-kb-active={isRowActive ? "true" : undefined}
         aria-current={isRowActive ? "true" : undefined}
@@ -158,11 +190,20 @@ function DesktopRow({ exp, open, onToggle, onEditEntry, cursor }) {
           <div className="exp-meta-bank">
             <div className="exp-meta-dot" />
             {exp.bank_name}
+            {crossed && (
+              <AlertTriangle
+                size={13}
+                className="limit-icon"
+                aria-label="Daily limit crossed"
+              />
+            )}
           </div>
           <div className="exp-meta-day">{exp.day}</div>
         </div>
-        {/* Preview tags — hidden on tablet */}
-        <div className="exp-previews exp-preview-col"></div>
+        {/* Preview tags — hidden on tablet (shows the limit badge when crossed) */}
+        <div className="exp-previews exp-preview-col">
+          {crossed && <LimitBadge />}
+        </div>
         {/* Topup — hidden on tablet/mobile */}
         <div className="exp-amt exp-remaining-col">
           {exp.topup_expense_total < 0 ? (
@@ -266,6 +307,9 @@ function DesktopRow({ exp, open, onToggle, onEditEntry, cursor }) {
               </button>
             </div>
           ))}
+          {crossed && (
+            <LimitNote exp={exp} limit={dailyExpenseLimit} privacy={privacyMode} />
+          )}
           <InlineAddEntries expenseId={exp.id} />
         </div>
       )}
@@ -275,8 +319,9 @@ function DesktopRow({ exp, open, onToggle, onEditEntry, cursor }) {
 
 /* ── Mobile card ── */
 function MobileCard({ exp, open, onToggle, onEditEntry, cursor }) {
-  const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm } =
+  const { privacyMode, deleteExpense, deleteExpenseEntry, requestConfirm, dailyExpenseLimit } =
     useStore();
+  const crossed = isLimitCrossed(exp, dailyExpenseLimit);
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
   const yr = (exp.created_at || "").slice(6, 10);
@@ -284,7 +329,7 @@ function MobileCard({ exp, open, onToggle, onEditEntry, cursor }) {
 
   return (
     <div
-      className={`expense-card${open ? " open" : ""}${isRowActive ? " kb-active" : ""}`}
+      className={`expense-card${open ? " open" : ""}${isRowActive ? " kb-active" : ""}${crossed ? " limit-crossed" : ""}`}
       onClick={onToggle}
       data-kb-active={isRowActive ? "true" : undefined}
       aria-current={isRowActive ? "true" : undefined}
@@ -300,6 +345,7 @@ function MobileCard({ exp, open, onToggle, onEditEntry, cursor }) {
             <div className="exp-meta-dot" />
             {exp.bank_name}
           </div>
+          {crossed && <LimitBadge />}
           <div className="expense-card-amounts">
             {exp.topup_expense_total < 0 && (
               <div className="expense-card-amt-group">
@@ -410,8 +456,9 @@ const FULL_MONTHS = [
 ];
 
 function PhoneDayCard({ exp, open, onToggle, onEditEntry }) {
-  const { privacyMode, entryTags, deleteExpense, deleteExpenseEntry, requestConfirm } =
+  const { privacyMode, entryTags, deleteExpense, deleteExpenseEntry, requestConfirm, dailyExpenseLimit } =
     useStore();
+  const crossed = isLimitCrossed(exp, dailyExpenseLimit);
   const day = (exp.created_at || "").slice(0, 2);
   const mon = monthName((exp.created_at || "").slice(3, 5));
   const money = (n) => (privacyMode ? "••••" : `₹${fmtNum(n)}`);
@@ -420,7 +467,7 @@ function PhoneDayCard({ exp, open, onToggle, onEditEntry }) {
   const topup = Math.abs(exp.topup_expense_total || 0);
 
   return (
-    <div className={`m-card${open ? " open" : ""}`}>
+    <div className={`m-card${open ? " open" : ""}${crossed ? " limit-crossed" : ""}`}>
       <button
         type="button"
         className="m-card-head"
@@ -436,6 +483,7 @@ function PhoneDayCard({ exp, open, onToggle, onEditEntry }) {
           <span className="m-sub">
             {exp.bank_name} · {entries.length} {entries.length === 1 ? "entry" : "entries"}
           </span>
+          {crossed && <LimitBadge />}
         </span>
         <span className="m-amts">
           <span className="m-spent">{money(exp.expense_total)}</span>
@@ -449,6 +497,9 @@ function PhoneDayCard({ exp, open, onToggle, onEditEntry }) {
 
       {open && (
         <div className="m-body">
+          {crossed && (
+            <LimitNote exp={exp} limit={dailyExpenseLimit} privacy={privacyMode} short />
+          )}
           {entries.map((item) => (
             <div key={item.ee_id} className="m-entry">
               <button
@@ -511,6 +562,7 @@ export default function ExpenseTable({ onEditEntry }) {
     toggleExpenseOpen,
     kbCursor,
     setKbCursor,
+    dailyExpenseLimit,
   } = useStore();
   const phone = usePhoneScreen();
 
@@ -569,6 +621,9 @@ export default function ExpenseTable({ onEditEntry }) {
 
   return (
     <div className="table-area">
+      {dailyExpenseLimit != null && (
+        <LimitChip limit={dailyExpenseLimit} privacy={privacyMode} />
+      )}
       {/* Desktop table header */}
       <div className="table-head">
         <div className="th">Date</div>

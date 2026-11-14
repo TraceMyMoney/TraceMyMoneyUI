@@ -10,6 +10,7 @@ export const SHORTCUTS = [
   { id: "prev", combo: "p", keys: ["P"], label: "Previous expense / entry", group: "Expenses" },
   { id: "toggleRow", combo: "enter", keys: ["Enter"], label: "Expand or collapse a day; on an entry, edit it", group: "Expenses" },
   { id: "editEntry", combo: "t", keys: ["T"], label: "Edit tags and description of the highlighted entry", group: "Expenses" },
+  { id: "deleteItem", combo: "d", keys: ["D"], label: "Delete the highlighted expense / entry (asks first)", group: "Expenses" },
   { id: "search", combo: "/", keys: ["/"], label: "Search and filter", group: "Go to" },
   { id: "chat", combo: "c", keys: ["C"], label: "Chat assistant", group: "Go to" },
   { id: "newBank", combo: "b", keys: ["B"], label: "Create an account (bank)", group: "Go to" },

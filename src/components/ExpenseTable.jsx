@@ -3,7 +3,8 @@ import { useStore, fmtNum, filterValidExpenses, isLimitCrossed } from "../store/
 import { Trash2, Tag, ChevronDown, AlertTriangle, IndianRupee } from "lucide-react";
 import { usePhoneScreen } from "../useWideScreen.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
-import { sameCursor } from "../utils/kbCursor.js";
+import { sameCursor, ADD_ENTRY } from "../utils/kbCursor.js";
+import { cleanAmount, blockNegativeKey } from "../utils/amount.js";
 
 const MONTHS = [
   "Jan",
@@ -53,7 +54,7 @@ function LimitChip({ limit, privacy }) {
 }
 
 /* ── Inline add entries (shared desktop + mobile) ── */
-function InlineAddEntries({ expenseId, mini }) {
+function InlineAddEntries({ expenseId, mini, kbActive }) {
   const { entryTags, submitExpenseEntry } = useStore();
   const [entries, setEntries] = useState([]);
   const add = () =>
@@ -66,12 +67,8 @@ function InlineAddEntries({ expenseId, mini }) {
     setEntries((e) =>
       e.map((en, j) => {
         if (j !== i) return en;
-        const updated = { ...en, [k]: v };
-        // Auto-switch toggle when a negative/positive amount is typed
-        if (k === "amount" && v !== "" && v !== "-") {
-          updated.type = Number(v) < 0 ? "credit" : "debit";
-        }
-        return updated;
+        // The Debit / Credit chip alone decides the sign; amounts are never negative.
+        return { ...en, [k]: k === "amount" ? cleanAmount(v) : v };
       }),
     );
   const submit = async () => {
@@ -114,8 +111,11 @@ function InlineAddEntries({ expenseId, mini }) {
             <input
               className="inline-input"
               type="number"
+              min="0"
               placeholder="Amount"
               value={en.amount}
+              autoFocus={i === entries.length - 1}
+              onKeyDown={blockNegativeKey}
               onChange={(e) => update(i, "amount", e.target.value)}
             />
             <input
@@ -144,7 +144,13 @@ function InlineAddEntries({ expenseId, mini }) {
         </div>
       ))}
       <div className="inline-actions">
-        <button className="inline-add-btn" onClick={add}>
+        <button
+          className={`inline-add-btn${kbActive ? " kb-active" : ""}`}
+          onClick={add}
+          data-add-entry={expenseId}
+          data-kb-active={kbActive ? "true" : undefined}
+          aria-current={kbActive ? "true" : undefined}
+        >
           ＋ Add Entry
         </button>
         {entries.length > 0 && (
@@ -310,7 +316,10 @@ function DesktopRow({ exp, open, onToggle, onEditEntry, cursor }) {
           {crossed && (
             <LimitNote exp={exp} limit={dailyExpenseLimit} privacy={privacyMode} />
           )}
-          <InlineAddEntries expenseId={exp.id} />
+          <InlineAddEntries
+            expenseId={exp.id}
+            kbActive={sameCursor(cursor, { expId: exp.id, eeId: ADD_ENTRY })}
+          />
         </div>
       )}
     </div>
@@ -442,7 +451,11 @@ function MobileCard({ exp, open, onToggle, onEditEntry, cursor }) {
               </button>
             </div>
           ))}
-          <InlineAddEntries expenseId={exp.id} mini />
+          <InlineAddEntries
+            expenseId={exp.id}
+            mini
+            kbActive={sameCursor(cursor, { expId: exp.id, eeId: ADD_ENTRY })}
+          />
         </div>
       )}
     </div>
@@ -591,7 +604,8 @@ export default function ExpenseTable({ onEditEntry }) {
     if (!exp) setKbCursor(null);
     else if (
       kbCursor.eeId &&
-      (!openExpenseIds.includes(exp.id) || !(exp.expenses || []).some((e) => e.ee_id === kbCursor.eeId))
+      (!openExpenseIds.includes(exp.id) ||
+        (kbCursor.eeId !== ADD_ENTRY && !(exp.expenses || []).some((e) => e.ee_id === kbCursor.eeId)))
     )
       setKbCursor({ expId: exp.id, eeId: null });
   }, [filteredExpensesList, openExpenseIds, kbCursor, setKbCursor]);

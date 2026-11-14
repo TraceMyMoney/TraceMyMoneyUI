@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import { useStore, filterValidExpenses } from "../store/useStore.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
 import { usePhoneScreen } from "../useWideScreen.js";
+import { cleanAmount, blockNegativeKey } from "../utils/amount.js";
 
 // Same dynamic dev-mode fallback as useStore.js/ChatAssistantDialog.jsx.
 const BASE_URL = (
@@ -90,12 +91,8 @@ export default function AddExpenseDrawer({ open, onClose }) {
     setEntries((e) =>
       e.map((en, j) => {
         if (j !== i) return en;
-        const updated = { ...en, [k]: v };
-        // Auto-switch toggle when a negative/positive amount is typed
-        if (k === "amount" && v !== "" && v !== "-") {
-          updated.type = Number(v) < 0 ? "credit" : "debit";
-        }
-        return updated;
+        // The Debit / Credit chip alone decides the sign; amounts are never negative.
+        return { ...en, [k]: k === "amount" ? cleanAmount(v) : v };
       }),
     );
 
@@ -214,11 +211,13 @@ export default function AddExpenseDrawer({ open, onClose }) {
                     <input
                       className="d-entry-input"
                       type="number"
+                      min="0"
                       placeholder="Amount"
                       value={en.amount}
                       autoFocus={!phone && i === entries.length - 1}
                       onChange={(e) => updateEntry(i, "amount", e.target.value)}
                       onKeyDown={(e) => {
+                        blockNegativeKey(e);
                         // Enter moves on to the description of the same entry.
                         if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
                           e.preventDefault();

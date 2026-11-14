@@ -1,8 +1,26 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useStore } from "../store/useStore.js";
 
 export default function ConfirmDialog() {
   const { confirmState, resolveConfirm } = useStore();
+  const cancelRef = useRef(null);
+  const confirmRef = useRef(null);
+  const open = !!confirmState;
+
+  // Left / Right move the selection (focus) between Cancel and the Delete button.
+  // On the document, so it still works if focus was knocked off a button by a click.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      e.stopPropagation();
+      (e.key === "ArrowLeft" ? cancelRef : confirmRef).current?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   if (!confirmState) return null;
 
   return (
@@ -24,10 +42,11 @@ export default function ConfirmDialog() {
           </div>
         </div>
         <div className="dialog-footer">
-          <button className="d-btn-cancel" onClick={() => resolveConfirm(false)}>
+          <button ref={cancelRef} className="d-btn-cancel" onClick={() => resolveConfirm(false)}>
             Cancel
           </button>
           <button
+            ref={confirmRef}
             className="d-btn-danger"
             onClick={() => resolveConfirm(true)}
             autoFocus

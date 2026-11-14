@@ -20,7 +20,7 @@ import useWideScreen, { useTabletScreen, usePhoneScreen } from "../useWideScreen
 import MobileTopArea from "./MobileTopArea.jsx";
 import ShortcutsDialog from "./ShortcutsDialog.jsx";
 import useKeyboardShortcuts from "../hooks/useKeyboardShortcuts.js";
-import { flattenCursorItems, stepCursor } from "../utils/kbCursor.js";
+import { flattenCursorItems, stepCursor, sameCursor, ADD_ENTRY } from "../utils/kbCursor.js";
 import { keyHint } from "../utils/shortcuts.js";
 import { Plus } from "lucide-react";
 
@@ -154,10 +154,12 @@ export default function Dashboard() {
       const st = useStore.getState();
       if (!st.kbCursor) return hint("Press N to highlight an expense first");
       // On an entry, Enter edits it; on a day row it expands or collapses the day.
+      if (st.kbCursor.eeId === ADD_ENTRY) return addEntryAtCursor();
       if (st.kbCursor.eeId) return editHighlightedEntry();
       st.toggleExpenseOpen(st.kbCursor.expId);
     },
     editEntry: () => editHighlightedEntry(),
+    deleteItem: () => deleteHighlighted(),
     nextBank: () => moveBank(1),
     prevBank: () => moveBank(-1),
     prevPage: () => changePage(-1),
@@ -181,9 +183,44 @@ export default function Dashboard() {
     const st = useStore.getState();
     const c = st.kbCursor;
     const exp = c && st.filteredExpensesList.find((x) => x.id === c.expId);
-    const entry = exp && c.eeId && (exp.expenses || []).find((e) => e.ee_id === c.eeId);
+    const entry = exp && c.eeId && c.eeId !== ADD_ENTRY && (exp.expenses || []).find((e) => e.ee_id === c.eeId);
     if (!entry) return hint("Highlight an entry first: Enter to expand a day, then N");
     handleEditEntry({ ...entry, expenseId: exp.id });
+  }
+  // Enter on the highlighted "Add Entry" button: press the visible one (desktop row or tablet card);
+  // the new card's Amount field takes the cursor (autoFocus in InlineAddEntries).
+  function addEntryAtCursor() {
+    const id = useStore.getState().kbCursor?.expId;
+    const btn = Array.from(document.querySelectorAll("[data-add-entry]")).find(
+      (b) => b.dataset.addEntry === String(id) && b.offsetParent !== null,
+    );
+    if (btn) btn.click();
+  }
+  // D: delete the highlighted day or entry. Always asks first, like the trash buttons.
+  async function deleteHighlighted() {
+    const st = useStore.getState();
+    const c = st.kbCursor;
+    if (!c) return hint("Press N to highlight an expense or entry first");
+    if (c.eeId === ADD_ENTRY) return hint("D deletes an expense or an entry, not the Add Entry button");
+    const items = flattenCursorItems(st.filteredExpensesList, st.openExpenseIds);
+    const at = items.findIndex((i) => sameCursor(i, c));
+    // After the delete the highlight moves to a neighbour that survives (next, else previous).
+    const gone = (i) => (c.eeId ? sameCursor(i, c) : i.expId === c.expId);
+    const neighbour =
+      items.slice(at + 1).find((i) => !gone(i)) ||
+      items.slice(0, at).reverse().find((i) => !gone(i)) ||
+      null;
+    document.activeElement?.blur?.();
+    if (c.eeId) {
+      if (!(await st.requestConfirm("Delete this entry?"))) return;
+      await st.deleteExpenseEntry(c.expId, c.eeId);
+    } else {
+      if (!(await st.requestConfirm("Delete this expense?"))) return;
+      await st.deleteExpense(c.expId);
+    }
+    // The cursor effect in ExpenseTable drops a highlight whose row is gone; only move if the neighbour survived.
+    const left = useStore.getState().filteredExpensesList;
+    if (neighbour && left.some((x) => x.id === neighbour.expId)) st.setKbCursor(neighbour);
   }
   function moveBank(dir) {
     const st = useStore.getState();

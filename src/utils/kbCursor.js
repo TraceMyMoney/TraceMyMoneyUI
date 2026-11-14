@@ -2,6 +2,9 @@
 // for a day that is expanded, the entries inside it, in the order they appear on screen.
 // cursor = { expId, eeId } where eeId is null when the highlight is on the day row itself.
 
+// eeId of the "Add Entry" button at the bottom of an expanded day: N / P stop on it, Enter presses it.
+export const ADD_ENTRY = "__add__";
+
 export function flattenCursorItems(list, openIds) {
   const open = new Set(openIds);
   const items = [];
@@ -9,6 +12,7 @@ export function flattenCursorItems(list, openIds) {
     items.push({ expId: exp.id, eeId: null });
     if (open.has(exp.id)) {
       for (const e of exp.expenses || []) items.push({ expId: exp.id, eeId: e.ee_id });
+      items.push({ expId: exp.id, eeId: ADD_ENTRY });
     }
   }
   return items;

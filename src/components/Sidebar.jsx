@@ -241,7 +241,10 @@ export default function Sidebar({
       <aside className={`sidebar${open ? " open" : ""}`}>
         <div className="sidebar-section">
           <div style={{ height: 16 }} />
-          <div className="sidebar-section-label">Accounts</div>
+          <div className="sidebar-section-label">
+            Accounts
+            {banksList.length > 1 && <kbd className="kb-hint" aria-hidden="true">J / K</kbd>}
+          </div>
 
           {/* listRef wrapper lets cardIndexAtPoint query .account-card children */}
           <div ref={listRef}>

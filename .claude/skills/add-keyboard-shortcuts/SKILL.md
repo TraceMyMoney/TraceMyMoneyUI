@@ -17,7 +17,8 @@ description: How keyboard shortcuts work in TraceMyMoneyUI and how to add or cha
 1. Add an entry to `SHORTCUTS` (lowercase `combo`, display `keys`). Check no other combo starts with the same key.
 2. Add a function with the same `id` to `shortcutHandlers` in `Dashboard.jsx`. Read live data with `useStore.getState()` inside it, not from stale closures.
 3. If it has nothing to act on, call `hint("...")` (a corner toast, type `hint`) instead of failing silently.
-4. Never bind delete. Never bind `Space` (double Space opens the chat).
+4. Delete (`D`) was added at the user's request: it always goes through `requestConfirm`, then moves the highlight to a surviving neighbour. Never bind `Space` (double Space opens the chat).
+5. Amount fields never take a minus sign (`utils/amount.js`); the Debit / Credit chip sets the sign.
 5. Update the `Shortcuts.dc.html` artboard in the UI Artifact.
 
 ## Lessons

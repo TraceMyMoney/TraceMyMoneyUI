@@ -21,6 +21,29 @@ function clampMenuPosition(rect) {
     Math.min(rect.left, Math.max(GUTTER, vw - width - GUTTER)),
   );
   const top = rect.bottom + 4;
+
+  // Phones only: the iOS keyboard does not shrink window.innerHeight, so the
+  // list would open underneath it. Measure the part of the screen that is
+  // really visible (visual viewport) and open upwards when there is more room
+  // above the input than below it.
+  if (vw <= 600) {
+    const vv = window.visualViewport;
+    const visTop = vv ? vv.offsetTop : 0;
+    const visBottom = vv ? vv.offsetTop + vv.height : vh;
+    const below = visBottom - rect.bottom - 4 - GUTTER;
+    const above = rect.top - visTop - 4 - GUTTER;
+    if (below < 160 && above > below) {
+      const layoutH = document.documentElement.clientHeight || vh;
+      return {
+        bottom: layoutH - rect.top + 4,
+        left,
+        width,
+        maxListHeight: Math.max(80, Math.min(280, above)),
+      };
+    }
+    return { top, left, width, maxListHeight: Math.max(80, Math.min(280, below)) };
+  }
+
   const maxListHeight = Math.max(120, Math.min(280, vh - top - GUTTER));
   return { top, left, width, maxListHeight };
 }
@@ -75,11 +98,13 @@ export default function TagSearchSelect({
     const vv = window.visualViewport;
     if (vv) {
       vv.addEventListener("resize", syncMenuPosition);
+      vv.addEventListener("scroll", syncMenuPosition); // iOS pans the view when the keyboard opens
     }
     return () => {
       window.removeEventListener("resize", syncMenuPosition);
       if (vv) {
         vv.removeEventListener("resize", syncMenuPosition);
+        vv.removeEventListener("scroll", syncMenuPosition);
       }
     };
   }, [open, query, syncMenuPosition]);
@@ -229,7 +254,9 @@ export default function TagSearchSelect({
             className="tag-search-dropdown-portal"
             style={{
               position: "fixed",
-              top: menuPos.top,
+              ...(menuPos.bottom !== undefined
+                ? { bottom: menuPos.bottom }
+                : { top: menuPos.top }),
               left: menuPos.left,
               width: menuPos.width,
               zIndex,

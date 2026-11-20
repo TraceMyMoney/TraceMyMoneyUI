@@ -21,6 +21,7 @@ export const SHORTCUTS = [
   { id: "nextPage", combo: "]", keys: ["]"], label: "Next page", group: "View" },
   { id: "refresh", combo: "r", keys: ["R"], label: "Refresh expenses", group: "View" },
   { id: "theme", combo: "l", keys: ["L"], label: "Switch light / dark mode", group: "View" },
+  { id: "hideBalance", combo: "h", keys: ["H"], label: "Hide or show amounts and balances", group: "View" },
   { id: "sidebar", combo: "s", keys: ["S"], label: "Show or hide the sidebar (narrow screens)", group: "View" },
   { id: "escape", combo: "escape", keys: ["Esc"], label: "Close the top panel, then clear the highlight", group: "General" },
   { id: "help", combo: "?", keys: ["?"], label: "Show this list", group: "General" },

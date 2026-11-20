@@ -130,6 +130,10 @@ export default function Dashboard() {
       const st = useStore.getState();
       st.updateUserPreferences({ is_dark_mode: !st.isDarkMode });
     },
+    hideBalance: () => {
+      const st = useStore.getState();
+      st.updateUserPreferences({ privacy_mode_enabled: !st.privacyMode });
+    },
     sidebar: () => {
       if (window.innerWidth <= 860) setSidebarOpen((v) => !v);
       else hint("The sidebar is always visible on this screen");

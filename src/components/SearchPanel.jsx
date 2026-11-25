@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import DatePicker from "react-datepicker";
+import React, { useEffect, useState } from "react";
 import { useStore } from "../store/useStore.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
 import { usePhoneScreen } from "../useWideScreen.js";
+import DateRangeField from "./DateRangeField.jsx";
+import { defaultRange } from "../utils/dateRangePresets.js";
 
 const PAGE_SIZES = [5, 10, 15, 20, "ALL"];
 
@@ -19,6 +20,7 @@ export default function SearchPanel({ open, onClose }) {
     setSearchExcludeTags,
     setSearchSelectedBanks,
     setSearchEntryKeyword,
+    searchSelectedDaterange,
     setSearchSelectedDaterange,
     setSearchOperator,
     setPageSize,
@@ -29,13 +31,16 @@ export default function SearchPanel({ open, onClose }) {
 
   const phone = usePhoneScreen(); // no autofocus on phones: it pops the keyboard
   const [keyword, setKeyword] = useState("");
-  const [dateRange, setDateRange] = useState([null, null]);
-  const [start, end] = dateRange;
+  const [dateRange, setDateRange] = useState(searchSelectedDaterange);
+  // Re-sync with the store each time the dialog opens (the filter bar may have changed it).
+  useEffect(() => {
+    if (open) setDateRange(searchSelectedDaterange);
+  }, [open]);
 
   const search = () => {
     setAdvancedSearch(true);
     setSearchEntryKeyword(keyword);
-    if (start && end) setSearchSelectedDaterange([start, end]);
+    setSearchSelectedDaterange(dateRange);
     fetchExpenses();
     onClose?.();
   };
@@ -45,12 +50,12 @@ export default function SearchPanel({ open, onClose }) {
     setSearchExcludeTags(defaultExcludedTags || []);
     setSearchSelectedBanks([]);
     setSearchEntryKeyword("");
-    setSearchSelectedDaterange(null);
+    setSearchSelectedDaterange(defaultRange());
     setSearchOperator("and");
     setAdvancedSearch(false);
     setPageNumber(1);
     setKeyword("");
-    setDateRange([null, null]);
+    setDateRange(defaultRange());
     fetchExpenses();
   };
 
@@ -145,16 +150,7 @@ export default function SearchPanel({ open, onClose }) {
             {/* Date Range */}
             <div className="search-field-group">
               <label className="search-field-label">Date Range</label>
-              <DatePicker
-                selectsRange
-                startDate={start}
-                endDate={end}
-                onChange={([s, e]) => setDateRange([s, e])}
-                maxDate={new Date()}
-                placeholderText="Select range..."
-                dateFormat="dd/MM/yyyy"
-                isClearable
-              />
+              <DateRangeField value={dateRange} onChange={setDateRange} />
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 import { mapApiTags, normalizeTagName } from "../utils/tags.js";
+import { defaultRange } from "../utils/dateRangePresets.js";
 
 // In dev, default to whatever host the page itself was loaded from (works
 // for localhost, a LAN IP, etc. - including from a phone on the same
@@ -289,7 +290,8 @@ export const useStore = create((set, get) => ({
   searchSelectedTags: [],
   searchSelectedBanks: [],
   searchEntryKeyword: "",
-  searchSelectedDaterange: null,
+  // Starts on "This month" (see utils/dateRangePresets.js); null = all time.
+  searchSelectedDaterange: defaultRange(),
   searchOperator: "and",
   isAdvancedSearch: false,
 
@@ -606,27 +608,33 @@ export const useStore = create((set, get) => ({
     try {
       const s = get();
       const ps = s.pageSize === ALL ? ALL_PAGE_SIZE : s.pageSize;
+      // The backend only applies a date range in advanced mode. When just the
+      // date range is set (no user filters) send an advanced request scoped to
+      // the account selected in the sidebar, combined with "and".
+      const rangeOnly = !s.isAdvancedSearch && !!s.searchSelectedDaterange;
+      const advanced = s.isAdvancedSearch || rangeOnly;
       const data = {
         page_number: s.pageNumber,
         per_page: ps,
-        operator: s.searchOperator,
-        advanced_search: s.isAdvancedSearch,
+        operator: rangeOnly ? "and" : s.searchOperator,
+        advanced_search: advanced,
       };
       // Exclusion applies in every mode (default comes from user preferences).
       if (s.searchExcludeTags?.length) data.exclude_tags = s.searchExcludeTags;
-      if (s.isAdvancedSearch) {
-        if (s.searchSelectedTags?.length)
+      if (advanced) {
+        if (s.isAdvancedSearch && s.searchSelectedTags?.length)
           data.search_by_tags = s.searchSelectedTags;
-        if (s.searchSelectedBanks?.length)
+        if (s.isAdvancedSearch && s.searchSelectedBanks?.length)
           data.search_by_bank_ids = s.searchSelectedBanks;
         else if (
-          (s.analyticsOpen || s.searchScopeToCurrentBank) &&
+          (rangeOnly || s.analyticsOpen || s.searchScopeToCurrentBank) &&
           s.currentSelectedBankId
         )
           // Workspace filter bar: no account picked means "the account
           // selected in the sidebar", not every account.
           data.search_by_bank_ids = [s.currentSelectedBankId];
-        if (s.searchEntryKeyword) data.search_by_keyword = s.searchEntryKeyword;
+        if (s.isAdvancedSearch && s.searchEntryKeyword)
+          data.search_by_keyword = s.searchEntryKeyword;
         if (s.searchSelectedDaterange)
           data.search_by_daterange = {
             start_date: `${formatMyDates(s.searchSelectedDaterange[0])} 00:00`,

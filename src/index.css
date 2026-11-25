@@ -10653,3 +10653,96 @@ body.light .auth-birds { opacity: 0.5; }
     font-family: var(--f-mono);
     font-size: 16px;
 }
+
+/* Date range: preset dropdown beside the calendar. Same box model as
+   .tag-search-input / .rows-select-btn (padding 8px 10px, 13px text, 1px
+   border) so every filter control has the same height. */
+.drf {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: stretch;
+}
+.drf-select { position: relative; width: 140px; flex: none; }
+.drf-btn {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--ink-3);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--f-body);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.drf-btn svg { flex: none; color: var(--faint); transition: transform 0.2s; }
+.drf-btn:focus-visible,
+.drf-btn.open { border-color: var(--acid-mid); outline: none; }
+.drf-btn.open svg { transform: rotate(180deg); color: var(--acid); }
+.drf-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    min-width: 140px;
+    z-index: 640;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow: hidden;
+    background: var(--ink-2);
+    border: 1px solid var(--line-mid);
+    border-radius: var(--r-sm);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+.drf-menu button {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--f-body);
+    text-align: left;
+    cursor: pointer;
+}
+.drf-menu li:last-child button { border-bottom: none; }
+.drf-menu button:hover { background: var(--ink-4); }
+.drf-menu button.sel { background: var(--acid-dim); color: var(--acid); }
+.drf-menu button.sel svg { color: var(--acid); }
+.drf-sep { height: 0; border-top: 1px solid var(--line-mid); }
+.drf-date-wrap { flex: 1 1 200px; min-width: 0; }
+.drf-date-wrap .react-datepicker__input-container { height: 100%; }
+.drf-date-wrap .react-datepicker__input-container input {
+    box-sizing: border-box;
+    height: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    background: var(--ink-3);
+    font-size: 13px;
+}
+.insights-filter-field.drf-field {
+    flex: 0 0 auto;
+    width: 380px;
+    max-width: 100%;
+}
+@media (max-width: 600px) {
+    .drf { flex-wrap: wrap; }
+    .drf-select { width: 100%; }
+    .drf-date-wrap { flex: 1 1 100%; }
+}

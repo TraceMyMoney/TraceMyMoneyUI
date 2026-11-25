@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import DatePicker from "react-datepicker";
 import { useStore } from "../store/useStore.js";
 import TagSearchSelect from "./TagSearchSelect.jsx";
+import DateRangeField from "./DateRangeField.jsx";
+import { defaultRange, isDefaultRange } from "../utils/dateRangePresets.js";
 
 const PAGE_SIZES = [5, 10, 15, 20, 50, "all"];
 
@@ -97,7 +98,7 @@ export default function InsightsFilterBar() {
       next.tags.length ||
       next.banks.length ||
       next.keyword.trim() ||
-      next.range;
+      (next.range && !isDefaultRange(next.range));
     setAdvancedSearch(!!any);
   };
   const current = () => ({
@@ -143,32 +144,20 @@ export default function InsightsFilterBar() {
     markAdvanced({ ...current(), banks: v });
     run();
   };
-  const onRange = ([s, e]) => {
-    if (s && e) {
-      setSearchSelectedDaterange([s, e]);
-      markAdvanced({ ...current(), range: [s, e] });
-      run();
-    } else if (!s && !e) {
-      setSearchSelectedDaterange(null);
-      markAdvanced({ ...current(), range: null });
-      run();
-    } else {
-      // first click of a range: keep the picker open, fetch when complete
-      setSearchSelectedDaterange(null);
-      setPending([s, e]);
-    }
+  const onRange = (r) => {
+    setSearchSelectedDaterange(r);
+    markAdvanced({ ...current(), range: r });
+    run();
   };
-  const [pending, setPending] = useState(null);
-  const range = searchSelectedDaterange || pending || [null, null];
+  const range = searchSelectedDaterange;
 
   const reset = () => {
     setSearchSelectedTags([]);
     setSearchExcludeTags(defaultExcludedTags || []);
     setSearchSelectedBanks([]);
     setSearchEntryKeyword("");
-    setSearchSelectedDaterange(null);
+    setSearchSelectedDaterange(defaultRange());
     setAdvancedSearch(false);
-    setPending(null);
     setKeyword("");
     run();
   };
@@ -219,19 +208,9 @@ export default function InsightsFilterBar() {
           summary
         />
       </div>
-      <div className="insights-filter-field">
+      <div className="insights-filter-field drf-field">
         <label className="search-field-label">Date range</label>
-        <DatePicker
-          selectsRange
-          startDate={range[0]}
-          endDate={range[1]}
-          onChange={onRange}
-          maxDate={new Date()}
-          placeholderText="All time"
-          dateFormat="dd/MM/yyyy"
-          isClearable
-          className="search-input insights-date-input"
-        />
+        <DateRangeField value={range} onChange={onRange} />
       </div>
       <div className="insights-filter-field">
         <label className="search-field-label">Rows</label>

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, SlidersHorizontal, Tag, Plus, X, RotateCcw } from "lucide-react";
 import { useStore, fmtNum } from "../store/useStore.js";
 import RefreshButton from "./RefreshButton.jsx";
+import { defaultRange, isDefaultRange } from "../utils/dateRangePresets.js";
 
 /**
  * Phone-only header block: account chips, a balance card for the selected
@@ -68,7 +69,7 @@ export default function MobileTopArea({ open = true, onOpenFilter, onOpenTag }) 
         kw ||
         (searchSelectedTags || []).length ||
         (searchSelectedBanks || []).length ||
-        searchSelectedDaterange;
+        (searchSelectedDaterange && !isDefaultRange(searchSelectedDaterange));
       setAdvancedSearch(!!any);
       setPageNumber(1);
       fetchExpenses();
@@ -115,7 +116,7 @@ export default function MobileTopArea({ open = true, onOpenFilter, onOpenTag }) 
     setSearchExcludeTags(defaultExcludedTags || []);
     setSearchSelectedBanks([]);
     setSearchEntryKeyword("");
-    setSearchSelectedDaterange(null);
+    setSearchSelectedDaterange(defaultRange());
     setAdvancedSearch(false);
     setKeyword("");
     setPageNumber(1);
